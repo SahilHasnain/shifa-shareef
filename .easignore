@@ -1,0 +1,9 @@
+node_modules/
+.expo/
+.git/
+.vscode/
+.kiro/
+docs/
+*.md
+*.log
+.DS_Store
