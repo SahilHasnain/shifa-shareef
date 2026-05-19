@@ -1,5 +1,50 @@
 # Shifa Shareef - Build Guide
 
+## Quick Commands Reference
+
+### Development
+```bash
+npm start                    # Start Expo dev server
+npm run android             # Run on Android device/emulator
+npm run ios                 # Run on iOS device/simulator
+npm run web                 # Run in web browser
+```
+
+### Build Commands
+
+#### Development Builds (Internal Testing)
+```bash
+npm run build:dev           # Android development build
+npm run build:dev:ios       # iOS development build
+```
+
+#### Preview Builds (Beta Testing)
+```bash
+npm run build:prev          # Android preview APK
+npm run build:prev:ios      # iOS preview build
+```
+
+#### Production Builds (Store Release)
+```bash
+npm run build:prod          # Android production AAB
+npm run build:prod:ios      # iOS production build
+npm run build:all           # Build both platforms
+```
+
+### Submission
+```bash
+npm run submit:android      # Submit to Google Play
+npm run submit:ios          # Submit to App Store
+```
+
+### Utilities
+```bash
+npm run prebuild            # Generate native projects
+npm run prebuild:clean      # Clean and regenerate native projects
+npm run typecheck           # TypeScript type checking
+npm run lint                # ESLint code linting
+```
+
 ## Package Identifiers by Variant
 
 The app uses different package identifiers for each build variant to allow multiple versions to be installed simultaneously:

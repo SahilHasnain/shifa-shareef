@@ -82,7 +82,7 @@ export default {
       [
         "expo-notifications",
         {
-          icon: "./assets/images/notification-icon.png",
+          icon: "./assets/images/icon.png",
           color: "#173D31",
           sounds: [],
         },
@@ -94,6 +94,9 @@ export default {
     },
     extra: {
       router: {},
+      "eas": {
+        "projectId": "53403c76-73ed-4ca6-b313-a36d3fe374c6"
+      }
     },
   },
 };

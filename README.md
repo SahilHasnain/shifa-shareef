@@ -1,50 +1,160 @@
-# Welcome to your Expo app 👋
+# Shifa Shareef - Islamic Devotional Reading App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A beautifully focused reading companion built specifically for Shifa Shareef, designed to make devotional reading effortless and consistent.
 
-## Get started
+## 🎯 Product Vision
 
-1. Install dependencies
+This is not a generic PDF reader. It's a calm, guided reading companion that:
+- Makes it effortless to resume reading
+- Reduces the psychological weight of a long text
+- Makes progress visible and encouraging
+- Creates a respectful, peaceful atmosphere
 
-   ```bash
-   npm install
-   ```
+## ✨ Key Features
 
-2. Start the app
+### V1 (Current)
+- 📖 **Native PDF Reading** - Smooth, high-performance PDF rendering
+- 🔖 **Smart Bookmarks** - Save and return to important passages
+- 📊 **Progress Tracking** - Visual progress with reading streaks
+- 📑 **Section Navigation** - Navigate by meaningful sections, not just pages
+- 📅 **Reading Plans** - 7-day, 21-day, and daily light plans
+- 🌙 **Reading Modes** - Sepia, Night, and Light modes with brightness control
+- 🎯 **Focus Mode** - Distraction-free reading with orientation lock
+- ⚡ **Instant Resume** - One-tap continue from where you left off
 
-   ```bash
-   npx expo start
-   ```
+### V2 (Planned)
+- 🔊 Audio recitation sync
+- 🌐 Cloud backup for progress
+- 📤 Share quotes and passages
+- 🔔 Reading reminders
+- 🌙 Ramadan special plans
 
-In the output, you'll find options to open the app in a
+## 🏗️ Tech Stack
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- **Framework**: React Native with Expo SDK 54
+- **Navigation**: Expo Router (file-based routing)
+- **Styling**: NativeWind (Tailwind CSS for React Native)
+- **PDF Rendering**: react-native-pdf (native PDFKit/PdfRenderer)
+- **Storage**: MMKV (fast synchronous storage)
+- **State**: React hooks + AsyncStorage
+- **TypeScript**: Full type safety
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## 📦 Installation
 
 ```bash
-npm run reset-project
+# Install dependencies
+npm install
+
+# Start development server
+npm start
+
+# Run on Android
+npm run android
+
+# Run on iOS
+npm run ios
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🚀 Building
 
-## Learn more
+### Development Build
+```bash
+npm run build:dev           # Android
+npm run build:dev:ios       # iOS
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+### Production Build
+```bash
+npm run build:prod          # Android
+npm run build:prod:ios      # iOS
+npm run build:all           # Both platforms
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+See [BUILD.md](./docs/BUILD.md) for detailed build instructions.
 
-## Join the community
+## 📱 App Variants
 
-Join our community of developers creating universal apps.
+The app supports multiple build variants for parallel installation:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+| Variant | Package ID | Use Case |
+|---------|-----------|----------|
+| Production | `com.shifashareef` | Store release |
+| Preview | `com.shifashareef.preview` | Beta testing |
+| Development | `com.shifashareef.dev` | Local development |
+
+## 📚 Documentation
+
+- [Product Idea & Vision](./docs/idea.md) - Complete product specification
+- [Build Guide](./docs/BUILD.md) - Build and deployment instructions
+- [Packages Reference](./docs/PACKAGES.md) - All native packages and their purposes
+
+## 🎨 Design Principles
+
+- **Peaceful & Reverent** - Calm color palette with warm ivory and deep green
+- **Focused** - Minimal distractions, clean interfaces
+- **Encouraging** - Gentle progress feedback without gamification
+- **Accessible** - Clear typography, good contrast, readable fonts
+
+## 🗂️ Project Structure
+
+```
+shifa-shareef/
+├── app/                    # Expo Router pages
+│   ├── (tabs)/            # Tab navigation
+│   │   ├── index.tsx      # Home screen
+│   │   ├── sections.tsx   # Sections list
+│   │   └── journey.tsx    # Progress & stats
+│   └── reader/
+│       └── [page].tsx     # PDF reader
+├── assets/                # Images, fonts, PDF
+│   └── pdf/
+│       └── Shifa Shareef Urdu - V1.pdf
+├── components/            # Reusable components
+├── data/                  # Static data (sections, plans)
+├── hooks/                 # Custom React hooks
+├── docs/                  # Documentation
+└── app.config.js         # Expo configuration
+```
+
+## 🔧 Development
+
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+- Expo CLI
+- Android Studio (for Android)
+- Xcode (for iOS, macOS only)
+
+### Environment Setup
+```bash
+# Install Expo CLI globally
+npm install -g expo-cli
+
+# Install EAS CLI for builds
+npm install -g eas-cli
+
+# Login to Expo
+eas login
+```
+
+### Type Checking
+```bash
+npm run typecheck
+```
+
+### Linting
+```bash
+npm run lint
+```
+
+## 📄 License
+
+Private - All rights reserved
+
+## 👥 Team
+
+Built with ❤️ for the Muslim community
+
+---
+
+**Note**: This is a devotional reading app focused on providing a peaceful, distraction-free experience for reading Shifa Shareef.
