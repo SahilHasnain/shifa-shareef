@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { colors, shadows, typography } from "../../constants/theme";
 import { SECTIONS } from "../../data/book";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
 
@@ -38,38 +39,59 @@ export default function SectionsScreen() {
   ];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F4ECD9" }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        <View style={{ padding: 20, paddingBottom: 16 }}>
-          <Text style={{ color: "#173D31", fontSize: 28, fontWeight: "800" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={{ padding: 20, paddingBottom: 18 }}>
+          <Text
+            style={{
+              color: colors.text.primary,
+              fontSize: typography.size["4xl"],
+              fontWeight: typography.weight.extrabold,
+            }}
+          >
             Sections
           </Text>
-          <Text style={{ color: "#55665D", fontSize: 15, lineHeight: 22, marginTop: 4 }}>
+          <Text
+            style={{
+              color: colors.text.tertiary,
+              fontSize: typography.size.md,
+              lineHeight: 22,
+              marginTop: 6,
+            }}
+          >
             Navigate the book through meaningful sections
           </Text>
         </View>
 
+        {/* Filters */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 8, paddingBottom: 16 }}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 10, paddingBottom: 18 }}
         >
           {filters.map((f) => (
             <Pressable
               key={f.key}
               onPress={() => setFilter(f.key)}
-              style={{
-                backgroundColor: filter === f.key ? "#173D31" : "#FBF7EE",
-                paddingHorizontal: 16,
-                paddingVertical: 10,
+              style={({ pressed }) => ({
+                backgroundColor:
+                  filter === f.key ? colors.secondary.warmGold : colors.surface.warmIvory,
+                paddingHorizontal: 18,
+                paddingVertical: 11,
                 borderRadius: 20,
-              }}
+                opacity: pressed ? 0.9 : 1,
+                ...shadows.sm,
+              })}
             >
               <Text
                 style={{
-                  color: filter === f.key ? "#FFF9EA" : "#55665D",
-                  fontSize: 14,
-                  fontWeight: "700",
+                  color: filter === f.key ? colors.primary.deepGreen : colors.text.tertiary,
+                  fontSize: typography.size.base,
+                  fontWeight: typography.weight.bold,
                 }}
               >
                 {f.label}
@@ -78,19 +100,27 @@ export default function SectionsScreen() {
           ))}
         </ScrollView>
 
-        <View style={{ paddingHorizontal: 20, gap: 12 }}>
+        {/* Sections List */}
+        <View style={{ paddingHorizontal: 20, gap: 14 }}>
           {filteredSections.length === 0 ? (
             <View
               style={{
-                backgroundColor: "#FBF7EE",
-                borderRadius: 22,
-                padding: 32,
+                backgroundColor: colors.surface.warmIvory,
+                borderRadius: 24,
+                padding: 36,
                 alignItems: "center",
-                gap: 8,
+                gap: 12,
+                ...shadows.sm,
               }}
             >
-              <Ionicons name="book-outline" size={48} color="#C8D5CD" />
-              <Text style={{ color: "#55665D", fontSize: 16, fontWeight: "600" }}>
+              <Ionicons name="book-outline" size={52} color={colors.text.light} />
+              <Text
+                style={{
+                  color: colors.text.tertiary,
+                  fontSize: typography.size.lg,
+                  fontWeight: typography.weight.semibold,
+                }}
+              >
                 No sections match this filter
               </Text>
             </View>
@@ -106,27 +136,32 @@ export default function SectionsScreen() {
                 <Pressable
                   key={section.id}
                   onPress={() => router.push(`/reader/${section.startPage}`)}
-                  style={{
-                    backgroundColor: isCurrent ? "#173D31" : "#FBF7EE",
-                    borderRadius: 22,
-                    padding: 18,
-                    gap: 12,
-                  }}
+                  style={({ pressed }) => ({
+                    backgroundColor: isCurrent
+                      ? colors.secondary.paleGold
+                      : colors.surface.warmIvory,
+                    borderRadius: 24,
+                    padding: 20,
+                    gap: 14,
+                    opacity: pressed ? 0.95 : 1,
+                    ...shadows.md,
+                  })}
                 >
                   <View
                     style={{
                       flexDirection: "row",
                       justifyContent: "space-between",
                       alignItems: "flex-start",
-                      gap: 12,
+                      gap: 14,
                     }}
                   >
                     <Text
                       style={{
-                        color: isCurrent ? "#FFF9EA" : "#173D31",
-                        fontSize: 18,
-                        fontWeight: "800",
+                        color: isCurrent ? colors.primary.deepGreen : colors.text.primary,
+                        fontSize: typography.size.xl,
+                        fontWeight: typography.weight.extrabold,
                         flex: 1,
+                        lineHeight: 26,
                       }}
                     >
                       {section.title}
@@ -134,18 +169,20 @@ export default function SectionsScreen() {
                     <View
                       style={{
                         backgroundColor: isCurrent
-                          ? "rgba(241, 224, 164, 0.2)"
-                          : "rgba(124, 110, 63, 0.1)",
-                        paddingHorizontal: 10,
-                        paddingVertical: 6,
+                          ? colors.primary.deepGreen
+                          : "rgba(201, 169, 97, 0.12)",
+                        paddingHorizontal: 12,
+                        paddingVertical: 7,
                         borderRadius: 12,
                       }}
                     >
                       <Text
                         style={{
-                          color: isCurrent ? "#F1E0A4" : "#7C6E3F",
-                          fontSize: 13,
-                          fontWeight: "700",
+                          color: isCurrent
+                            ? "#FFFFFF"
+                            : colors.secondary.mutedGold,
+                          fontSize: typography.size.sm,
+                          fontWeight: typography.weight.bold,
                         }}
                       >
                         {section.estimatedMinutes} min
@@ -157,14 +194,15 @@ export default function SectionsScreen() {
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
-                      gap: 12,
+                      gap: 14,
+                      flexWrap: "wrap",
                     }}
                   >
                     <Text
                       style={{
-                        color: isCurrent ? "#D8E2DA" : "#55665D",
-                        fontSize: 14,
-                        fontWeight: "600",
+                        color: isCurrent ? colors.primary.forestGreen : colors.text.tertiary,
+                        fontSize: typography.size.base,
+                        fontWeight: typography.weight.semibold,
                       }}
                     >
                       Pages {section.startPage}-{section.endPage}
@@ -174,19 +212,19 @@ export default function SectionsScreen() {
                         style={{
                           flexDirection: "row",
                           alignItems: "center",
-                          gap: 4,
+                          gap: 5,
                         }}
                       >
                         <Ionicons
                           name="checkmark-circle"
-                          size={16}
-                          color={isCurrent ? "#A8D5BA" : "#5A9B6E"}
+                          size={17}
+                          color={isCurrent ? colors.primary.deepGreen : colors.accent.success}
                         />
                         <Text
                           style={{
-                            color: isCurrent ? "#A8D5BA" : "#5A9B6E",
-                            fontSize: 13,
-                            fontWeight: "700",
+                            color: isCurrent ? colors.primary.deepGreen : colors.accent.success,
+                            fontSize: typography.size.sm,
+                            fontWeight: typography.weight.bold,
                           }}
                         >
                           Completed
@@ -197,9 +235,9 @@ export default function SectionsScreen() {
 
                   <Text
                     style={{
-                      color: isCurrent ? "#C2D2C8" : "#64756C",
-                      fontSize: 14,
-                      lineHeight: 21,
+                      color: isCurrent ? colors.primary.forestGreen : colors.text.muted,
+                      fontSize: typography.size.base,
+                      lineHeight: 22,
                     }}
                   >
                     {section.description}
@@ -210,16 +248,16 @@ export default function SectionsScreen() {
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
-                        gap: 6,
+                        gap: 7,
                         marginTop: 4,
                       }}
                     >
-                      <Ionicons name="book" size={16} color="#F1E0A4" />
+                      <Ionicons name="book" size={17} color={colors.primary.deepGreen} />
                       <Text
                         style={{
-                          color: "#F1E0A4",
-                          fontSize: 13,
-                          fontWeight: "700",
+                          color: colors.primary.deepGreen,
+                          fontSize: typography.size.sm,
+                          fontWeight: typography.weight.bold,
                         }}
                       >
                         Currently reading

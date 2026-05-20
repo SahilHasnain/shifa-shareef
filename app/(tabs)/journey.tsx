@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { colors, shadows, typography } from "../../constants/theme";
 import { SECTIONS, TOTAL_PAGES } from "../../data/book";
 import { useBookmarks } from "../../hooks/useBookmarks";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
@@ -48,13 +49,30 @@ export default function JourneyScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F4ECD9" }}>
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>
+      <ScrollView
+        contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
         <View>
-          <Text style={{ color: "#173D31", fontSize: 28, fontWeight: "800" }}>
+          <Text
+            style={{
+              color: colors.text.primary,
+              fontSize: typography.size["4xl"],
+              fontWeight: typography.weight.extrabold,
+            }}
+          >
             Journey
           </Text>
-          <Text style={{ color: "#55665D", fontSize: 15, lineHeight: 22, marginTop: 4 }}>
+          <Text
+            style={{
+              color: colors.text.tertiary,
+              fontSize: typography.size.md,
+              lineHeight: 22,
+              marginTop: 6,
+            }}
+          >
             Your reading progress and saved moments
           </Text>
         </View>
@@ -62,26 +80,46 @@ export default function JourneyScreen() {
         {/* Progress Card */}
         <View
           style={{
-            backgroundColor: "#173D31",
-            borderRadius: 26,
-            padding: 20,
-            gap: 14,
+            backgroundColor: colors.primary.deepGreen,
+            borderRadius: 28,
+            padding: 24,
+            gap: 16,
+            ...shadows.lg,
           }}
         >
-          <Text style={{ color: "#D8E2DA", fontSize: 14, fontWeight: "700" }}>
+          <Text
+            style={{
+              color: colors.text.light,
+              fontSize: typography.size.base,
+              fontWeight: typography.weight.bold,
+              letterSpacing: 0.5,
+              textTransform: "uppercase",
+            }}
+          >
             Current Progress
           </Text>
-          <Text style={{ color: "#FFF9EA", fontSize: 34, fontWeight: "800" }}>
+          <Text
+            style={{
+              color: "#FFF9EA",
+              fontSize: typography.size["5xl"],
+              fontWeight: typography.weight.extrabold,
+            }}
+          >
             {completion}%
           </Text>
-          <Text style={{ color: "#C6D4CB", fontSize: 15 }}>
+          <Text
+            style={{
+              color: "#C6D4CB",
+              fontSize: typography.size.md,
+            }}
+          >
             Page {currentPage} of {TOTAL_PAGES}
           </Text>
           <View
             style={{
-              height: 8,
+              height: 10,
               backgroundColor: "rgba(255, 249, 234, 0.2)",
-              borderRadius: 4,
+              borderRadius: 5,
               overflow: "hidden",
               marginTop: 4,
             }}
@@ -90,8 +128,8 @@ export default function JourneyScreen() {
               style={{
                 height: "100%",
                 width: `${completion}%`,
-                backgroundColor: "#F1E0A4",
-                borderRadius: 4,
+                backgroundColor: colors.secondary.lightGold,
+                borderRadius: 5,
               }}
             />
           </View>
@@ -101,41 +139,54 @@ export default function JourneyScreen() {
         <View
           style={{
             flexDirection: "row",
-            gap: 12,
+            gap: 14,
           }}
         >
           {/* Streak Card */}
           <View
             style={{
               flex: 1,
-              backgroundColor: "#FBF7EE",
-              borderRadius: 20,
-              padding: 16,
-              gap: 8,
+              backgroundColor: colors.surface.warmIvory,
+              borderRadius: 22,
+              padding: 18,
+              gap: 10,
+              ...shadows.md,
             }}
           >
             <View
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
+                width: 44,
+                height: 44,
+                borderRadius: 22,
                 backgroundColor: readToday
-                  ? "rgba(241, 224, 164, 0.3)"
-                  : "rgba(124, 110, 63, 0.1)",
+                  ? "rgba(241, 224, 164, 0.35)"
+                  : "rgba(201, 169, 97, 0.12)",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
               <Ionicons
                 name="flame"
-                size={22}
-                color={readToday ? "#F1E0A4" : "#7C6E3F"}
+                size={24}
+                color={readToday ? colors.secondary.lightGold : colors.secondary.mutedGold}
               />
             </View>
-            <Text style={{ color: "#173D31", fontSize: 24, fontWeight: "800" }}>
+            <Text
+              style={{
+                color: colors.text.primary,
+                fontSize: typography.size["3xl"],
+                fontWeight: typography.weight.extrabold,
+              }}
+            >
               {currentStreak}
             </Text>
-            <Text style={{ color: "#64756C", fontSize: 13, fontWeight: "600" }}>
+            <Text
+              style={{
+                color: colors.text.muted,
+                fontSize: typography.size.sm,
+                fontWeight: typography.weight.semibold,
+              }}
+            >
               Day Streak
             </Text>
           </View>
@@ -144,28 +195,41 @@ export default function JourneyScreen() {
           <View
             style={{
               flex: 1,
-              backgroundColor: "#FBF7EE",
-              borderRadius: 20,
-              padding: 16,
-              gap: 8,
+              backgroundColor: colors.surface.warmIvory,
+              borderRadius: 22,
+              padding: 18,
+              gap: 10,
+              ...shadows.md,
             }}
           >
             <View
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "rgba(124, 110, 63, 0.1)",
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: "rgba(201, 169, 97, 0.12)",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Ionicons name="book-outline" size={22} color="#7C6E3F" />
+              <Ionicons name="book-outline" size={24} color={colors.secondary.mutedGold} />
             </View>
-            <Text style={{ color: "#173D31", fontSize: 24, fontWeight: "800" }}>
+            <Text
+              style={{
+                color: colors.text.primary,
+                fontSize: typography.size["3xl"],
+                fontWeight: typography.weight.extrabold,
+              }}
+            >
               {totalSessions}
             </Text>
-            <Text style={{ color: "#64756C", fontSize: 13, fontWeight: "600" }}>
+            <Text
+              style={{
+                color: colors.text.muted,
+                fontSize: typography.size.sm,
+                fontWeight: typography.weight.semibold,
+              }}
+            >
               Sessions
             </Text>
           </View>
@@ -174,28 +238,41 @@ export default function JourneyScreen() {
           <View
             style={{
               flex: 1,
-              backgroundColor: "#FBF7EE",
-              borderRadius: 20,
-              padding: 16,
-              gap: 8,
+              backgroundColor: colors.surface.warmIvory,
+              borderRadius: 22,
+              padding: 18,
+              gap: 10,
+              ...shadows.md,
             }}
           >
             <View
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "rgba(124, 110, 63, 0.1)",
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: "rgba(201, 169, 97, 0.12)",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Ionicons name="checkmark-circle" size={22} color="#7C6E3F" />
+              <Ionicons name="checkmark-circle" size={24} color={colors.secondary.mutedGold} />
             </View>
-            <Text style={{ color: "#173D31", fontSize: 24, fontWeight: "800" }}>
+            <Text
+              style={{
+                color: colors.text.primary,
+                fontSize: typography.size["3xl"],
+                fontWeight: typography.weight.extrabold,
+              }}
+            >
               {sectionsCompleted}
             </Text>
-            <Text style={{ color: "#64756C", fontSize: 13, fontWeight: "600" }}>
+            <Text
+              style={{
+                color: colors.text.muted,
+                fontSize: typography.size.sm,
+                fontWeight: typography.weight.semibold,
+              }}
+            >
               Sections
             </Text>
           </View>
@@ -203,11 +280,17 @@ export default function JourneyScreen() {
 
         {/* Recent Sessions */}
         {recentSessions.length > 0 && (
-          <View style={{ gap: 12 }}>
-            <Text style={{ color: "#173D31", fontSize: 20, fontWeight: "800" }}>
+          <View style={{ gap: 14 }}>
+            <Text
+              style={{
+                color: colors.text.primary,
+                fontSize: typography.size["2xl"],
+                fontWeight: typography.weight.extrabold,
+              }}
+            >
               Recent Sessions
             </Text>
-            <View style={{ gap: 10 }}>
+            <View style={{ gap: 12 }}>
               {recentSessions.slice(0, 5).map((session: ReadingSession) => {
                 const sessionDate = new Date(session.date);
                 const isToday =
@@ -217,10 +300,11 @@ export default function JourneyScreen() {
                   <View
                     key={session.id}
                     style={{
-                      backgroundColor: "#FBF7EE",
-                      borderRadius: 18,
-                      padding: 16,
-                      gap: 8,
+                      backgroundColor: colors.surface.warmIvory,
+                      borderRadius: 20,
+                      padding: 18,
+                      gap: 10,
+                      ...shadows.sm,
                     }}
                   >
                     <View
@@ -230,30 +314,35 @@ export default function JourneyScreen() {
                         justifyContent: "space-between",
                       }}
                     >
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                         <View
                           style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 18,
+                            width: 40,
+                            height: 40,
+                            borderRadius: 20,
                             backgroundColor: "rgba(23, 61, 49, 0.1)",
                             alignItems: "center",
                             justifyContent: "center",
                           }}
                         >
-                          <Ionicons name="book" size={18} color="#173D31" />
+                          <Ionicons name="book" size={20} color={colors.primary.deepGreen} />
                         </View>
                         <View>
                           <Text
                             style={{
-                              color: "#173D31",
-                              fontSize: 15,
-                              fontWeight: "700",
+                              color: colors.text.primary,
+                              fontSize: typography.size.md,
+                              fontWeight: typography.weight.bold,
                             }}
                           >
                             {session.pagesRead} pages
                           </Text>
-                          <Text style={{ color: "#7A8A82", fontSize: 13 }}>
+                          <Text
+                            style={{
+                              color: colors.text.subtle,
+                              fontSize: typography.size.sm,
+                            }}
+                          >
                             {isToday ? "Today" : formatDate(session.date)}
                           </Text>
                         </View>
@@ -261,14 +350,20 @@ export default function JourneyScreen() {
                       <View style={{ alignItems: "flex-end" }}>
                         <Text
                           style={{
-                            color: "#7C6E3F",
-                            fontSize: 13,
-                            fontWeight: "600",
+                            color: colors.secondary.mutedGold,
+                            fontSize: typography.size.sm,
+                            fontWeight: typography.weight.semibold,
                           }}
                         >
                           {session.durationMinutes} min
                         </Text>
-                        <Text style={{ color: "#7A8A82", fontSize: 12 }}>
+                        <Text
+                          style={{
+                            color: colors.text.subtle,
+                            fontSize: typography.size.xs,
+                            marginTop: 2,
+                          }}
+                        >
                           Pages {session.startPage}-{session.endPage}
                         </Text>
                       </View>
@@ -279,6 +374,7 @@ export default function JourneyScreen() {
             </View>
           </View>
         )}
+
 
         {/* Bookmarks Section */}
         <View style={{ gap: 12 }}>
@@ -424,7 +520,7 @@ export default function JourneyScreen() {
             </View>
           )}
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </ScrollView >
+    </SafeAreaView >
   );
 }

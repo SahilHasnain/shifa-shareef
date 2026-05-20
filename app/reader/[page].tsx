@@ -16,6 +16,7 @@ import {
 
 import { SessionCompletionModal } from "../../components/SessionCompletionModal";
 import { ZoomableImage } from "../../components/ZoomableImage";
+import { colors as designColors, typography } from "../../constants/theme";
 import { BOOK_TITLE, SECTIONS, TOTAL_PAGES } from "../../data/book";
 import { getPageImage } from "../../data/pages";
 import { useBookmarks } from "../../hooks/useBookmarks";
@@ -285,13 +286,19 @@ export default function ReaderScreen() {
                 gap: 12,
               }}
             >
-              <Text style={{ color: "#173D31", fontSize: 18, fontWeight: "700" }}>
+              <Text
+                style={{
+                  color: designColors.text.primary,
+                  fontSize: typography.size.xl,
+                  fontWeight: typography.weight.bold,
+                }}
+              >
                 Page {pageNum}
               </Text>
               <Text
                 style={{
-                  color: "#55665D",
-                  fontSize: 14,
+                  color: designColors.text.tertiary,
+                  fontSize: typography.size.base,
                   textAlign: "center",
                   paddingHorizontal: 40,
                 }}
@@ -319,13 +326,13 @@ export default function ReaderScreen() {
               gap: 10,
             }}
           >
-            <Text style={{ color: "#173D31", fontSize: 17, fontWeight: "800" }}>
+            <Text style={{ color: designColors.text.primary, fontSize: typography.size.xl, fontWeight: typography.weight.extrabold }}>
               Image-based reader is ready
             </Text>
             <Text
               style={{
-                color: "#55665D",
-                fontSize: 14,
+                color: designColors.text.tertiary,
+                fontSize: typography.size.base,
                 lineHeight: 21,
                 textAlign: "center",
               }}
@@ -377,7 +384,7 @@ export default function ReaderScreen() {
             left: 0,
             right: 0,
             opacity: fadeAnim,
-            backgroundColor: "rgba(23, 61, 49, 0.95)",
+            backgroundColor: designColors.overlay.dark,
             paddingTop: 50,
             paddingBottom: 12,
             paddingHorizontal: 16,
@@ -388,35 +395,49 @@ export default function ReaderScreen() {
         >
           <Pressable
             onPress={() => router.back()}
-            style={{
+            style={({ pressed }) => ({
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: "rgba(255, 249, 234, 0.2)",
+              backgroundColor: designColors.overlay.light,
               alignItems: "center",
               justifyContent: "center",
-            }}
+              opacity: pressed ? 0.7 : 1,
+            })}
           >
             <Ionicons name="chevron-back" size={24} color="#FFF9EA" />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: "#FFF9EA", fontSize: 16, fontWeight: "700" }}>
+            <Text
+              style={{
+                color: "#FFF9EA",
+                fontSize: typography.size.lg,
+                fontWeight: typography.weight.bold,
+              }}
+            >
               {BOOK_TITLE}
             </Text>
-            <Text style={{ color: "#C8D5CD", fontSize: 14, fontWeight: "600" }}>
+            <Text
+              style={{
+                color: "#C6D4CB",
+                fontSize: typography.size.base,
+                fontWeight: typography.weight.semibold,
+              }}
+            >
               {currentSection.title}
             </Text>
           </View>
           <Pressable
             onPress={cycleTheme}
-            style={{
+            style={({ pressed }) => ({
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: "rgba(255, 249, 234, 0.2)",
+              backgroundColor: designColors.overlay.light,
               alignItems: "center",
               justifyContent: "center",
-            }}
+              opacity: pressed ? 0.7 : 1,
+            })}
           >
             <Ionicons
               name={
@@ -432,14 +453,15 @@ export default function ReaderScreen() {
           </Pressable>
           <Pressable
             onPress={toggleBookmark}
-            style={{
+            style={({ pressed }) => ({
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: "rgba(255, 249, 234, 0.2)",
+              backgroundColor: designColors.overlay.light,
               alignItems: "center",
               justifyContent: "center",
-            }}
+              opacity: pressed ? 0.7 : 1,
+            })}
           >
             <Ionicons
               name={pageIsBookmarked ? "bookmark" : "bookmark-outline"}
@@ -459,7 +481,7 @@ export default function ReaderScreen() {
             left: 0,
             right: 0,
             opacity: fadeAnim,
-            backgroundColor: "rgba(23, 61, 49, 0.95)",
+            backgroundColor: designColors.overlay.dark,
             paddingTop: 16,
             paddingBottom: 32,
             paddingHorizontal: 16,
@@ -478,28 +500,40 @@ export default function ReaderScreen() {
             <Pressable
               disabled={currentPage <= 1}
               onPress={() => moveToPage(currentPage - 1)}
-              style={{
+              style={({ pressed }) => ({
                 width: 48,
                 height: 48,
                 borderRadius: 24,
                 backgroundColor:
-                  currentPage <= 1 ? "rgba(255, 249, 234, 0.1)" : "rgba(240, 225, 167, 0.9)",
+                  currentPage <= 1 ? designColors.overlay.medium : designColors.secondary.lightGold,
                 alignItems: "center",
                 justifyContent: "center",
-              }}
+                opacity: pressed && currentPage > 1 ? 0.8 : 1,
+              })}
             >
               <Ionicons
                 name="chevron-back"
                 size={24}
-                color={currentPage <= 1 ? "#7A8A82" : "#173D31"}
+                color={currentPage <= 1 ? designColors.text.subtle : designColors.primary.deepGreen}
               />
             </Pressable>
 
             <View style={{ flex: 1, alignItems: "center" }}>
-              <Text style={{ color: "#FFF9EA", fontSize: 16, fontWeight: "700" }}>
+              <Text
+                style={{
+                  color: "#FFF9EA",
+                  fontSize: typography.size.lg,
+                  fontWeight: typography.weight.bold,
+                }}
+              >
                 Page {currentPage} of {TOTAL_PAGES}
               </Text>
-              <Text style={{ color: "#C8D5CD", fontSize: 13 }}>
+              <Text
+                style={{
+                  color: "#C6D4CB",
+                  fontSize: typography.size.sm,
+                }}
+              >
                 {Math.round((currentPage / TOTAL_PAGES) * 100)}% complete
               </Text>
             </View>
@@ -507,22 +541,23 @@ export default function ReaderScreen() {
             <Pressable
               disabled={currentPage >= TOTAL_PAGES}
               onPress={() => moveToPage(currentPage + 1)}
-              style={{
+              style={({ pressed }) => ({
                 width: 48,
                 height: 48,
                 borderRadius: 24,
                 backgroundColor:
                   currentPage >= TOTAL_PAGES
-                    ? "rgba(255, 249, 234, 0.1)"
-                    : "rgba(240, 225, 167, 0.9)",
+                    ? designColors.overlay.medium
+                    : designColors.secondary.lightGold,
                 alignItems: "center",
                 justifyContent: "center",
-              }}
+                opacity: pressed && currentPage < TOTAL_PAGES ? 0.8 : 1,
+              })}
             >
               <Ionicons
                 name="chevron-forward"
                 size={24}
-                color={currentPage >= TOTAL_PAGES ? "#7A8A82" : "#173D31"}
+                color={currentPage >= TOTAL_PAGES ? designColors.text.subtle : designColors.primary.deepGreen}
               />
             </Pressable>
           </View>

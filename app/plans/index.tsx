@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { colors, shadows, typography } from "../../constants/theme";
 import { getCurrentDayForPlan, getPlanProgress, READING_PLANS } from "../../data/plans";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
@@ -66,31 +67,45 @@ export default function PlansScreen() {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: "#F4ECD9" }}>
-            <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>
+            <ScrollView contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 40 }}>
                 {/* Header */}
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                     <Pressable
                         onPress={() => router.back()}
-                        style={{
+                        style={({ pressed }) => ({
                             width: 40,
                             height: 40,
                             borderRadius: 20,
-                            backgroundColor: "#FBF7EE",
+                            backgroundColor: colors.surface.warmIvory,
                             alignItems: "center",
                             justifyContent: "center",
-                        }}
+                            opacity: pressed ? 0.7 : 1,
+                            ...shadows.sm,
+                        })}
                     >
-                        <Ionicons name="chevron-back" size={24} color="#173D31" />
+                        <Ionicons name="chevron-back" size={24} color={colors.primary.deepGreen} />
                     </Pressable>
                     <View style={{ flex: 1 }}>
-                        <Text style={{ color: "#173D31", fontSize: 28, fontWeight: "800" }}>
+                        <Text
+                            style={{
+                                color: colors.text.primary,
+                                fontSize: typography.size["4xl"],
+                                fontWeight: typography.weight.extrabold,
+                            }}
+                        >
                             Reading Plans
                         </Text>
                     </View>
                 </View>
 
-                <Text style={{ color: "#55665D", fontSize: 15, lineHeight: 22 }}>
+                <Text
+                    style={{
+                        color: colors.text.tertiary,
+                        fontSize: typography.size.md,
+                        lineHeight: 22,
+                    }}
+                >
                     Choose a plan that matches your pace. Consistency matters more than speed.
                 </Text>
 
@@ -98,10 +113,11 @@ export default function PlansScreen() {
                 {activePlan && (
                     <View
                         style={{
-                            backgroundColor: "#173D31",
-                            borderRadius: 22,
-                            padding: 18,
-                            gap: 12,
+                            backgroundColor: colors.primary.deepGreen,
+                            borderRadius: 24,
+                            padding: 20,
+                            gap: 14,
+                            ...shadows.lg,
                         }}
                     >
                         <View
@@ -112,29 +128,51 @@ export default function PlansScreen() {
                             }}
                         >
                             <View style={{ flex: 1 }}>
-                                <Text style={{ color: "#D8E2DA", fontSize: 13, fontWeight: "700" }}>
+                                <Text
+                                    style={{
+                                        color: colors.text.light,
+                                        fontSize: typography.size.sm,
+                                        fontWeight: typography.weight.bold,
+                                        letterSpacing: 0.5,
+                                        textTransform: "uppercase",
+                                    }}
+                                >
                                     Active Plan
                                 </Text>
-                                <Text style={{ color: "#FFF9EA", fontSize: 20, fontWeight: "800", marginTop: 4 }}>
+                                <Text
+                                    style={{
+                                        color: "#FFF9EA",
+                                        fontSize: typography.size["2xl"],
+                                        fontWeight: typography.weight.extrabold,
+                                        marginTop: 4,
+                                    }}
+                                >
                                     {activePlan.title}
                                 </Text>
                             </View>
                             <Pressable
                                 onPress={handleClearPlan}
-                                style={{
-                                    paddingHorizontal: 12,
+                                style={({ pressed }) => ({
+                                    paddingHorizontal: 14,
                                     paddingVertical: 8,
                                     borderRadius: 12,
                                     backgroundColor: "rgba(220, 53, 69, 0.2)",
-                                }}
+                                    opacity: pressed ? 0.7 : 1,
+                                })}
                             >
-                                <Text style={{ color: "#FFB3BA", fontSize: 13, fontWeight: "700" }}>
+                                <Text
+                                    style={{
+                                        color: "#FFB3BA",
+                                        fontSize: typography.size.sm,
+                                        fontWeight: typography.weight.bold,
+                                    }}
+                                >
                                     Clear
                                 </Text>
                             </Pressable>
                         </View>
 
-                        <View style={{ gap: 6 }}>
+                        <View style={{ gap: 8 }}>
                             <View
                                 style={{
                                     flexDirection: "row",
@@ -142,18 +180,29 @@ export default function PlansScreen() {
                                     alignItems: "center",
                                 }}
                             >
-                                <Text style={{ color: "#C8D5CD", fontSize: 14 }}>
+                                <Text
+                                    style={{
+                                        color: "#C6D4CB",
+                                        fontSize: typography.size.base,
+                                    }}
+                                >
                                     Day {getCurrentDayForPlan(activePlan, currentPage)} of {activePlan.totalDays}
                                 </Text>
-                                <Text style={{ color: "#F1E0A4", fontSize: 14, fontWeight: "700" }}>
+                                <Text
+                                    style={{
+                                        color: colors.secondary.lightGold,
+                                        fontSize: typography.size.base,
+                                        fontWeight: typography.weight.bold,
+                                    }}
+                                >
                                     {getPlanProgress(activePlan, currentPage)}%
                                 </Text>
                             </View>
                             <View
                                 style={{
-                                    height: 6,
+                                    height: 8,
                                     backgroundColor: "rgba(255, 249, 234, 0.2)",
-                                    borderRadius: 3,
+                                    borderRadius: 4,
                                     overflow: "hidden",
                                 }}
                             >
@@ -161,8 +210,8 @@ export default function PlansScreen() {
                                     style={{
                                         height: "100%",
                                         width: `${getPlanProgress(activePlan, currentPage)}%`,
-                                        backgroundColor: "#F1E0A4",
-                                        borderRadius: 3,
+                                        backgroundColor: colors.secondary.lightGold,
+                                        borderRadius: 4,
                                     }}
                                 />
                             </View>
@@ -171,7 +220,7 @@ export default function PlansScreen() {
                 )}
 
                 {/* Available Plans */}
-                <View style={{ gap: 12 }}>
+                <View style={{ gap: 14 }}>
                     {READING_PLANS.map((plan) => {
                         const isActive = activePlan?.id === plan.id;
 
@@ -180,13 +229,14 @@ export default function PlansScreen() {
                                 key={plan.id}
                                 onPress={() => !isActive && handleSelectPlan(plan.id)}
                                 disabled={isActive}
-                                style={{
-                                    backgroundColor: isActive ? "#E8F5E9" : "#FBF7EE",
-                                    borderRadius: 22,
-                                    padding: 18,
-                                    gap: 12,
-                                    opacity: isActive ? 0.7 : 1,
-                                }}
+                                style={({ pressed }) => ({
+                                    backgroundColor: isActive ? "#E8F5E9" : colors.surface.warmIvory,
+                                    borderRadius: 24,
+                                    padding: 20,
+                                    gap: 14,
+                                    opacity: isActive ? 0.7 : pressed ? 0.8 : 1,
+                                    ...shadows.md,
+                                })}
                             >
                                 <View
                                     style={{
@@ -197,7 +247,13 @@ export default function PlansScreen() {
                                     }}
                                 >
                                     <View style={{ flex: 1 }}>
-                                        <Text style={{ color: "#173D31", fontSize: 20, fontWeight: "800" }}>
+                                        <Text
+                                            style={{
+                                                color: colors.text.primary,
+                                                fontSize: typography.size["2xl"],
+                                                fontWeight: typography.weight.extrabold,
+                                            }}
+                                        >
                                             {plan.title}
                                         </Text>
                                         {isActive && (
@@ -206,11 +262,17 @@ export default function PlansScreen() {
                                                     flexDirection: "row",
                                                     alignItems: "center",
                                                     gap: 4,
-                                                    marginTop: 4,
+                                                    marginTop: 6,
                                                 }}
                                             >
-                                                <Ionicons name="checkmark-circle" size={16} color="#5A9B6E" />
-                                                <Text style={{ color: "#5A9B6E", fontSize: 13, fontWeight: "700" }}>
+                                                <Ionicons name="checkmark-circle" size={16} color={colors.accent.success} />
+                                                <Text
+                                                    style={{
+                                                        color: colors.accent.success,
+                                                        fontSize: typography.size.sm,
+                                                        fontWeight: typography.weight.bold,
+                                                    }}
+                                                >
                                                     Currently Active
                                                 </Text>
                                             </View>
@@ -218,19 +280,31 @@ export default function PlansScreen() {
                                     </View>
                                     <View
                                         style={{
-                                            backgroundColor: "rgba(124, 110, 63, 0.1)",
+                                            backgroundColor: "rgba(201, 169, 97, 0.12)",
                                             paddingHorizontal: 12,
                                             paddingVertical: 6,
                                             borderRadius: 12,
                                         }}
                                     >
-                                        <Text style={{ color: "#7C6E3F", fontSize: 13, fontWeight: "700" }}>
+                                        <Text
+                                            style={{
+                                                color: colors.secondary.mutedGold,
+                                                fontSize: typography.size.sm,
+                                                fontWeight: typography.weight.bold,
+                                            }}
+                                        >
                                             {plan.totalDays} days
                                         </Text>
                                     </View>
                                 </View>
 
-                                <Text style={{ color: "#64756C", fontSize: 14, lineHeight: 21 }}>
+                                <Text
+                                    style={{
+                                        color: colors.text.muted,
+                                        fontSize: typography.size.base,
+                                        lineHeight: 21,
+                                    }}
+                                >
                                     {plan.description}
                                 </Text>
 
@@ -239,18 +313,30 @@ export default function PlansScreen() {
                                         flexDirection: "row",
                                         alignItems: "center",
                                         gap: 16,
-                                        paddingTop: 8,
+                                        paddingTop: 4,
                                     }}
                                 >
                                     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                                        <Ionicons name="book-outline" size={18} color="#7A8A82" />
-                                        <Text style={{ color: "#55665D", fontSize: 13, fontWeight: "600" }}>
+                                        <Ionicons name="book-outline" size={18} color={colors.text.subtle} />
+                                        <Text
+                                            style={{
+                                                color: colors.text.tertiary,
+                                                fontSize: typography.size.sm,
+                                                fontWeight: typography.weight.semibold,
+                                            }}
+                                        >
                                             {plan.pagesPerDay} pages/day
                                         </Text>
                                     </View>
                                     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                                        <Ionicons name="time-outline" size={18} color="#7A8A82" />
-                                        <Text style={{ color: "#55665D", fontSize: 13, fontWeight: "600" }}>
+                                        <Ionicons name="time-outline" size={18} color={colors.text.subtle} />
+                                        <Text
+                                            style={{
+                                                color: colors.text.tertiary,
+                                                fontSize: typography.size.sm,
+                                                fontWeight: typography.weight.semibold,
+                                            }}
+                                        >
                                             ~{Math.round(plan.pagesPerDay * 0.5)} min/day
                                         </Text>
                                     </View>
@@ -263,19 +349,32 @@ export default function PlansScreen() {
                 {/* Info Card */}
                 <View
                     style={{
-                        backgroundColor: "#FBF7EE",
+                        backgroundColor: colors.surface.warmIvory,
                         borderRadius: 22,
-                        padding: 18,
-                        gap: 8,
+                        padding: 20,
+                        gap: 10,
+                        ...shadows.sm,
                     }}
                 >
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                        <Ionicons name="information-circle-outline" size={20} color="#7C6E3F" />
-                        <Text style={{ color: "#173D31", fontSize: 16, fontWeight: "700" }}>
+                        <Ionicons name="information-circle-outline" size={20} color={colors.secondary.mutedGold} />
+                        <Text
+                            style={{
+                                color: colors.text.primary,
+                                fontSize: typography.size.lg,
+                                fontWeight: typography.weight.bold,
+                            }}
+                        >
                             About Plans
                         </Text>
                     </View>
-                    <Text style={{ color: "#64756C", fontSize: 14, lineHeight: 21 }}>
+                    <Text
+                        style={{
+                            color: colors.text.muted,
+                            fontSize: typography.size.base,
+                            lineHeight: 21,
+                        }}
+                    >
                         Plans help you build consistency. Choose one that feels sustainable. You can always
                         switch or read at your own pace without a plan.
                     </Text>
