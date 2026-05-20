@@ -1,18 +1,19 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors, shadows, typography } from "../../constants/theme";
-import { VOLUMES, getCurrentSection, getVolumeById } from "../../data/volumes";
 import type { Bookmark } from "../../data/types";
+import { VOLUMES, getCurrentSection, getVolumeById } from "../../data/volumes";
 import { useGlobalStats } from "../../hooks/useGlobalStats";
 import { useReadingSessions, type ReadingSession } from "../../hooks/useReadingSessions";
 
 export default function JourneyScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [filterVolumeId, setFilterVolumeId] = useState<string | null>(null);
   const [allBookmarks, setAllBookmarks] = useState<Bookmark[]>([]);
   const { totalPagesRead, volumeStats } = useGlobalStats();
@@ -83,33 +84,33 @@ export default function JourneyScreen() {
 
   const filteredSectionsCompleted = filterVolumeId
     ? (() => {
-        const volume = getVolumeById(filterVolumeId);
-        const latestSession = sessions.find(
-          (session) => session.volumeId === filterVolumeId,
-        );
-        const latestPage = latestSession?.endPage ?? 1;
-        return volume.sections.filter((section) => latestPage > section.endPage).length;
-      })()
+      const volume = getVolumeById(filterVolumeId);
+      const latestSession = sessions.find(
+        (session) => session.volumeId === filterVolumeId,
+      );
+      const latestPage = latestSession?.endPage ?? 1;
+      return volume.sections.filter((section) => latestPage > section.endPage).length;
+    })()
     : sessions.reduce((maxCompleted, session) => {
-        const volume = getVolumeById(session.volumeId);
-        const completed = volume.sections.filter(
-          (section) => session.endPage > section.endPage,
-        ).length;
-        return Math.max(maxCompleted, completed);
-      }, 0);
+      const volume = getVolumeById(session.volumeId);
+      const completed = volume.sections.filter(
+        (section) => session.endPage > section.endPage,
+      ).length;
+      return Math.max(maxCompleted, completed);
+    }, 0);
 
   const progressPercent = Math.min(
     100,
     filterVolumeId
       ? Math.round(
-          ((volumeStats[filterVolumeId] ?? 0) /
-            getVolumeById(filterVolumeId).totalPages) *
-            100,
-        )
+        ((volumeStats[filterVolumeId] ?? 0) /
+          getVolumeById(filterVolumeId).totalPages) *
+        100,
+      )
       : Math.round(
-          (totalPagesRead / VOLUMES.reduce((sum, volume) => sum + volume.totalPages, 0)) *
-            100,
-        ),
+        (totalPagesRead / VOLUMES.reduce((sum, volume) => sum + volume.totalPages, 0)) *
+        100,
+      ),
   );
 
   const formatDate = (dateString: string) => {
@@ -138,9 +139,9 @@ export default function JourneyScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>
+    <View style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>
       <ScrollView
-        contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingTop: insets.top + 5, padding: 20, gap: 20, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
         <View>
@@ -679,6 +680,6 @@ export default function JourneyScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

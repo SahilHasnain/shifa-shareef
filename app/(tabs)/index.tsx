@@ -1,13 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors, shadows, typography } from "../../constants/theme";
 import { BOOK_TITLE } from "../../data/book";
 import { VOLUMES, getCurrentSection } from "../../data/volumes";
-import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
+import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
 
 function formatLastRead(value?: string) {
@@ -26,6 +26,7 @@ function formatLastRead(value?: string) {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { currentVolume, currentVolumeId, switchVolume } = useCurrentVolume();
   const { progress, isLoaded } = useReadingProgress(currentVolumeId);
   const { activePlan } = useReadingPlan(currentVolumeId);
@@ -35,17 +36,17 @@ export default function HomeScreen() {
     getCurrentSection(currentVolumeId, currentPage) ?? currentVolume.sections[0];
   const currentPlanDay = activePlan
     ? activePlan.items.find(
-        (item) => currentPage >= item.startPage && currentPage <= item.endPage,
-      )?.day ?? 1
+      (item) => currentPage >= item.startPage && currentPage <= item.endPage,
+    )?.day ?? 1
     : 1;
   const currentPlanProgress = activePlan
     ? Math.round((currentPlanDay / activePlan.totalDays) * 100)
     : 0;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>
+    <View style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>
       <ScrollView
-        contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingTop: insets.top + 5, paddingHorizontal: 20, gap: 20, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
         <View style={{ gap: 12 }}>
@@ -254,9 +255,9 @@ export default function HomeScreen() {
                 <Text
                   style={{
                     color: colors.text.muted,
-                  fontSize: typography.size.base,
-                }}
-              >
+                    fontSize: typography.size.base,
+                  }}
+                >
                   Day {currentPlanDay} of {activePlan.totalDays}
                 </Text>
                 <Text
@@ -545,6 +546,6 @@ export default function HomeScreen() {
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
