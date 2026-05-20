@@ -5,17 +5,18 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, shadows, typography } from "../../constants/theme";
-import { SECTIONS } from "../../data/book";
+import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
 
 type FilterType = "all" | "unread" | "in-progress" | "short";
 
 export default function SectionsScreen() {
   const router = useRouter();
-  const { progress } = useReadingProgress();
+  const { currentVolume, currentVolumeId } = useCurrentVolume();
+  const { progress } = useReadingProgress(currentVolumeId);
   const [filter, setFilter] = useState<FilterType>("all");
 
-  const getSectionStatus = (section: (typeof SECTIONS)[number]) => {
+  const getSectionStatus = (section: (typeof currentVolume.sections)[number]) => {
     if (!progress) return "unread";
 
     const { lastPage } = progress;
@@ -25,7 +26,7 @@ export default function SectionsScreen() {
     return "unread";
   };
 
-  const filteredSections = SECTIONS.filter((section) => {
+  const filteredSections = currentVolume.sections.filter((section) => {
     if (filter === "all") return true;
     if (filter === "short") return section.estimatedMinutes <= 25;
     return getSectionStatus(section) === filter;
@@ -63,7 +64,7 @@ export default function SectionsScreen() {
               marginTop: 6,
             }}
           >
-            Navigate the book through meaningful sections
+            {currentVolume.title} sections for steady reading and quick continuation
           </Text>
         </View>
 
@@ -135,7 +136,9 @@ export default function SectionsScreen() {
               return (
                 <Pressable
                   key={section.id}
-                  onPress={() => router.push(`/reader/${section.startPage}`)}
+                  onPress={() =>
+                    router.push(`/reader/${currentVolumeId}/${section.startPage}` as any)
+                  }
                   style={({ pressed }) => ({
                     backgroundColor: isCurrent
                       ? colors.secondary.paleGold

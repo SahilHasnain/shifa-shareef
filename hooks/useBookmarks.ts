@@ -1,22 +1,19 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "shifa-shareef:bookmarks";
+import { DEFAULT_VOLUME_ID } from "../data/volumes";
+import type { Bookmark } from "../data/types";
 
-export type Bookmark = {
-  id: string;
-  page: number;
-  label?: string;
-  createdAt: string;
-};
+export type { Bookmark } from "../data/types";
 
-export function useBookmarks() {
+export function useBookmarks(volumeId: string = DEFAULT_VOLUME_ID) {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const storageKey = `shifa-shareef:bookmarks-${volumeId}`;
 
   const loadBookmarks = async () => {
     try {
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      const stored = await AsyncStorage.getItem(storageKey);
       if (!stored) {
         setBookmarks([]);
         return;
@@ -32,12 +29,13 @@ export function useBookmarks() {
   };
 
   useEffect(() => {
-    loadBookmarks();
-  }, []);
+    void loadBookmarks();
+  }, [storageKey]);
 
   const addBookmark = async (page: number, label?: string) => {
     const newBookmark: Bookmark = {
       id: `bookmark-${Date.now()}`,
+      volumeId,
       page,
       label,
       createdAt: new Date().toISOString(),
@@ -45,13 +43,13 @@ export function useBookmarks() {
 
     const updated = [...bookmarks, newBookmark].sort((a, b) => a.page - b.page);
     setBookmarks(updated);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
   };
 
   const removeBookmark = async (id: string) => {
     const updated = bookmarks.filter((b) => b.id !== id);
     setBookmarks(updated);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
   };
 
   const isBookmarked = (page: number) => {

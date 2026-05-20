@@ -1,9 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 
-import { getPlanById, ReadingPlan } from "../data/plans";
-
-const STORAGE_KEY = "shifa-shareef:active-plan";
+import { DEFAULT_VOLUME_ID, getVolumeById } from "../data/volumes";
+import type { ReadingPlan } from "../data/types";
 
 type ActivePlanData = {
   planId: string;
@@ -11,13 +10,14 @@ type ActivePlanData = {
   completedDays: number[];
 };
 
-export function useReadingPlan() {
+export function useReadingPlan(volumeId: string = DEFAULT_VOLUME_ID) {
   const [activePlanData, setActivePlanData] = useState<ActivePlanData | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const storageKey = `shifa-shareef:active-plan-${volumeId}`;
 
   const loadActivePlan = async () => {
     try {
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      const stored = await AsyncStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored) as ActivePlanData;
         setActivePlanData(parsed);
@@ -28,11 +28,12 @@ export function useReadingPlan() {
   };
 
   useEffect(() => {
-    loadActivePlan();
-  }, []);
+    void loadActivePlan();
+  }, [storageKey]);
 
   const activePlan: ReadingPlan | null = activePlanData
-    ? getPlanById(activePlanData.planId) ?? null
+    ? getVolumeById(volumeId).plans.find((plan) => plan.id === activePlanData.planId) ??
+      null
     : null;
 
   const startPlan = async (planId: string) => {
@@ -42,7 +43,7 @@ export function useReadingPlan() {
       completedDays: [],
     };
     setActivePlanData(newPlanData);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newPlanData));
+    await AsyncStorage.setItem(storageKey, JSON.stringify(newPlanData));
   };
 
   const completePlanDay = async (day: number) => {
@@ -60,12 +61,12 @@ export function useReadingPlan() {
     };
 
     setActivePlanData(updated);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
   };
 
   const clearPlan = async () => {
     setActivePlanData(null);
-    await AsyncStorage.removeItem(STORAGE_KEY);
+    await AsyncStorage.removeItem(storageKey);
   };
 
   const isDayCompleted = (day: number): boolean => {

@@ -2,24 +2,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "shifa-shareef:reading-progress";
-
-type ReadingProgress = {
-  lastPage: number;
-  lastReadAt?: string;
-};
+import { DEFAULT_VOLUME_ID } from "../data/volumes";
+import type { ReadingProgress } from "../data/types";
 
 const defaultProgress: ReadingProgress = {
   lastPage: 1,
 };
 
-export function useReadingProgress() {
+export function useReadingProgress(volumeId: string = DEFAULT_VOLUME_ID) {
   const [progress, setProgress] = useState<ReadingProgress>(defaultProgress);
   const [isLoaded, setIsLoaded] = useState(false);
+  const storageKey = `shifa-shareef:reading-progress-${volumeId}`;
 
   const loadProgress = async () => {
     try {
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      const stored = await AsyncStorage.getItem(storageKey);
       if (!stored) {
         setProgress(defaultProgress);
         return;
@@ -49,7 +46,7 @@ export function useReadingProgress() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [storageKey]);
 
   useFocusEffect(() => {
     loadProgress();
@@ -62,7 +59,7 @@ export function useReadingProgress() {
     };
 
     setProgress(nextProgress);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nextProgress));
+    await AsyncStorage.setItem(storageKey, JSON.stringify(nextProgress));
   };
 
   return {

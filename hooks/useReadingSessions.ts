@@ -1,16 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 
+import { DEFAULT_VOLUME_ID } from "../data/volumes";
+import type { ReadingSession } from "../data/types";
+
 const STORAGE_KEY = "shifa-shareef:reading-sessions";
 
-export type ReadingSession = {
-  id: string;
-  date: string; // ISO date string
-  pagesRead: number;
-  startPage: number;
-  endPage: number;
-  durationMinutes: number;
-};
+export type { ReadingSession } from "../data/types";
 
 type SessionsData = {
   sessions: ReadingSession[];
@@ -37,17 +33,20 @@ export function useReadingSessions() {
   };
 
   useEffect(() => {
-    loadSessions();
+    void loadSessions();
   }, []);
 
-  const addSession = async (session: Omit<ReadingSession, "id">) => {
+  const addSession = async (
+    session: Omit<ReadingSession, "id" | "volumeId"> & { volumeId?: string },
+  ) => {
     const newSession: ReadingSession = {
       ...session,
       id: Date.now().toString(),
+      volumeId: session.volumeId ?? DEFAULT_VOLUME_ID,
     };
 
     const updated: SessionsData = {
-      sessions: [newSession, ...data.sessions].slice(0, 50), // Keep last 50 sessions
+      sessions: [newSession, ...data.sessions].slice(0, 100),
       lastSessionDate: session.date,
     };
 
@@ -131,6 +130,10 @@ export function useReadingSessions() {
     });
   };
 
+  const getSessionsForVolume = (volumeId: string): ReadingSession[] => {
+    return data.sessions.filter((session) => session.volumeId === volumeId);
+  };
+
   return {
     sessions: data.sessions,
     isLoaded,
@@ -138,6 +141,7 @@ export function useReadingSessions() {
     getCurrentStreak,
     getTotalSessions,
     getRecentSessions,
+    getSessionsForVolume,
     hasReadToday,
   };
 }

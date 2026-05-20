@@ -1,40 +1,116 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, shadows, typography } from "../../constants/theme";
-import { SECTIONS, TOTAL_PAGES } from "../../data/book";
-import { useBookmarks } from "../../hooks/useBookmarks";
-import { useReadingProgress } from "../../hooks/useReadingProgress";
+import { VOLUMES, getCurrentSection, getVolumeById } from "../../data/volumes";
+import type { Bookmark } from "../../data/types";
+import { useGlobalStats } from "../../hooks/useGlobalStats";
 import { useReadingSessions, type ReadingSession } from "../../hooks/useReadingSessions";
 
 export default function JourneyScreen() {
   const router = useRouter();
-  const { progress } = useReadingProgress();
-  const { bookmarks, removeBookmark } = useBookmarks();
+  const [filterVolumeId, setFilterVolumeId] = useState<string | null>(null);
+  const [allBookmarks, setAllBookmarks] = useState<Bookmark[]>([]);
+  const { totalPagesRead, volumeStats } = useGlobalStats();
   const {
+    sessions,
     getCurrentStreak,
     getTotalSessions,
     getRecentSessions,
     hasReadToday,
   } = useReadingSessions();
 
-  const currentPage = progress?.lastPage ?? 1;
-  const completion = Math.round((currentPage / TOTAL_PAGES) * 100);
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadAllBookmarks() {
+      const bookmarkSets = await Promise.all(
+        VOLUMES.map(async (volume) => {
+          const stored = await AsyncStorage.getItem(
+            `shifa-shareef:bookmarks-${volume.id}`,
+          );
+          return stored ? (JSON.parse(stored) as Bookmark[]) : [];
+        }),
+      );
+
+      if (isMounted) {
+        setAllBookmarks(
+          bookmarkSets.flat().sort((a, b) => {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          }),
+        );
+      }
+    }
+
+    void loadAllBookmarks();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const currentStreak = getCurrentStreak();
   const totalSessions = getTotalSessions();
-  const recentSessions = getRecentSessions(7);
   const readToday = hasReadToday();
 
-  // Calculate sections completed
-  const sectionsCompleted = SECTIONS.filter(
-    (section) => currentPage > section.endPage,
-  ).length;
+  const filteredSessions = useMemo(() => {
+    const recentSessions = getRecentSessions(7);
+    if (!filterVolumeId) {
+      return recentSessions;
+    }
 
-  const getSectionForPage = (page: number) => {
-    return SECTIONS.find((s) => page >= s.startPage && page <= s.endPage);
-  };
+    return recentSessions.filter((session) => session.volumeId === filterVolumeId);
+  }, [filterVolumeId, getRecentSessions]);
+
+  const filteredBookmarks = useMemo(() => {
+    if (!filterVolumeId) {
+      return allBookmarks;
+    }
+
+    return allBookmarks.filter((bookmark) => bookmark.volumeId === filterVolumeId);
+  }, [allBookmarks, filterVolumeId]);
+
+  const filteredPagesRead = filterVolumeId
+    ? volumeStats[filterVolumeId] ?? 0
+    : totalPagesRead;
+  const filteredSessionCount = filterVolumeId
+    ? sessions.filter((session) => session.volumeId === filterVolumeId).length
+    : totalSessions;
+
+  const filteredSectionsCompleted = filterVolumeId
+    ? (() => {
+        const volume = getVolumeById(filterVolumeId);
+        const latestSession = sessions.find(
+          (session) => session.volumeId === filterVolumeId,
+        );
+        const latestPage = latestSession?.endPage ?? 1;
+        return volume.sections.filter((section) => latestPage > section.endPage).length;
+      })()
+    : sessions.reduce((maxCompleted, session) => {
+        const volume = getVolumeById(session.volumeId);
+        const completed = volume.sections.filter(
+          (section) => session.endPage > section.endPage,
+        ).length;
+        return Math.max(maxCompleted, completed);
+      }, 0);
+
+  const progressPercent = Math.min(
+    100,
+    filterVolumeId
+      ? Math.round(
+          ((volumeStats[filterVolumeId] ?? 0) /
+            getVolumeById(filterVolumeId).totalPages) *
+            100,
+        )
+      : Math.round(
+          (totalPagesRead / VOLUMES.reduce((sum, volume) => sum + volume.totalPages, 0)) *
+            100,
+        ),
+  );
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -48,13 +124,25 @@ export default function JourneyScreen() {
     return date.toLocaleDateString();
   };
 
+  const removeBookmark = async (bookmark: Bookmark) => {
+    const nextBookmarks = allBookmarks.filter((item) => item.id !== bookmark.id);
+    setAllBookmarks(nextBookmarks);
+
+    const volumeBookmarks = nextBookmarks.filter(
+      (item) => item.volumeId === bookmark.volumeId,
+    );
+    await AsyncStorage.setItem(
+      `shifa-shareef:bookmarks-${bookmark.volumeId}`,
+      JSON.stringify(volumeBookmarks),
+    );
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>
       <ScrollView
         contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <View>
           <Text
             style={{
@@ -73,11 +161,10 @@ export default function JourneyScreen() {
               marginTop: 6,
             }}
           >
-            Your reading progress and saved moments
+            Combined reading history across volumes, with optional volume filters.
           </Text>
         </View>
 
-        {/* Progress Card */}
         <View
           style={{
             backgroundColor: colors.primary.deepGreen,
@@ -96,7 +183,9 @@ export default function JourneyScreen() {
               textTransform: "uppercase",
             }}
           >
-            Current Progress
+            {filterVolumeId
+              ? `${getVolumeById(filterVolumeId).title} Progress`
+              : "Combined Progress"}
           </Text>
           <Text
             style={{
@@ -105,7 +194,7 @@ export default function JourneyScreen() {
               fontWeight: typography.weight.extrabold,
             }}
           >
-            {completion}%
+            {filteredPagesRead}
           </Text>
           <Text
             style={{
@@ -113,7 +202,7 @@ export default function JourneyScreen() {
               fontSize: typography.size.md,
             }}
           >
-            Page {currentPage} of {TOTAL_PAGES}
+            {filterVolumeId ? "Pages read in this volume" : "Pages read across all volumes"}
           </Text>
           <View
             style={{
@@ -127,7 +216,7 @@ export default function JourneyScreen() {
             <View
               style={{
                 height: "100%",
-                width: `${completion}%`,
+                width: `${progressPercent}%`,
                 backgroundColor: colors.secondary.lightGold,
                 borderRadius: 5,
               }}
@@ -135,14 +224,75 @@ export default function JourneyScreen() {
           </View>
         </View>
 
-        {/* Stats Grid */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 10 }}
+        >
+          <Pressable
+            onPress={() => setFilterVolumeId(null)}
+            style={({ pressed }) => ({
+              backgroundColor:
+                filterVolumeId === null
+                  ? colors.secondary.warmGold
+                  : colors.surface.warmIvory,
+              paddingHorizontal: 18,
+              paddingVertical: 11,
+              borderRadius: 20,
+              opacity: pressed ? 0.9 : 1,
+              ...shadows.sm,
+            })}
+          >
+            <Text
+              style={{
+                color:
+                  filterVolumeId === null
+                    ? colors.primary.deepGreen
+                    : colors.text.tertiary,
+                fontWeight: typography.weight.bold,
+              }}
+            >
+              All Volumes
+            </Text>
+          </Pressable>
+          {VOLUMES.map((volume) => {
+            const isActive = filterVolumeId === volume.id;
+            return (
+              <Pressable
+                key={volume.id}
+                onPress={() => setFilterVolumeId(volume.id)}
+                style={({ pressed }) => ({
+                  backgroundColor: isActive
+                    ? colors.secondary.warmGold
+                    : colors.surface.warmIvory,
+                  paddingHorizontal: 18,
+                  paddingVertical: 11,
+                  borderRadius: 20,
+                  opacity: pressed ? 0.9 : 1,
+                  ...shadows.sm,
+                })}
+              >
+                <Text
+                  style={{
+                    color: isActive
+                      ? colors.primary.deepGreen
+                      : colors.text.tertiary,
+                    fontWeight: typography.weight.bold,
+                  }}
+                >
+                  {volume.title}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
         <View
           style={{
             flexDirection: "row",
             gap: 14,
           }}
         >
-          {/* Streak Card */}
           <View
             style={{
               flex: 1,
@@ -191,7 +341,6 @@ export default function JourneyScreen() {
             </Text>
           </View>
 
-          {/* Sessions Card */}
           <View
             style={{
               flex: 1,
@@ -221,7 +370,7 @@ export default function JourneyScreen() {
                 fontWeight: typography.weight.extrabold,
               }}
             >
-              {totalSessions}
+              {filteredSessionCount}
             </Text>
             <Text
               style={{
@@ -234,7 +383,6 @@ export default function JourneyScreen() {
             </Text>
           </View>
 
-          {/* Sections Card */}
           <View
             style={{
               flex: 1,
@@ -264,7 +412,7 @@ export default function JourneyScreen() {
                 fontWeight: typography.weight.extrabold,
               }}
             >
-              {sectionsCompleted}
+              {filteredSectionsCompleted}
             </Text>
             <Text
               style={{
@@ -278,8 +426,7 @@ export default function JourneyScreen() {
           </View>
         </View>
 
-        {/* Recent Sessions */}
-        {recentSessions.length > 0 && (
+        {filteredSessions.length > 0 && (
           <View style={{ gap: 14 }}>
             <Text
               style={{
@@ -291,10 +438,11 @@ export default function JourneyScreen() {
               Recent Sessions
             </Text>
             <View style={{ gap: 12 }}>
-              {recentSessions.slice(0, 5).map((session: ReadingSession) => {
+              {filteredSessions.slice(0, 5).map((session: ReadingSession) => {
                 const sessionDate = new Date(session.date);
                 const isToday =
                   sessionDate.toDateString() === new Date().toDateString();
+                const sessionVolume = getVolumeById(session.volumeId);
 
                 return (
                   <View
@@ -339,6 +487,15 @@ export default function JourneyScreen() {
                           </Text>
                           <Text
                             style={{
+                              color: colors.secondary.mutedGold,
+                              fontSize: typography.size.xs,
+                              fontWeight: typography.weight.bold,
+                            }}
+                          >
+                            {sessionVolume.title}
+                          </Text>
+                          <Text
+                            style={{
                               color: colors.text.subtle,
                               fontSize: typography.size.sm,
                             }}
@@ -375,8 +532,6 @@ export default function JourneyScreen() {
           </View>
         )}
 
-
-        {/* Bookmarks Section */}
         <View style={{ gap: 12 }}>
           <View
             style={{
@@ -397,12 +552,12 @@ export default function JourneyScreen() {
               }}
             >
               <Text style={{ color: "#FFF9EA", fontSize: 13, fontWeight: "700" }}>
-                {bookmarks.length}
+                {filteredBookmarks.length}
               </Text>
             </View>
           </View>
 
-          {bookmarks.length === 0 ? (
+          {filteredBookmarks.length === 0 ? (
             <View
               style={{
                 backgroundColor: "#FBF7EE",
@@ -436,12 +591,15 @@ export default function JourneyScreen() {
             </View>
           ) : (
             <View style={{ gap: 10 }}>
-              {bookmarks.map((bookmark) => {
-                const section = getSectionForPage(bookmark.page);
+              {filteredBookmarks.map((bookmark) => {
+                const section = getCurrentSection(bookmark.volumeId, bookmark.page);
+
                 return (
                   <Pressable
                     key={bookmark.id}
-                    onPress={() => router.push(`/reader/${bookmark.page}`)}
+                    onPress={() =>
+                      router.push(`/reader/${bookmark.volumeId}/${bookmark.page}` as any)
+                    }
                     style={{
                       backgroundColor: "#FBF7EE",
                       borderRadius: 18,
@@ -479,7 +637,7 @@ export default function JourneyScreen() {
                             fontWeight: "800",
                           }}
                         >
-                          Page {bookmark.page}
+                          {bookmark.volumeId === "volume1" ? "V1" : "V2"}: Page {bookmark.page}
                         </Text>
                         {section && (
                           <Text
@@ -499,9 +657,9 @@ export default function JourneyScreen() {
                     </View>
 
                     <Pressable
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        removeBookmark(bookmark.id);
+                      onPress={(event) => {
+                        event.stopPropagation();
+                        void removeBookmark(bookmark);
                       }}
                       style={{
                         width: 36,
@@ -520,7 +678,7 @@ export default function JourneyScreen() {
             </View>
           )}
         </View>
-      </ScrollView >
-    </SafeAreaView >
+      </ScrollView>
+    </SafeAreaView>
   );
 }

@@ -4,9 +4,10 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, shadows, typography } from "../../constants/theme";
-import { BOOK_TITLE, SECTIONS, TOTAL_PAGES } from "../../data/book";
-import { getCurrentDayForPlan, getPlanProgress } from "../../data/plans";
+import { BOOK_TITLE } from "../../data/book";
+import { VOLUMES, getCurrentSection } from "../../data/volumes";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
+import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
 
 function formatLastRead(value?: string) {
@@ -25,15 +26,21 @@ function formatLastRead(value?: string) {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { progress, isLoaded } = useReadingProgress();
-  const { activePlan } = useReadingPlan();
+  const { currentVolume, currentVolumeId, switchVolume } = useCurrentVolume();
+  const { progress, isLoaded } = useReadingProgress(currentVolumeId);
+  const { activePlan } = useReadingPlan(currentVolumeId);
 
   const currentPage = progress?.lastPage ?? 1;
   const currentSection =
-    SECTIONS.find(
-      (section) =>
-        currentPage >= section.startPage && currentPage <= section.endPage,
-    ) ?? SECTIONS[0];
+    getCurrentSection(currentVolumeId, currentPage) ?? currentVolume.sections[0];
+  const currentPlanDay = activePlan
+    ? activePlan.items.find(
+        (item) => currentPage >= item.startPage && currentPage <= item.endPage,
+      )?.day ?? 1
+    : 1;
+  const currentPlanProgress = activePlan
+    ? Math.round((currentPlanDay / activePlan.totalDays) * 100)
+    : 0;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>
@@ -41,6 +48,56 @@ export default function HomeScreen() {
         contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
+        <View style={{ gap: 12 }}>
+          <Text
+            style={{
+              color: colors.text.primary,
+              fontSize: typography.size["4xl"],
+              fontWeight: typography.weight.extrabold,
+            }}
+          >
+            {BOOK_TITLE}
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 12, paddingRight: 8 }}
+          >
+            {VOLUMES.map((volume) => {
+              const isActive = volume.id === currentVolumeId;
+
+              return (
+                <Pressable
+                  key={volume.id}
+                  onPress={() => switchVolume(volume.id)}
+                  style={({ pressed }) => ({
+                    backgroundColor: isActive
+                      ? colors.secondary.warmGold
+                      : colors.surface.warmIvory,
+                    paddingHorizontal: 18,
+                    paddingVertical: 11,
+                    borderRadius: 20,
+                    opacity: pressed ? 0.92 : 1,
+                    ...shadows.sm,
+                  })}
+                >
+                  <Text
+                    style={{
+                      color: isActive
+                        ? colors.primary.deepGreen
+                        : colors.text.tertiary,
+                      fontSize: typography.size.base,
+                      fontWeight: typography.weight.bold,
+                    }}
+                  >
+                    {volume.title}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
         {/* Continue Reading Card - Hero */}
         <View
           style={{
@@ -65,12 +122,12 @@ export default function HomeScreen() {
           <Text
             style={{
               color: "#FFF9EA",
-              fontSize: typography.size["4xl"],
+              fontSize: typography.size["3xl"],
               fontWeight: typography.weight.extrabold,
-              lineHeight: 34,
+              lineHeight: 32,
             }}
           >
-            {BOOK_TITLE}
+            {currentVolume.title}
           </Text>
           <Text
             style={{
@@ -88,7 +145,7 @@ export default function HomeScreen() {
               lineHeight: 22,
             }}
           >
-            Page {currentPage} of {TOTAL_PAGES}
+            Page {currentPage} of {currentVolume.totalPages}
           </Text>
           <Text
             style={{
@@ -99,7 +156,7 @@ export default function HomeScreen() {
             {isLoaded ? formatLastRead(progress?.lastReadAt) : "Loading progress..."}
           </Text>
           <Pressable
-            onPress={() => router.push(`/reader/${currentPage}`)}
+            onPress={() => router.push(`/reader/${currentVolumeId}/${currentPage}` as any)}
             style={({ pressed }) => ({
               alignSelf: "flex-start",
               marginTop: 8,
@@ -197,10 +254,10 @@ export default function HomeScreen() {
                 <Text
                   style={{
                     color: colors.text.muted,
-                    fontSize: typography.size.base,
-                  }}
-                >
-                  Day {getCurrentDayForPlan(activePlan, currentPage)} of {activePlan.totalDays}
+                  fontSize: typography.size.base,
+                }}
+              >
+                  Day {currentPlanDay} of {activePlan.totalDays}
                 </Text>
                 <Text
                   style={{
@@ -209,7 +266,7 @@ export default function HomeScreen() {
                     fontWeight: typography.weight.bold,
                   }}
                 >
-                  {getPlanProgress(activePlan, currentPage)}%
+                  {currentPlanProgress}%
                 </Text>
               </View>
               <View
@@ -223,7 +280,7 @@ export default function HomeScreen() {
                 <View
                   style={{
                     height: "100%",
-                    width: `${getPlanProgress(activePlan, currentPage)}%`,
+                    width: `${currentPlanProgress}%`,
                     backgroundColor: colors.secondary.mutedGold,
                     borderRadius: 4,
                   }}
@@ -299,7 +356,7 @@ export default function HomeScreen() {
             Read 2 pages from your current place. The goal is consistency, not speed.
           </Text>
           <Pressable
-            onPress={() => router.push(`/reader/${currentPage}`)}
+            onPress={() => router.push(`/reader/${currentVolumeId}/${currentPage}` as any)}
             style={({ pressed }) => ({
               alignSelf: "flex-start",
               borderRadius: 999,
@@ -341,7 +398,7 @@ export default function HomeScreen() {
           >
             Reading Structure
           </Text>
-          {SECTIONS.slice(0, 3).map((section) => (
+          {currentVolume.sections.slice(0, 3).map((section) => (
             <View
               key={section.id}
               style={{

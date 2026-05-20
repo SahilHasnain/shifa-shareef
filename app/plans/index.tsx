@@ -4,15 +4,25 @@ import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, shadows, typography } from "../../constants/theme";
-import { getCurrentDayForPlan, getPlanProgress, READING_PLANS } from "../../data/plans";
+import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
 
 export default function PlansScreen() {
     const router = useRouter();
-    const { progress } = useReadingProgress();
-    const { activePlan, startPlan, clearPlan } = useReadingPlan();
+    const { currentVolume, currentVolumeId } = useCurrentVolume();
+    const { progress } = useReadingProgress(currentVolumeId);
+    const { activePlan, startPlan, clearPlan } = useReadingPlan(currentVolumeId);
     const currentPage = progress?.lastPage ?? 1;
+    const readingPlans = currentVolume.plans;
+    const currentPlanDay = activePlan
+        ? activePlan.items.find(
+            (item) => currentPage >= item.startPage && currentPage <= item.endPage,
+        )?.day ?? 1
+        : 1;
+    const currentPlanProgress = activePlan
+        ? Math.round((currentPlanDay / activePlan.totalDays) * 100)
+        : 0;
 
     const handleSelectPlan = (planId: string) => {
         if (activePlan) {
@@ -94,7 +104,7 @@ export default function PlansScreen() {
                                 fontWeight: typography.weight.extrabold,
                             }}
                         >
-                            Reading Plans
+                            {currentVolume.title} Plans
                         </Text>
                     </View>
                 </View>
@@ -186,7 +196,7 @@ export default function PlansScreen() {
                                         fontSize: typography.size.base,
                                     }}
                                 >
-                                    Day {getCurrentDayForPlan(activePlan, currentPage)} of {activePlan.totalDays}
+                                    Day {currentPlanDay} of {activePlan.totalDays}
                                 </Text>
                                 <Text
                                     style={{
@@ -195,7 +205,7 @@ export default function PlansScreen() {
                                         fontWeight: typography.weight.bold,
                                     }}
                                 >
-                                    {getPlanProgress(activePlan, currentPage)}%
+                                    {currentPlanProgress}%
                                 </Text>
                             </View>
                             <View
@@ -209,7 +219,7 @@ export default function PlansScreen() {
                                 <View
                                     style={{
                                         height: "100%",
-                                        width: `${getPlanProgress(activePlan, currentPage)}%`,
+                                        width: `${currentPlanProgress}%`,
                                         backgroundColor: colors.secondary.lightGold,
                                         borderRadius: 4,
                                     }}
@@ -221,7 +231,7 @@ export default function PlansScreen() {
 
                 {/* Available Plans */}
                 <View style={{ gap: 14 }}>
-                    {READING_PLANS.map((plan) => {
+                    {readingPlans.map((plan) => {
                         const isActive = activePlan?.id === plan.id;
 
                         return (
