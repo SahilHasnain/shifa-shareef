@@ -1,8 +1,11 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BOOK_TITLE, SECTIONS, TOTAL_PAGES } from "../../data/book";
+import { getCurrentDayForPlan, getPlanProgress } from "../../data/plans";
+import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
 
 function formatLastRead(value?: string) {
@@ -22,6 +25,7 @@ function formatLastRead(value?: string) {
 export default function HomeScreen() {
   const router = useRouter();
   const { progress, isLoaded } = useReadingProgress();
+  const { activePlan } = useReadingPlan();
 
   const currentPage = progress?.lastPage ?? 1;
   const currentSection =
@@ -72,6 +76,105 @@ export default function HomeScreen() {
             </Text>
           </Pressable>
         </View>
+
+        {/* Reading Plan Card */}
+        {activePlan ? (
+          <View
+            style={{
+              backgroundColor: "#FBF7EE",
+              borderRadius: 24,
+              padding: 18,
+              gap: 12,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: "#7C6E3F", fontSize: 13, fontWeight: "700" }}>
+                  Active Plan
+                </Text>
+                <Text style={{ color: "#173D31", fontSize: 18, fontWeight: "800", marginTop: 2 }}>
+                  {activePlan.title}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => router.push("/plans/" as any)}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 12,
+                  backgroundColor: "rgba(124, 110, 63, 0.1)",
+                }}
+              >
+                <Text style={{ color: "#7C6E3F", fontSize: 13, fontWeight: "700" }}>
+                  View
+                </Text>
+              </Pressable>
+            </View>
+
+            <View style={{ gap: 6 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ color: "#64756C", fontSize: 14 }}>
+                  Day {getCurrentDayForPlan(activePlan, currentPage)} of {activePlan.totalDays}
+                </Text>
+                <Text style={{ color: "#7C6E3F", fontSize: 14, fontWeight: "700" }}>
+                  {getPlanProgress(activePlan, currentPage)}%
+                </Text>
+              </View>
+              <View
+                style={{
+                  height: 6,
+                  backgroundColor: "rgba(124, 110, 63, 0.15)",
+                  borderRadius: 3,
+                  overflow: "hidden",
+                }}
+              >
+                <View
+                  style={{
+                    height: "100%",
+                    width: `${getPlanProgress(activePlan, currentPage)}%`,
+                    backgroundColor: "#7C6E3F",
+                    borderRadius: 3,
+                  }}
+                />
+              </View>
+            </View>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => router.push("/plans/" as any)}
+            style={{
+              backgroundColor: "#FBF7EE",
+              borderRadius: 24,
+              padding: 18,
+              gap: 10,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <View style={{ flex: 1, gap: 6 }}>
+              <Text style={{ color: "#173D31", fontSize: 18, fontWeight: "800" }}>
+                Choose a Reading Plan
+              </Text>
+              <Text style={{ color: "#64756C", fontSize: 14, lineHeight: 20 }}>
+                Build consistency with a structured plan
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#7C6E3F" />
+          </Pressable>
+        )}
 
         <View
           style={{

@@ -12,15 +12,22 @@ interface ZoomableImageProps {
     width: number;
     height: number;
     onPress?: () => void;
+    onZoomChange?: (isZoomed: boolean) => void;
 }
 
-export function ZoomableImage({ source, width, height, onPress }: ZoomableImageProps) {
+export function ZoomableImage({ source, width, height, onPress, onZoomChange }: ZoomableImageProps) {
     const scale = useSharedValue(1);
     const savedScale = useSharedValue(1);
     const translateX = useSharedValue(0);
     const translateY = useSharedValue(0);
     const savedTranslateX = useSharedValue(0);
     const savedTranslateY = useSharedValue(0);
+
+    const notifyZoomChange = (isZoomed: boolean) => {
+        if (onZoomChange) {
+            onZoomChange(isZoomed);
+        }
+    };
 
     const pinchGesture = Gesture.Pinch()
         .onUpdate((e) => {
@@ -31,11 +38,20 @@ export function ZoomableImage({ source, width, height, onPress }: ZoomableImageP
             if (scale.value < 1) {
                 scale.value = withSpring(1);
                 savedScale.value = 1;
+                if (onZoomChange) {
+                    runOnJS(notifyZoomChange)(false);
+                }
             } else if (scale.value > 3) {
                 scale.value = withSpring(3);
                 savedScale.value = 3;
+                if (onZoomChange) {
+                    runOnJS(notifyZoomChange)(true);
+                }
             } else {
                 savedScale.value = scale.value;
+                if (onZoomChange) {
+                    runOnJS(notifyZoomChange)(scale.value > 1);
+                }
             }
         });
 
@@ -76,10 +92,16 @@ export function ZoomableImage({ source, width, height, onPress }: ZoomableImageP
                 translateY.value = withSpring(0);
                 savedTranslateX.value = 0;
                 savedTranslateY.value = 0;
+                if (onZoomChange) {
+                    runOnJS(notifyZoomChange)(false);
+                }
             } else {
                 // Double tap to zoom in 2x
                 scale.value = withSpring(2);
                 savedScale.value = 2;
+                if (onZoomChange) {
+                    runOnJS(notifyZoomChange)(true);
+                }
             }
         });
 
