@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { DEFAULT_VOLUME_ID } from "../data/volumes";
 import type { ReadingSession } from "../data/types";
@@ -20,7 +20,7 @@ export function useReadingSessions() {
   });
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -30,13 +30,13 @@ export function useReadingSessions() {
     } finally {
       setIsLoaded(true);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void loadSessions();
   }, []);
 
-  const addSession = async (
+  const addSession = useCallback(async (
     session: Omit<ReadingSession, "id" | "volumeId"> & { volumeId?: string },
   ) => {
     const newSession: ReadingSession = {
@@ -52,10 +52,10 @@ export function useReadingSessions() {
 
     setData(updated);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  };
+  }, [data.sessions]);
 
   // Calculate current streak (consecutive days with reading)
-  const getCurrentStreak = (): number => {
+  const getCurrentStreak = useCallback((): number => {
     if (data.sessions.length === 0) return 0;
 
     const today = new Date();
@@ -99,15 +99,15 @@ export function useReadingSessions() {
     }
 
     return streak;
-  };
+  }, [data.sessions]);
 
   // Get total sessions count
-  const getTotalSessions = (): number => {
+  const getTotalSessions = useCallback((): number => {
     return data.sessions.length;
-  };
+  }, [data.sessions.length]);
 
   // Get sessions from last 7 days
-  const getRecentSessions = (days: number = 7): ReadingSession[] => {
+  const getRecentSessions = useCallback((days: number = 7): ReadingSession[] => {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
     cutoffDate.setHours(0, 0, 0, 0);
@@ -116,10 +116,10 @@ export function useReadingSessions() {
       const sessionDate = new Date(s.date);
       return sessionDate >= cutoffDate;
     });
-  };
+  }, [data.sessions]);
 
   // Check if user read today
-  const hasReadToday = (): boolean => {
+  const hasReadToday = useCallback((): boolean => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -128,11 +128,11 @@ export function useReadingSessions() {
       sessionDate.setHours(0, 0, 0, 0);
       return sessionDate.getTime() === today.getTime();
     });
-  };
+  }, [data.sessions]);
 
-  const getSessionsForVolume = (volumeId: string): ReadingSession[] => {
+  const getSessionsForVolume = useCallback((volumeId: string): ReadingSession[] => {
     return data.sessions.filter((session) => session.volumeId === volumeId);
-  };
+  }, [data.sessions]);
 
   return {
     sessions: data.sessions,

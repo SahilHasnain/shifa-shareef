@@ -177,16 +177,18 @@ export default function ReaderScreen() {
 
   useEffect(() => {
     const routePage = clampPage(Number(params.page ?? 1) || 1);
-    if (routePage === currentPage) {
-      return;
-    }
+    setCurrentPage((previousPage) => {
+      if (previousPage === routePage) {
+        return previousPage;
+      }
 
-    setCurrentPage(routePage);
-    flatListRef.current?.scrollToIndex({
-      index: routePage - 1,
-      animated: false,
+      flatListRef.current?.scrollToIndex({
+        index: routePage - 1,
+        animated: false,
+      });
+      return routePage;
     });
-  }, [clampPage, currentPage, params.page]);
+  }, [clampPage, params.page, volume.id]);
 
   useEffect(() => {
     sessionMinPage.current = Math.min(sessionMinPage.current, currentPage);

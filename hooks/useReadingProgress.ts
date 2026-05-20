@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { DEFAULT_VOLUME_ID } from "../data/volumes";
 import type { ReadingProgress } from "../data/types";
@@ -14,7 +14,7 @@ export function useReadingProgress(volumeId: string = DEFAULT_VOLUME_ID) {
   const [isLoaded, setIsLoaded] = useState(false);
   const storageKey = `shifa-shareef:reading-progress-${volumeId}`;
 
-  const loadProgress = async () => {
+  const loadProgress = useCallback(async () => {
     try {
       const stored = await AsyncStorage.getItem(storageKey);
       if (!stored) {
@@ -30,7 +30,7 @@ export function useReadingProgress(volumeId: string = DEFAULT_VOLUME_ID) {
     } finally {
       setIsLoaded(true);
     }
-  };
+  }, [storageKey]);
 
   useEffect(() => {
     let isMounted = true;
@@ -46,13 +46,15 @@ export function useReadingProgress(volumeId: string = DEFAULT_VOLUME_ID) {
     return () => {
       isMounted = false;
     };
-  }, [storageKey]);
+  }, [loadProgress]);
 
-  useFocusEffect(() => {
-    loadProgress();
-  });
+  useFocusEffect(
+    useCallback(() => {
+      void loadProgress();
+    }, [loadProgress]),
+  );
 
-  const saveProgress = async (page: number) => {
+  const saveProgress = useCallback(async (page: number) => {
     const nextProgress = {
       lastPage: page,
       lastReadAt: new Date().toISOString(),
@@ -60,7 +62,7 @@ export function useReadingProgress(volumeId: string = DEFAULT_VOLUME_ID) {
 
     setProgress(nextProgress);
     await AsyncStorage.setItem(storageKey, JSON.stringify(nextProgress));
-  };
+  }, [storageKey]);
 
   return {
     progress,

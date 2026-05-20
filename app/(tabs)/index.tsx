@@ -104,74 +104,74 @@ export default function HomeScreen() {
             backgroundColor: colors.primary.deepGreen,
             borderRadius: 28,
             padding: 24,
-            gap: 14,
+            gap: 18,
             ...shadows.lg,
           }}
         >
-          <Text
-            style={{
-              color: colors.text.light,
-              fontSize: typography.size.sm,
-              fontWeight: typography.weight.bold,
-              letterSpacing: 0.5,
-              textTransform: "uppercase",
-            }}
-          >
-            Continue Reading
-          </Text>
-          <Text
-            style={{
-              color: "#FFF9EA",
-              fontSize: typography.size["3xl"],
-              fontWeight: typography.weight.extrabold,
-              lineHeight: 32,
-            }}
-          >
-            {currentVolume.title}
-          </Text>
-          <Text
-            style={{
-              color: colors.secondary.paleGold,
-              fontSize: typography.size.lg,
-              fontWeight: typography.weight.semibold,
-            }}
-          >
-            {currentSection.title}
-          </Text>
-          <Text
-            style={{
-              color: "#C8D5CD",
-              fontSize: typography.size.md,
-              lineHeight: 22,
-            }}
-          >
-            Page {currentPage} of {currentVolume.totalPages}
-          </Text>
-          <Text
-            style={{
-              color: colors.text.light,
-              fontSize: typography.size.sm,
-            }}
-          >
-            {isLoaded ? formatLastRead(progress?.lastReadAt) : "Loading progress..."}
-          </Text>
+          <View style={{ gap: 14 }}>
+            <Text
+              style={{
+                color: colors.text.light,
+                fontSize: typography.size.sm,
+                fontWeight: typography.weight.bold,
+                letterSpacing: 0.5,
+                textTransform: "uppercase",
+              }}
+            >
+              Continue Reading
+            </Text>
+            <Text
+              style={{
+                color: "#FFF9EA",
+                fontSize: typography.size["3xl"],
+                fontWeight: typography.weight.extrabold,
+                lineHeight: 32,
+              }}
+            >
+              {currentVolume.title}
+            </Text>
+            <Text
+              style={{
+                color: colors.secondary.paleGold,
+                fontSize: typography.size.lg,
+                fontWeight: typography.weight.semibold,
+              }}
+            >
+              {currentSection.title}
+            </Text>
+            <Text
+              style={{
+                color: "#C8D5CD",
+                fontSize: typography.size.md,
+                lineHeight: 22,
+              }}
+            >
+              Page {currentPage} of {currentVolume.totalPages}
+            </Text>
+            <Text
+              style={{
+                color: colors.text.light,
+                fontSize: typography.size.sm,
+              }}
+            >
+              {isLoaded ? formatLastRead(progress?.lastReadAt) : "Loading progress..."}
+            </Text>
+          </View>
           <Pressable
             onPress={() => router.push(`/reader/${currentVolumeId}/${currentPage}` as any)}
-            style={({ pressed }) => ({
+            style={{
               alignSelf: "flex-start",
-              marginTop: 8,
+              marginTop: 4,
               borderRadius: 999,
-              backgroundColor: colors.secondary.lightGold,
-              paddingHorizontal: 24,
-              paddingVertical: 14,
-              opacity: pressed ? 0.9 : 1,
-              ...shadows.md,
-            })}
+              backgroundColor: "#F0E1A7",
+              paddingHorizontal: 20,
+              paddingVertical: 12,
+            }}
           >
             <Text
               style={{
-                color: colors.primary.deepGreen,
-                fontSize: typography.size.md,
+                color: "#173D31",
+                fontSize: 15,
                 fontWeight: typography.weight.extrabold,
               }}
             >
@@ -292,38 +292,120 @@ export default function HomeScreen() {
           <Pressable
             onPress={() => router.push("/plans/" as any)}
             style={({ pressed }) => ({
-              backgroundColor: colors.surface.warmIvory,
+              backgroundColor: "#F3E7C9",
               borderRadius: 24,
-              padding: 20,
-              gap: 12,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
+              padding: 22,
+              gap: 16,
               opacity: pressed ? 0.95 : 1,
               ...shadows.md,
             })}
           >
-            <View style={{ flex: 1, gap: 6 }}>
-              <Text
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 16,
+              }}
+            >
+              <View style={{ flex: 1, gap: 8 }}>
+                <View
+                  style={{
+                    alignSelf: "flex-start",
+                    borderRadius: 999,
+                    backgroundColor: "rgba(23, 61, 49, 0.08)",
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: colors.primary.deepGreen,
+                      fontSize: typography.size.xs,
+                      fontWeight: typography.weight.extrabold,
+                      letterSpacing: 0.4,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Reading Plan
+                  </Text>
+                </View>
+                <Text
+                  style={{
+                    color: colors.text.primary,
+                    fontSize: typography.size["2xl"],
+                    fontWeight: typography.weight.extrabold,
+                  }}
+                >
+                  Choose a Reading Plan
+                </Text>
+                <Text
+                  style={{
+                    color: colors.text.secondary,
+                    fontSize: typography.size.base,
+                    lineHeight: 22,
+                  }}
+                >
+                  Build consistency with a gentle structure that fits your pace.
+                </Text>
+              </View>
+              <View
                 style={{
-                  color: colors.text.primary,
-                  fontSize: typography.size.xl,
-                  fontWeight: typography.weight.extrabold,
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                  backgroundColor: "rgba(23, 61, 49, 0.08)",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                Choose a Reading Plan
-              </Text>
-              <Text
-                style={{
-                  color: colors.text.muted,
-                  fontSize: typography.size.base,
-                  lineHeight: 21,
-                }}
-              >
-                Build consistency with a structured plan
-              </Text>
+                <Ionicons
+                  name="calendar-clear-outline"
+                  size={24}
+                  color={colors.primary.deepGreen}
+                />
+              </View>
             </View>
-            <Ionicons name="chevron-forward" size={24} color={colors.secondary.mutedGold} />
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.secondary.mutedGold,
+                  fontSize: typography.size.sm,
+                  fontWeight: typography.weight.bold,
+                }}
+              >
+                7-day, 21-day, and steady daily options
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <Text
+                  style={{
+                    color: colors.primary.deepGreen,
+                    fontSize: typography.size.sm,
+                    fontWeight: typography.weight.extrabold,
+                  }}
+                >
+                  View plans
+                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={colors.primary.deepGreen}
+                />
+              </View>
+            </View>
           </Pressable>
         )}
 
