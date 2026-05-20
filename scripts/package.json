@@ -1,0 +1,13 @@
+{
+  "name": "pdf-converter",
+  "version": "1.0.0",
+  "description": "Convert PDF to WebP images",
+  "main": "convert-pdf-to-images.js",
+  "scripts": {
+    "convert": "node convert-pdf-to-images.js"
+  },
+  "dependencies": {
+    "pdf-poppler": "^0.2.1",
+    "sharp": "^0.33.0"
+  }
+}

@@ -9,13 +9,20 @@ async function loadPdfUri() {
   if (!pdfUriPromise) {
     pdfUriPromise = (async () => {
       const asset = Asset.fromModule(SHIFA_PDF_ASSET);
-      await asset.downloadAsync();
+      
+      // Download asset if not already cached
+      if (!asset.downloaded) {
+        console.log("Downloading PDF asset...");
+        await asset.downloadAsync();
+        console.log("PDF asset downloaded");
+      }
 
       const assetUri = asset.localUri ?? asset.uri;
       if (!assetUri) {
         throw new Error("Unable to resolve bundled PDF asset URI.");
       }
 
+      console.log(`PDF ready: ${assetUri}`);
       return assetUri;
     })();
   }

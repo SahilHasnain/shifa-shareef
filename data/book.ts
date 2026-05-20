@@ -1,8 +1,8 @@
 export const BOOK_TITLE = "Shifa Shareef";
 
-export const TOTAL_PAGES = 310;
+export const TOTAL_PAGES = 489; // Updated after PDF conversion
 
-export const SHIFA_PDF_ASSET = require("../assets/pdf/Shifa Shareef Urdu - V1.pdf");
+export const SHIFA_PDF_ASSET = require("../assets/pdf/shifa-shareef-v1.pdf");
 
 export const SECTIONS = [
   {
