@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Animated,
   BackHandler,
   Dimensions,
   FlatList,
@@ -14,6 +13,7 @@ import {
   ViewToken,
 } from "react-native";
 
+import { SafeAreaView } from "react-native-safe-area-context";
 import { SessionCompletionModal } from "../../../components/SessionCompletionModal";
 import { ZoomableImage } from "../../../components/ZoomableImage";
 import { colors as designColors, typography } from "../../../constants/theme";
@@ -47,7 +47,6 @@ export default function ReaderScreen() {
   const { addSession, getCurrentStreak } = useReadingSessions();
 
   const [currentPage, setCurrentPage] = useState(initialPage);
-  const [controlsVisible, setControlsVisible] = useState(true);
   const [isZoomed, setIsZoomed] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionData, setCompletionData] = useState<{
@@ -57,8 +56,6 @@ export default function ReaderScreen() {
     isNewStreak: boolean;
   } | null>(null);
 
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flatListRef = useRef<FlatList>(null);
   const sessionStartTime = useRef(Date.now());
@@ -73,32 +70,9 @@ export default function ReaderScreen() {
 
   const pageIsBookmarked = isBookmarked(currentPage);
 
-  const showControls = useCallback(() => {
-    setControlsVisible(true);
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim]);
-
-  const hideControls = useCallback(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      setControlsVisible(false);
-    });
-  }, [fadeAnim]);
-
   const toggleControls = useCallback(() => {
-    if (controlsVisible) {
-      hideControls();
-    } else {
-      showControls();
-    }
-  }, [controlsVisible, hideControls, showControls]);
+    // Controls are always visible now, this is just for tap handling
+  }, []);
 
   const completeSession = useCallback(async () => {
     const endTime = Date.now();
@@ -215,26 +189,6 @@ export default function ReaderScreen() {
 
     return () => backHandler.remove();
   }, [completeSession, router, showCompletionModal]);
-
-  useEffect(() => {
-    return () => {
-      void completeSession();
-    };
-  }, [completeSession]);
-
-  useEffect(() => {
-    if (controlsVisible) {
-      hideTimeoutRef.current = setTimeout(() => {
-        hideControls();
-      }, 3000);
-    }
-
-    return () => {
-      if (hideTimeoutRef.current) {
-        clearTimeout(hideTimeoutRef.current);
-      }
-    };
-  }, [controlsVisible, hideControls]);
 
   const handleViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -385,113 +339,115 @@ export default function ReaderScreen() {
         )}
       </View>
 
-      {controlsVisible && (
-        <Animated.View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            opacity: fadeAnim,
-            backgroundColor: designColors.overlay.dark,
-            paddingTop: 50,
-            paddingBottom: 12,
-            paddingHorizontal: 16,
-            flexDirection: "row",
+      {/* Header - Always Visible */}
+      <View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: designColors.overlay.dark,
+          paddingTop: 50,
+          paddingBottom: 12,
+          paddingHorizontal: 16,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => ({
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: designColors.overlay.light,
             alignItems: "center",
-            gap: 12,
-          }}
+            justifyContent: "center",
+            opacity: pressed ? 0.7 : 1,
+          })}
         >
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => ({
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: designColors.overlay.light,
-              alignItems: "center",
-              justifyContent: "center",
-              opacity: pressed ? 0.7 : 1,
-            })}
+          <Ionicons name="chevron-back" size={24} color="#FFF9EA" />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              color: "#FFF9EA",
+              fontSize: typography.size.lg,
+              fontWeight: typography.weight.bold,
+            }}
           >
-            <Ionicons name="chevron-back" size={24} color="#FFF9EA" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                color: "#FFF9EA",
-                fontSize: typography.size.lg,
-                fontWeight: typography.weight.bold,
-              }}
-            >
-              {BOOK_TITLE}
-            </Text>
-            <Text
-              style={{
-                color: "#C6D4CB",
-                fontSize: typography.size.base,
-                fontWeight: typography.weight.semibold,
-              }}
-            >
-              {volume.title} • {currentSection.title}
-            </Text>
-          </View>
-          <Pressable
-            onPress={cycleTheme}
-            style={({ pressed }) => ({
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: designColors.overlay.light,
-              alignItems: "center",
-              justifyContent: "center",
-              opacity: pressed ? 0.7 : 1,
-            })}
+            {BOOK_TITLE}
+          </Text>
+          <Text
+            style={{
+              color: "#C6D4CB",
+              fontSize: typography.size.base,
+              fontWeight: typography.weight.semibold,
+            }}
           >
-            <Ionicons
-              name={
-                theme === "light"
-                  ? "sunny-outline"
-                  : theme === "sepia"
-                    ? "book-outline"
-                    : "moon-outline"
-              }
-              size={22}
-              color="#FFF9EA"
-            />
-          </Pressable>
-          <Pressable
-            onPress={toggleBookmark}
-            style={({ pressed }) => ({
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: designColors.overlay.light,
-              alignItems: "center",
-              justifyContent: "center",
-              opacity: pressed ? 0.7 : 1,
-            })}
-          >
-            <Ionicons
-              name={pageIsBookmarked ? "bookmark" : "bookmark-outline"}
-              size={22}
-              color="#FFF9EA"
-            />
-          </Pressable>
-        </Animated.View>
-      )}
+            {volume.title} • {currentSection.title}
+          </Text>
+        </View>
+        <Pressable
+          onPress={cycleTheme}
+          style={({ pressed }) => ({
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: designColors.overlay.light,
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Ionicons
+            name={
+              theme === "light"
+                ? "sunny-outline"
+                : theme === "sepia"
+                  ? "book-outline"
+                  : "moon-outline"
+            }
+            size={22}
+            color="#FFF9EA"
+          />
+        </Pressable>
+        <Pressable
+          onPress={toggleBookmark}
+          style={({ pressed }) => ({
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: designColors.overlay.light,
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Ionicons
+            name={pageIsBookmarked ? "bookmark" : "bookmark-outline"}
+            size={22}
+            color="#FFF9EA"
+          />
+        </Pressable>
+      </View>
 
-      {controlsVisible && (
-        <Animated.View
+      {/* Footer - Always Visible with SafeAreaView */}
+      <SafeAreaView
+        edges={['bottom']}
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: designColors.overlay.dark,
+        }}
+      >
+        <View
           style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            opacity: fadeAnim,
-            backgroundColor: designColors.overlay.dark,
             paddingTop: 16,
-            paddingBottom: 32,
+            paddingBottom: 16,
             paddingHorizontal: 16,
             gap: 16,
           }}
@@ -531,7 +487,7 @@ export default function ReaderScreen() {
               />
             </Pressable>
 
-            <View style={{ flex: 1, alignItems: "center" }}>
+            <View style={{ flex: 1, alignItems: "center", gap: 8 }}>
               <Text
                 style={{
                   color: "#FFF9EA",
@@ -541,14 +497,24 @@ export default function ReaderScreen() {
               >
                 Page {currentPage} of {totalPages}
               </Text>
-              <Text
+              <View
                 style={{
-                  color: "#C6D4CB",
-                  fontSize: typography.size.sm,
+                  width: "100%",
+                  height: 6,
+                  backgroundColor: "rgba(255, 249, 234, 0.2)",
+                  borderRadius: 3,
+                  overflow: "hidden",
                 }}
               >
-                {Math.round((currentPage / totalPages) * 100)}% complete
-              </Text>
+                <View
+                  style={{
+                    height: "100%",
+                    width: `${Math.round((currentPage / totalPages) * 100)}%`,
+                    backgroundColor: designColors.secondary.lightGold,
+                    borderRadius: 3,
+                  }}
+                />
+              </View>
             </View>
 
             <Pressable
@@ -578,28 +544,30 @@ export default function ReaderScreen() {
               />
             </Pressable>
           </View>
-        </Animated.View>
-      )}
+        </View>
+      </SafeAreaView>
 
-      {showCompletionModal && completionData && (
-        <SessionCompletionModal
-          visible={showCompletionModal}
-          onClose={() => {
-            setShowCompletionModal(false);
-          }}
-          onContinue={() => {
-            setShowCompletionModal(false);
-          }}
-          onGoHome={() => {
-            setShowCompletionModal(false);
-            setTimeout(() => router.push("/(tabs)/" as any), 100);
-          }}
-          pagesRead={completionData.pagesRead}
-          durationMinutes={completionData.durationMinutes}
-          currentStreak={completionData.currentStreak}
-          isNewStreak={completionData.isNewStreak}
-        />
-      )}
-    </View>
+      {
+        showCompletionModal && completionData && (
+          <SessionCompletionModal
+            visible={showCompletionModal}
+            onClose={() => {
+              setShowCompletionModal(false);
+            }}
+            onContinue={() => {
+              setShowCompletionModal(false);
+            }}
+            onGoHome={() => {
+              setShowCompletionModal(false);
+              setTimeout(() => router.push("/(tabs)/" as any), 100);
+            }}
+            pagesRead={completionData.pagesRead}
+            durationMinutes={completionData.durationMinutes}
+            currentStreak={completionData.currentStreak}
+            isNewStreak={completionData.isNewStreak}
+          />
+        )
+      }
+    </View >
   );
 }
