@@ -1,6 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors, shadows, typography } from "../../constants/theme";
@@ -8,6 +21,7 @@ import { BOOK_TITLE } from "../../data/book";
 import {
   LANGUAGES,
   getCurrentSectionByLanguage,
+  getVolumeByLanguageAndId,
   getVolumeDisplayTitle,
   shouldShowVolumeLabel,
 } from "../../data/languages";
@@ -30,37 +44,215 @@ function formatLastRead(value?: string) {
   });
 }
 
-export default function HomeScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { currentLanguage, currentLanguageId, switchLanguage } = useCurrentLanguage();
-  const { currentVolume, currentVolumeId, switchVolume } = useCurrentVolume(currentLanguageId);
-  const { progress, isLoaded } = useReadingProgress(currentVolumeId, currentLanguageId);
-  const { activePlan } = useReadingPlan(currentVolumeId, currentLanguageId);
+function ContinueReadingContent({
+  languageId,
+  languageTitle,
+  volumeId,
+  showVolumeLabel,
+}: {
+  languageId: string;
+  languageTitle: string;
+  volumeId: string;
+  showVolumeLabel: boolean;
+}) {
+  const volume = getVolumeByLanguageAndId(languageId, volumeId);
+  const { progress, isLoaded } = useReadingProgress(volumeId, languageId);
 
   const currentPage = progress?.lastPage ?? 1;
   const currentSection =
-    getCurrentSectionByLanguage(currentLanguageId, currentVolumeId, currentPage) ??
-    currentVolume.sections[0];
+    getCurrentSectionByLanguage(languageId, volumeId, currentPage) ?? volume.sections[0];
   const currentVolumeDisplayTitle = getVolumeDisplayTitle(
-    currentLanguageId,
-    currentVolumeId,
-    currentVolume.title,
+    languageId,
+    volumeId,
+    volume.title,
   );
-  const showVolumeChips = shouldShowVolumeLabel(currentLanguageId);
+
+  return (
+    <View style={{ gap: 14 }}>
+      <Text
+        style={{
+          color: colors.text.light,
+          fontSize: typography.size.sm,
+          fontWeight: typography.weight.semibold,
+        }}
+      >
+        {languageTitle}
+      </Text>
+      <Text
+        style={{
+          color: "#FFF9EA",
+          fontSize: typography.size["3xl"],
+          fontWeight: typography.weight.extrabold,
+          lineHeight: 32,
+        }}
+      >
+        {showVolumeLabel ? currentVolumeDisplayTitle : languageTitle}
+      </Text>
+      <Text
+        style={{
+          color: colors.secondary.paleGold,
+          fontSize: typography.size.lg,
+          fontWeight: typography.weight.semibold,
+        }}
+      >
+        {currentSection.title}
+      </Text>
+      <Text
+        style={{
+          color: "#C8D5CD",
+          fontSize: typography.size.md,
+          lineHeight: 22,
+        }}
+      >
+        Page {currentPage} of {volume.totalPages}
+      </Text>
+      <Text
+        style={{
+          color: colors.text.light,
+          fontSize: typography.size.sm,
+        }}
+      >
+        {isLoaded ? formatLastRead(progress?.lastReadAt) : "Loading progress..."}
+      </Text>
+    </View>
+  );
+}
+
+export default function HomeScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const isAnimatingRef = useRef(false);
+  const lastLanguageIdRef = useRef<string | null>(null);
+  const slideX = useSharedValue(0);
+  const fade = useSharedValue(1);
+
+  const { currentLanguage, currentLanguageId, switchLanguage } = useCurrentLanguage();
+  const { currentVolume, currentVolumeId, switchVolume } = useCurrentVolume(currentLanguageId);
+  const { progress } = useReadingProgress(currentVolumeId, currentLanguageId);
+  const { activePlan } = useReadingPlan(currentVolumeId, currentLanguageId);
+
+  const [displayVolumeId, setDisplayVolumeId] = useState(currentVolumeId);
+
+  const currentPage = progress?.lastPage ?? 1;
+  const showVolumeControls = shouldShowVolumeLabel(currentLanguageId);
+  const currentVolumeIndex = useMemo(
+    () =>
+      Math.max(
+        0,
+        currentLanguage.volumes.findIndex((volume) => volume.id === displayVolumeId),
+      ),
+    [currentLanguage.volumes, displayVolumeId],
+  );
+  const currentDisplayVolume =
+    currentLanguage.volumes[currentVolumeIndex] ?? currentLanguage.volumes[0];
+  const currentDisplayProgress = useReadingProgress(
+    currentDisplayVolume.id,
+    currentLanguageId,
+  ).progress;
+  const currentDisplayPage = currentDisplayProgress?.lastPage ?? 1;
   const currentPlanDay = activePlan
     ? activePlan.items.find(
-      (item) => currentPage >= item.startPage && currentPage <= item.endPage,
-    )?.day ?? 1
+        (item) => currentPage >= item.startPage && currentPage <= item.endPage,
+      )?.day ?? 1
     : 1;
   const currentPlanProgress = activePlan
     ? Math.round((currentPlanDay / activePlan.totalDays) * 100)
     : 0;
 
+  const animatedHeroContentStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: slideX.value }],
+    opacity: fade.value,
+  }));
+
+  useEffect(() => {
+    if (lastLanguageIdRef.current !== currentLanguageId) {
+      lastLanguageIdRef.current = currentLanguageId;
+      setDisplayVolumeId(currentVolumeId);
+      slideX.value = 0;
+      fade.value = 1;
+      isAnimatingRef.current = false;
+      return;
+    }
+
+    if (!isAnimatingRef.current && currentVolumeId !== displayVolumeId) {
+      setDisplayVolumeId(currentVolumeId);
+    }
+  }, [currentVolumeId, currentLanguageId, displayVolumeId, fade, slideX]);
+
+  const resetHeroPosition = useCallback(() => {
+    slideX.value = withSpring(0, {
+      damping: 18,
+      stiffness: 240,
+      mass: 0.6,
+    });
+    fade.value = withTiming(1, {
+      duration: 140,
+      easing: Easing.out(Easing.quad),
+    });
+  }, [fade, slideX]);
+
+  useEffect(() => {
+    slideX.value = 0;
+    fade.value = 1;
+    isAnimatingRef.current = false;
+  }, [currentLanguageId, fade, slideX]);
+
+  const finalizeVolumeTransition = useCallback((nextVolumeId: string, incomingOffset: number) => {
+    setDisplayVolumeId(nextVolumeId);
+    slideX.value = incomingOffset;
+    fade.value = 0;
+    slideX.value = withTiming(0, {
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+    });
+    fade.value = withTiming(1, {
+      duration: 180,
+      easing: Easing.out(Easing.quad),
+    });
+    isAnimatingRef.current = false;
+    void switchVolume(nextVolumeId);
+  }, [fade, slideX, switchVolume]);
+
+  const animateToVolume = useCallback((nextIndex: number, direction: "next" | "previous") => {
+    const nextVolume = currentLanguage.volumes[nextIndex];
+    if (!nextVolume || isAnimatingRef.current) {
+      resetHeroPosition();
+      return;
+    }
+
+    isAnimatingRef.current = true;
+    const offset = direction === "next" ? -48 : 48;
+
+    slideX.value = withTiming(offset, {
+      duration: 150,
+      easing: Easing.out(Easing.cubic),
+    });
+    fade.value = withTiming(0, {
+      duration: 130,
+      easing: Easing.out(Easing.quad),
+    });
+    setTimeout(() => {
+      finalizeVolumeTransition(nextVolume.id, -offset);
+    }, 150);
+  }, [currentLanguage.volumes, fade, finalizeVolumeTransition, resetHeroPosition, slideX]);
+
+  const goToNextVolume = useCallback(() => {
+    animateToVolume(currentVolumeIndex + 1, "next");
+  }, [animateToVolume, currentVolumeIndex]);
+
+  const goToPreviousVolume = useCallback(() => {
+    animateToVolume(currentVolumeIndex - 1, "previous");
+  }, [animateToVolume, currentVolumeIndex]);
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top + 5, paddingHorizontal: 20, gap: 20, paddingBottom: 40 }}
+        contentContainerStyle={{
+          paddingTop: insets.top + 5,
+          paddingHorizontal: 20,
+          gap: 20,
+          paddingBottom: 40,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <View style={{ gap: 12 }}>
@@ -109,144 +301,160 @@ export default function HomeScreen() {
               );
             })}
           </ScrollView>
-          {showVolumeChips && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 12, paddingRight: 8 }}
-            >
-              {currentLanguage.volumes.map((volume) => {
-                const isActive = volume.id === currentVolumeId;
-
-                return (
-                  <Pressable
-                    key={volume.id}
-                    onPress={() => switchVolume(volume.id)}
-                    style={({ pressed }) => ({
-                      backgroundColor: isActive
-                        ? colors.secondary.warmGold
-                        : colors.surface.warmIvory,
-                      paddingHorizontal: 18,
-                      paddingVertical: 11,
-                      borderRadius: 20,
-                      opacity: pressed ? 0.92 : 1,
-                      ...shadows.sm,
-                    })}
-                  >
-                    <Text
-                      style={{
-                        color: isActive
-                          ? colors.primary.deepGreen
-                          : colors.text.tertiary,
-                        fontSize: typography.size.base,
-                        fontWeight: typography.weight.bold,
-                      }}
-                    >
-                      {volume.title}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          )}
         </View>
 
-        {/* Continue Reading Card - Hero */}
         <View
-          style={{
-            backgroundColor: colors.primary.deepGreen,
-            borderRadius: 28,
-            padding: 24,
-            gap: 18,
-            ...shadows.lg,
-          }}
-        >
-          <View style={{ gap: 14 }}>
-            <Text
-              style={{
-                color: colors.text.light,
-                fontSize: typography.size.sm,
-                fontWeight: typography.weight.bold,
-                letterSpacing: 0.5,
-                textTransform: "uppercase",
-              }}
-            >
-              Continue Reading
-            </Text>
-            <Text
-              style={{
-                color: colors.text.light,
-                fontSize: typography.size.sm,
-                fontWeight: typography.weight.semibold,
-              }}
-            >
-              {currentLanguage.title}
-            </Text>
-            <Text
-              style={{
-                color: "#FFF9EA",
-                fontSize: typography.size["3xl"],
-                fontWeight: typography.weight.extrabold,
-                lineHeight: 32,
-              }}
-            >
-              {currentVolumeDisplayTitle}
-            </Text>
-            <Text
-              style={{
-                color: colors.secondary.paleGold,
-                fontSize: typography.size.lg,
-                fontWeight: typography.weight.semibold,
-              }}
-            >
-              {currentSection.title}
-            </Text>
-            <Text
-              style={{
-                color: "#C8D5CD",
-                fontSize: typography.size.md,
-                lineHeight: 22,
-              }}
-            >
-              Page {currentPage} of {currentVolume.totalPages}
-            </Text>
-            <Text
-              style={{
-                color: colors.text.light,
-                fontSize: typography.size.sm,
-              }}
-            >
-              {isLoaded ? formatLastRead(progress?.lastReadAt) : "Loading progress..."}
-            </Text>
-          </View>
-          <Pressable
-            onPress={() =>
-              router.push(
-                `/reader/${currentLanguageId}/${currentVolumeId}/${currentPage}` as any,
-              )
-            }
             style={{
-              alignSelf: "flex-start",
-              marginTop: 4,
-              borderRadius: 999,
-              backgroundColor: "#F0E1A7",
-              paddingHorizontal: 20,
-              paddingVertical: 12,
+              backgroundColor: colors.primary.deepGreen,
+              borderRadius: 28,
+              padding: 24,
+              gap: 18,
+              overflow: "hidden",
+              ...shadows.lg,
             }}
           >
-            <Text
+            <View
               style={{
-                color: "#173D31",
-                fontSize: 15,
-                fontWeight: typography.weight.extrabold,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
               }}
             >
-              Resume Reading
-            </Text>
-          </Pressable>
+              <Text
+                style={{
+                  color: colors.text.light,
+                  fontSize: typography.size.sm,
+                  fontWeight: typography.weight.bold,
+                  letterSpacing: 0.5,
+                  textTransform: "uppercase",
+                }}
+              >
+                Continue Reading
+              </Text>
+              {showVolumeControls && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Pressable
+                    onPress={goToPreviousVolume}
+                    disabled={currentVolumeIndex <= 0}
+                    style={({ pressed }) => ({
+                      width: 34,
+                      height: 34,
+                      borderRadius: 17,
+                      backgroundColor:
+                        currentVolumeIndex > 0
+                          ? "rgba(255, 249, 234, 0.14)"
+                          : "rgba(255, 249, 234, 0.06)",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      opacity: pressed && currentVolumeIndex > 0 ? 0.85 : 1,
+                    })}
+                  >
+                    <Ionicons
+                      name="chevron-back"
+                      size={18}
+                      color={
+                        currentVolumeIndex > 0
+                          ? "#FFF9EA"
+                          : "rgba(255, 249, 234, 0.35)"
+                      }
+                    />
+                  </Pressable>
+                  <Pressable
+                    onPress={goToNextVolume}
+                    disabled={currentVolumeIndex >= currentLanguage.volumes.length - 1}
+                    style={({ pressed }) => ({
+                      width: 34,
+                      height: 34,
+                      borderRadius: 17,
+                      backgroundColor:
+                        currentVolumeIndex < currentLanguage.volumes.length - 1
+                          ? "rgba(255, 249, 234, 0.14)"
+                          : "rgba(255, 249, 234, 0.06)",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      opacity:
+                        pressed &&
+                        currentVolumeIndex < currentLanguage.volumes.length - 1
+                          ? 0.85
+                          : 1,
+                    })}
+                  >
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={
+                        currentVolumeIndex < currentLanguage.volumes.length - 1
+                          ? "#FFF9EA"
+                          : "rgba(255, 249, 234, 0.35)"
+                      }
+                    />
+                  </Pressable>
+                </View>
+              )}
+            </View>
+
+            <Animated.View
+              style={[
+                {
+                  gap: 18,
+                },
+                animatedHeroContentStyle,
+              ]}
+            >
+              <ContinueReadingContent
+                languageId={currentLanguageId}
+                languageTitle={currentLanguage.title}
+                volumeId={displayVolumeId}
+                showVolumeLabel={showVolumeControls}
+              />
+
+              {showVolumeControls && (
+                <View style={{ flexDirection: "row", justifyContent: "center", gap: 6 }}>
+                  {currentLanguage.volumes.map((volume, index) => (
+                    <View
+                      key={volume.id}
+                      style={{
+                        width: index === currentVolumeIndex ? 18 : 6,
+                        height: 6,
+                        borderRadius: 999,
+                        backgroundColor:
+                          index === currentVolumeIndex
+                            ? colors.secondary.lightGold
+                            : "rgba(255, 249, 234, 0.22)",
+                      }}
+                    />
+                  ))}
+                </View>
+              )}
+
+              <Pressable
+                onPress={() =>
+                  router.push(
+                    `/reader/${currentLanguageId}/${displayVolumeId}/${currentDisplayPage}` as any,
+                  )
+                }
+                style={{
+                  alignSelf: "flex-start",
+                  borderRadius: 999,
+                  backgroundColor: "#F0E1A7",
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#173D31",
+                    fontSize: 15,
+                    fontWeight: typography.weight.extrabold,
+                  }}
+                >
+                  Resume Reading
+                </Text>
+              </Pressable>
+            </Animated.View>
         </View>
 
-        {/* Reading Plan Card */}
         {activePlan ? (
           <View
             style={{
@@ -475,7 +683,6 @@ export default function HomeScreen() {
           </Pressable>
         )}
 
-        {/* Today's Gentle Target */}
         <View
           style={{
             backgroundColor: colors.surface.warmIvory,
@@ -531,7 +738,6 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* Reading Structure */}
         <View
           style={{
             backgroundColor: colors.surface.creamyWhite,
@@ -592,7 +798,6 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        {/* Reflective Quote */}
         <View
           style={{
             backgroundColor: colors.surface.warmIvory,
