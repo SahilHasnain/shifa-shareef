@@ -13,9 +13,10 @@ interface ZoomableImageProps {
     height: number;
     onPress?: () => void;
     onZoomChange?: (isZoomed: boolean) => void;
+    onError?: () => void;
 }
 
-export function ZoomableImage({ source, width, height, onPress, onZoomChange }: ZoomableImageProps) {
+export function ZoomableImage({ source, width, height, onPress, onZoomChange, onError }: ZoomableImageProps) {
     const scale = useSharedValue(1);
     const savedScale = useSharedValue(1);
     const translateX = useSharedValue(0);
@@ -133,6 +134,7 @@ export function ZoomableImage({ source, width, height, onPress, onZoomChange }: 
                         source={source}
                         style={{ width, height }}
                         resizeMode="contain"
+                        onError={onError}
                     />
                 </Animated.View>
             </GestureDetector>

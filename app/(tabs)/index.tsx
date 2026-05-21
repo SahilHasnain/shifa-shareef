@@ -27,6 +27,7 @@ import {
 } from "../../data/languages";
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
+import { useVolumeDownload } from "../../hooks/useVolumeDownload";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
 
@@ -118,6 +119,38 @@ function ContinueReadingContent({
   );
 }
 
+function getDownloadStatusLabel({
+  canDownload,
+  deliveryMode,
+  isDownloading,
+  isFullyDownloaded,
+  isPartiallyDownloaded,
+}: {
+  canDownload: boolean;
+  deliveryMode: "bundled" | "remote" | "hybrid";
+  isDownloading: boolean;
+  isFullyDownloaded: boolean;
+  isPartiallyDownloaded: boolean;
+}) {
+  if (deliveryMode === "bundled" && !canDownload) {
+    return "Included in app";
+  }
+
+  if (isDownloading) {
+    return "Downloading";
+  }
+
+  if (isFullyDownloaded) {
+    return "Ready offline";
+  }
+
+  if (isPartiallyDownloaded) {
+    return "Partially offline";
+  }
+
+  return "Available online";
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -149,6 +182,20 @@ export default function HomeScreen() {
     currentDisplayVolume.id,
     currentLanguageId,
   ).progress;
+  const {
+    canDownload,
+    deliveryMode,
+    downloadAll,
+    isDownloading,
+    isFullyDownloaded,
+    isPartiallyDownloaded,
+    progressPercent: downloadProgressPercent,
+    removeDownload,
+  } = useVolumeDownload(
+    currentLanguageId,
+    currentDisplayVolume.id,
+    currentDisplayVolume.totalPages,
+  );
   const currentDisplayPage = currentDisplayProgress?.lastPage ?? 1;
   const currentPlanDay = activePlan
     ? activePlan.items.find(
@@ -158,6 +205,13 @@ export default function HomeScreen() {
   const currentPlanProgress = activePlan
     ? Math.round((currentPlanDay / activePlan.totalDays) * 100)
     : 0;
+  const downloadStatusLabel = getDownloadStatusLabel({
+    canDownload,
+    deliveryMode,
+    isDownloading,
+    isFullyDownloaded,
+    isPartiallyDownloaded,
+  });
 
   const animatedHeroContentStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: slideX.value }],
@@ -408,6 +462,111 @@ export default function HomeScreen() {
                 volumeId={displayVolumeId}
                 showVolumeLabel={showVolumeControls}
               />
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 16,
+                }}
+              >
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text
+                    style={{
+                      color: "#D9E2DC",
+                      fontSize: typography.size.xs,
+                      fontWeight: typography.weight.bold,
+                      letterSpacing: 0.4,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Offline status
+                  </Text>
+                  <Text
+                    style={{
+                      color: "#FFF9EA",
+                      fontSize: typography.size.sm,
+                      fontWeight: typography.weight.semibold,
+                    }}
+                  >
+                    {downloadStatusLabel}
+                    {canDownload && (isPartiallyDownloaded || isFullyDownloaded)
+                      ? ` • ${downloadProgressPercent}%`
+                      : ""}
+                  </Text>
+                </View>
+
+                {canDownload ? (
+                  isFullyDownloaded ? (
+                    <Pressable
+                      onPress={() => {
+                        void removeDownload();
+                      }}
+                      style={({ pressed }) => ({
+                        borderRadius: 999,
+                        backgroundColor: "rgba(255, 249, 234, 0.12)",
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        opacity: pressed ? 0.8 : 1,
+                      })}
+                    >
+                      <Text
+                        style={{
+                          color: "#FFF9EA",
+                          fontSize: typography.size.sm,
+                          fontWeight: typography.weight.bold,
+                        }}
+                      >
+                        Remove
+                      </Text>
+                    </Pressable>
+                  ) : (
+                    <Pressable
+                      onPress={() => {
+                        void downloadAll();
+                      }}
+                      disabled={isDownloading}
+                      style={({ pressed }) => ({
+                        borderRadius: 999,
+                        backgroundColor: "#EFD997",
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        opacity: pressed && !isDownloading ? 0.85 : 1,
+                      })}
+                    >
+                      <Text
+                        style={{
+                          color: "#173D31",
+                          fontSize: typography.size.sm,
+                          fontWeight: typography.weight.extrabold,
+                        }}
+                      >
+                        {isDownloading ? "Downloading..." : "Download"}
+                      </Text>
+                    </Pressable>
+                  )
+                ) : (
+                  <View
+                    style={{
+                      borderRadius: 999,
+                      backgroundColor: "rgba(255, 249, 234, 0.12)",
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#FFF9EA",
+                        fontSize: typography.size.sm,
+                        fontWeight: typography.weight.bold,
+                      }}
+                    >
+                      Included
+                    </Text>
+                  </View>
+                )}
+              </View>
 
               {showVolumeControls && (
                 <View style={{ flexDirection: "row", justifyContent: "center", gap: 6 }}>

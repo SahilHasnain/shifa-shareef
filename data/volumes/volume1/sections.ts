@@ -1,5 +1,7 @@
 import type { Section } from "../../types";
 
+export const VOLUME1_TOTAL_PAGES = 489;
+
 export const VOLUME1_SECTIONS: Section[] = [
   {
     id: "opening",

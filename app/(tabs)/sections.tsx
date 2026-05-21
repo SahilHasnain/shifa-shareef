@@ -8,6 +8,7 @@ import { getVolumeDisplayTitle, shouldShowVolumeLabel } from "../../data/languag
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
+import { useVolumeDownload } from "../../hooks/useVolumeDownload";
 
 export default function SectionsScreen() {
   const router = useRouter();
@@ -20,6 +21,19 @@ export default function SectionsScreen() {
     currentLanguageId,
     currentVolumeId,
     currentVolume.title,
+  );
+  const {
+    canDownload,
+    downloadAll,
+    isDownloading,
+    isFullyDownloaded,
+    isPartiallyDownloaded,
+    progressPercent,
+    removeDownload,
+  } = useVolumeDownload(
+    currentLanguageId,
+    currentVolumeId,
+    currentVolume.totalPages,
   );
 
   const getSectionStatus = (section: (typeof currentVolume.sections)[number]) => {
@@ -36,7 +50,6 @@ export default function SectionsScreen() {
         contentContainerStyle={{ paddingTop: insets.top + 5, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <View style={{ paddingHorizontal: 20, paddingBottom: 24 }}>
           <Text
             style={{
@@ -59,9 +72,99 @@ export default function SectionsScreen() {
               ? `${currentLanguage.title} • ${currentVolumeDisplayTitle}`
               : currentLanguage.title}
           </Text>
+
+          <View
+            style={{
+              marginTop: 16,
+              borderRadius: 18,
+              backgroundColor: "#F5E9C9",
+              padding: 16,
+              gap: 10,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.text.primary,
+                fontSize: typography.size.sm,
+                fontWeight: typography.weight.bold,
+                textTransform: "uppercase",
+                letterSpacing: 0.4,
+              }}
+            >
+              Offline access
+            </Text>
+            <Text
+              style={{
+                color: colors.text.secondary,
+                fontSize: typography.size.base,
+                lineHeight: 22,
+              }}
+            >
+              {!canDownload
+                ? "This volume is currently included in the app."
+                : isDownloading
+                  ? `Downloading pages for offline reading (${progressPercent}%).`
+                  : isFullyDownloaded
+                    ? "This volume is fully available offline."
+                    : isPartiallyDownloaded
+                      ? `Partially downloaded (${progressPercent}%).`
+                      : "Download this volume to read fully offline."}
+            </Text>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              {canDownload && !isFullyDownloaded ? (
+                <Pressable
+                  onPress={() => {
+                    void downloadAll();
+                  }}
+                  disabled={isDownloading}
+                  style={({ pressed }) => ({
+                    borderRadius: 999,
+                    backgroundColor: colors.primary.deepGreen,
+                    paddingHorizontal: 16,
+                    paddingVertical: 11,
+                    opacity: pressed && !isDownloading ? 0.85 : 1,
+                  })}
+                >
+                  <Text
+                    style={{
+                      color: "#FFF9EA",
+                      fontSize: typography.size.sm,
+                      fontWeight: typography.weight.bold,
+                    }}
+                  >
+                    {isDownloading ? "Downloading..." : "Download volume"}
+                  </Text>
+                </Pressable>
+              ) : null}
+
+              {canDownload && (isFullyDownloaded || isPartiallyDownloaded) && !isDownloading ? (
+                <Pressable
+                  onPress={() => {
+                    void removeDownload();
+                  }}
+                  style={({ pressed }) => ({
+                    borderRadius: 999,
+                    backgroundColor: "rgba(23, 61, 49, 0.08)",
+                    paddingHorizontal: 16,
+                    paddingVertical: 11,
+                    opacity: pressed ? 0.8 : 1,
+                  })}
+                >
+                  <Text
+                    style={{
+                      color: colors.text.primary,
+                      fontSize: typography.size.sm,
+                      fontWeight: typography.weight.bold,
+                    }}
+                  >
+                    Remove download
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
         </View>
 
-        {/* Sections List */}
         <View style={{ paddingHorizontal: 20, gap: 2 }}>
           {currentVolume.sections.map((section, index) => {
             const status = getSectionStatus(section);
@@ -86,7 +189,6 @@ export default function SectionsScreen() {
                   opacity: pressed ? 0.7 : 1,
                 })}
               >
-                {/* Section Number */}
                 <View
                   style={{
                     width: 48,
@@ -116,7 +218,6 @@ export default function SectionsScreen() {
                   )}
                 </View>
 
-                {/* Section Info */}
                 <View style={{ flex: 1, gap: 4 }}>
                   <Text
                     style={{
@@ -164,7 +265,6 @@ export default function SectionsScreen() {
                   </View>
                 </View>
 
-                {/* Arrow */}
                 <Ionicons
                   name="chevron-forward"
                   size={20}

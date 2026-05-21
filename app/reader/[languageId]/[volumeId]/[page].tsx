@@ -12,8 +12,8 @@ import {
   View,
   ViewToken,
 } from "react-native";
-
 import { SafeAreaView } from "react-native-safe-area-context";
+
 import { SessionCompletionModal } from "../../../../components/SessionCompletionModal";
 import { ZoomableImage } from "../../../../components/ZoomableImage";
 import { colors as designColors, typography } from "../../../../constants/theme";
@@ -21,7 +21,6 @@ import { BOOK_TITLE } from "../../../../data/book";
 import {
   getCurrentSectionByLanguage,
   getLanguageById,
-  getPageImageForLanguageVolume,
   getVolumeByLanguageAndId,
   getVolumeDisplayTitle,
   shouldShowVolumeLabel,
@@ -32,10 +31,96 @@ import { useCurrentVolume } from "../../../../hooks/useCurrentVolume";
 import { useReadingProgress } from "../../../../hooks/useReadingProgress";
 import { useReadingSessions } from "../../../../hooks/useReadingSessions";
 import { useReadingTheme } from "../../../../hooks/useReadingTheme";
+import { useResolvedPageAsset } from "../../../../hooks/useResolvedPageAsset";
+import { prefetchPageAssets } from "../../../../lib/page-asset-resolver";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const IMAGE_WIDTH = SCREEN_WIDTH;
 const IMAGE_HEIGHT = IMAGE_WIDTH / 0.7;
+
+function ReaderPageSurface({
+  languageId,
+  languageTitle,
+  volumeId,
+  volumeDisplayTitle,
+  pageNum,
+  showVolumeLabel,
+  backgroundColor,
+  onPress,
+  onZoomChange,
+}: {
+  languageId: string;
+  languageTitle: string;
+  volumeId: string;
+  volumeDisplayTitle: string;
+  pageNum: number;
+  showVolumeLabel: boolean;
+  backgroundColor: string;
+  onPress: () => void;
+  onZoomChange: (isZoomed: boolean) => void;
+}) {
+  const { asset, isLoading } = useResolvedPageAsset(languageId, volumeId, pageNum);
+  const [hasLoadError, setHasLoadError] = useState(false);
+
+  useEffect(() => {
+    setHasLoadError(false);
+  }, [asset?.uri, asset?.kind, pageNum]);
+
+  if (asset?.source && !hasLoadError) {
+    return (
+      <ZoomableImage
+        source={asset.source}
+        width={IMAGE_WIDTH}
+        height={IMAGE_HEIGHT}
+        onPress={onPress}
+        onZoomChange={onZoomChange}
+        onError={() => {
+          setHasLoadError(true);
+        }}
+      />
+    );
+  }
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        width: IMAGE_WIDTH,
+        height: SCREEN_HEIGHT,
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 12,
+        backgroundColor,
+      }}
+    >
+      <Text
+        style={{
+          color: designColors.text.primary,
+          fontSize: typography.size.xl,
+          fontWeight: typography.weight.bold,
+        }}
+      >
+        {showVolumeLabel
+          ? `${languageTitle} • ${volumeDisplayTitle} • Page ${pageNum}`
+          : `${languageTitle} • Page ${pageNum}`}
+      </Text>
+      <Text
+        style={{
+          color: designColors.text.tertiary,
+          fontSize: typography.size.base,
+          textAlign: "center",
+          paddingHorizontal: 40,
+        }}
+      >
+        {isLoading
+          ? "Preparing page..."
+          : asset?.kind === "remote" || hasLoadError
+            ? "This page is not available offline right now. Connect once or download the volume."
+            : "Page source is not available for this language and volume."}
+      </Text>
+    </Pressable>
+  );
+}
 
 export default function ReaderScreen() {
   const router = useRouter();
@@ -87,7 +172,7 @@ export default function ReaderScreen() {
   const pageIsBookmarked = isBookmarked(currentPage);
 
   const toggleControls = useCallback(() => {
-    // Controls are always visible now, this is just for tap handling
+    // Controls are always visible now, this is just for tap handling.
   }, []);
 
   useEffect(() => {
@@ -184,12 +269,25 @@ export default function ReaderScreen() {
       });
       return routePage;
     });
-  }, [clampPage, params.page, volume.id, language.id]);
+  }, [clampPage, params.page]);
 
   useEffect(() => {
     sessionMinPage.current = Math.min(sessionMinPage.current, currentPage);
     sessionMaxPage.current = Math.max(sessionMaxPage.current, currentPage);
   }, [currentPage]);
+
+  useEffect(() => {
+    const pagesToPrefetch = Array.from(
+      new Set([
+        currentPage,
+        currentPage + 1,
+        currentPage + 2,
+        currentPage - 1,
+      ]),
+    ).filter((page) => page >= 1 && page <= totalPages);
+
+    void prefetchPageAssets(language.id, volume.id, pagesToPrefetch);
+  }, [currentPage, language.id, totalPages, volume.id]);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
@@ -227,74 +325,39 @@ export default function ReaderScreen() {
     itemVisiblePercentThreshold: 50,
   }).current;
 
-  const renderPage = ({ item: pageNum }: { item: number }) => {
-    const pageImage = getPageImageForLanguageVolume(language.id, volume.id, pageNum);
-
-    return (
-      <View
-        style={{
-          width: SCREEN_WIDTH,
-          height: SCREEN_HEIGHT,
-          backgroundColor: colors.background,
+  const renderPage = ({ item: pageNum }: { item: number }) => (
+    <View
+      style={{
+        width: SCREEN_WIDTH,
+        height: SCREEN_HEIGHT,
+        backgroundColor: colors.background,
+      }}
+    >
+      <ScrollView
+        contentContainerStyle={{
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: SCREEN_HEIGHT,
         }}
+        showsVerticalScrollIndicator={false}
+        bounces
+        scrollEventThrottle={16}
+        scrollEnabled={!isZoomed}
       >
-        <ScrollView
-          contentContainerStyle={{
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: SCREEN_HEIGHT,
-          }}
-          showsVerticalScrollIndicator={false}
-          bounces
-          scrollEventThrottle={16}
-          scrollEnabled={!isZoomed}
-        >
-          {pageImage ? (
-            <ZoomableImage
-              source={pageImage}
-              width={IMAGE_WIDTH}
-              height={IMAGE_HEIGHT}
-              onPress={toggleControls}
-              onZoomChange={setIsZoomed}
-            />
-          ) : (
-            <Pressable
-              onPress={toggleControls}
-              style={{
-                width: IMAGE_WIDTH,
-                height: SCREEN_HEIGHT,
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 12,
-              }}
-            >
-              <Text
-                style={{
-                  color: designColors.text.primary,
-                  fontSize: typography.size.xl,
-                  fontWeight: typography.weight.bold,
-                }}
-              >
-                {showVolumeLabel
-                  ? `${language.title} • ${volumeDisplayTitle} • Page ${pageNum}`
-                  : `${language.title} • Page ${pageNum}`}
-              </Text>
-              <Text
-                style={{
-                  color: designColors.text.tertiary,
-                  fontSize: typography.size.base,
-                  textAlign: "center",
-                  paddingHorizontal: 40,
-                }}
-              >
-                Images not yet generated for this language and volume.
-              </Text>
-            </Pressable>
-          )}
-        </ScrollView>
-      </View>
-    );
-  };
+        <ReaderPageSurface
+          languageId={language.id}
+          languageTitle={language.title}
+          volumeId={volume.id}
+          volumeDisplayTitle={volumeDisplayTitle}
+          pageNum={pageNum}
+          showVolumeLabel={showVolumeLabel}
+          backgroundColor={colors.background}
+          onPress={toggleControls}
+          onZoomChange={setIsZoomed}
+        />
+      </ScrollView>
+    </View>
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>

@@ -73,3 +73,37 @@ export type VolumeProgress = {
   bookmarks: Bookmark[];
   activePlanId?: string;
 };
+
+export type RemoteDeliveryMode = "bundled" | "remote" | "hybrid";
+
+export type VolumeAssetManifest = {
+  id: string;
+  version: string;
+  totalPages: number;
+  deliveryMode: RemoteDeliveryMode;
+  baseUrl?: string;
+  filePattern: string;
+  extension: string;
+  samplePages?: number[];
+  hashes?: Record<string, string>;
+};
+
+export type LanguageAssetManifest = {
+  languageId: string;
+  title: string;
+  version: string;
+  volumes: VolumeAssetManifest[];
+};
+
+export type PageAssetSourceKind = "bundled" | "local" | "remote" | "missing";
+
+export type ResolvedPageAsset = {
+  kind: PageAssetSourceKind;
+  source?: number | { uri: string };
+  uri?: string;
+  cacheUri?: string;
+  manifestVersion: string;
+  languageId: string;
+  volumeId: string;
+  page: number;
+};
