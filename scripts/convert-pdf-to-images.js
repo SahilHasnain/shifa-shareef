@@ -13,18 +13,24 @@ function getArgument(name, fallback) {
   return process.argv[index + 1];
 }
 
+const languageId = getArgument("language", "urdu");
 const volumeId = getArgument("volume", "volume1");
 const defaultPdfFile =
-  volumeId === "volume2" ? "shifa-shareef-v2.pdf" : "shifa-shareef-v1.pdf";
+  languageId === "roman-urdu"
+    ? "shifa-shareef-roman_urdu.pdf"
+    : volumeId === "volume2"
+      ? "shifa-shareef-v2.pdf"
+      : "shifa-shareef-v1.pdf";
 const pdfFileName = getArgument("pdf", defaultPdfFile);
 const PDF_PATH = path.join(__dirname, "../assets/pdf", pdfFileName);
-const OUTPUT_DIR = path.join(__dirname, "../assets/pages", volumeId);
-const TEMP_DIR = path.join(__dirname, `../temp-pages-${volumeId}`);
+const OUTPUT_DIR = path.join(__dirname, "../assets/pages", languageId, volumeId);
+const TEMP_DIR = path.join(__dirname, `../temp-pages-${languageId}-${volumeId}`);
 const QUALITY = 85;
 const MAX_WIDTH = 1080;
 
 async function convertPdfToImages() {
   console.log("Converting PDF to images...");
+  console.log(`Language: ${languageId}`);
   console.log(`Volume: ${volumeId}`);
   console.log(`PDF: ${PDF_PATH}`);
   console.log(`Output: ${OUTPUT_DIR}`);

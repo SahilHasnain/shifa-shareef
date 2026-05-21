@@ -13,6 +13,10 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
+          name="reader/[languageId]/[volumeId]/[page]"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
           name="reader/[volumeId]/[page]"
           options={{ animation: "slide_from_right" }}
         />

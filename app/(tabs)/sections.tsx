@@ -4,14 +4,23 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors, typography } from "../../constants/theme";
+import { getVolumeDisplayTitle, shouldShowVolumeLabel } from "../../data/languages";
+import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
 
 export default function SectionsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { currentVolume, currentVolumeId } = useCurrentVolume();
-  const { progress } = useReadingProgress(currentVolumeId);
+  const { currentLanguage, currentLanguageId } = useCurrentLanguage();
+  const { currentVolume, currentVolumeId } = useCurrentVolume(currentLanguageId);
+  const { progress } = useReadingProgress(currentVolumeId, currentLanguageId);
+  const showVolumeLabel = shouldShowVolumeLabel(currentLanguageId);
+  const currentVolumeDisplayTitle = getVolumeDisplayTitle(
+    currentLanguageId,
+    currentVolumeId,
+    currentVolume.title,
+  );
 
   const getSectionStatus = (section: (typeof currentVolume.sections)[number]) => {
     if (!progress) return "unread";
@@ -38,6 +47,18 @@ export default function SectionsScreen() {
           >
             Sections
           </Text>
+          <Text
+            style={{
+              color: colors.text.tertiary,
+              fontSize: typography.size.md,
+              lineHeight: 22,
+              marginTop: 6,
+            }}
+          >
+            {showVolumeLabel
+              ? `${currentLanguage.title} • ${currentVolumeDisplayTitle}`
+              : currentLanguage.title}
+          </Text>
         </View>
 
         {/* Sections List */}
@@ -51,7 +72,9 @@ export default function SectionsScreen() {
               <Pressable
                 key={section.id}
                 onPress={() =>
-                  router.push(`/reader/${currentVolumeId}/${section.startPage}` as any)
+                  router.push(
+                    `/reader/${currentLanguageId}/${currentVolumeId}/${section.startPage}` as any,
+                  )
                 }
                 style={({ pressed }) => ({
                   backgroundColor: isCurrent ? "#F8F0D8" : "transparent",

@@ -1,24 +1,29 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 
-import { DEFAULT_VOLUME_ID, getVolumeById } from "../data/volumes";
+import {
+  DEFAULT_LANGUAGE_ID,
+  DEFAULT_VOLUME_ID,
+  getVolumeByLanguageAndId,
+} from "../data/languages";
 
-const STORAGE_KEY = "shifa-shareef:current-volume-id";
-
-export function useCurrentVolume() {
-  const [currentVolumeId, setCurrentVolumeId] = useState(DEFAULT_VOLUME_ID);
+export function useCurrentVolume(languageId: string = DEFAULT_LANGUAGE_ID) {
+  const storageKey = `shifa-shareef:current-volume-id-${languageId}`;
+  const [currentVolumeId, setCurrentVolumeId] = useState(
+    getVolumeByLanguageAndId(languageId, DEFAULT_VOLUME_ID).id,
+  );
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
-    AsyncStorage.getItem(STORAGE_KEY)
+    AsyncStorage.getItem(storageKey)
       .then((storedVolumeId) => {
         if (!isMounted || !storedVolumeId) {
           return;
         }
 
-        setCurrentVolumeId(getVolumeById(storedVolumeId).id);
+        setCurrentVolumeId(getVolumeByLanguageAndId(languageId, storedVolumeId).id);
       })
       .finally(() => {
         if (isMounted) {
@@ -29,17 +34,17 @@ export function useCurrentVolume() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [storageKey]);
 
   const switchVolume = async (volumeId: string) => {
-    const safeVolumeId = getVolumeById(volumeId).id;
+    const safeVolumeId = getVolumeByLanguageAndId(languageId, volumeId).id;
     setCurrentVolumeId(safeVolumeId);
-    await AsyncStorage.setItem(STORAGE_KEY, safeVolumeId);
+    await AsyncStorage.setItem(storageKey, safeVolumeId);
   };
 
   return {
     currentVolumeId,
-    currentVolume: getVolumeById(currentVolumeId),
+    currentVolume: getVolumeByLanguageAndId(languageId, currentVolumeId),
     isLoaded,
     switchVolume,
   };

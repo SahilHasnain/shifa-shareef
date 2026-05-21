@@ -4,15 +4,27 @@ import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, shadows, typography } from "../../constants/theme";
+import { getVolumeDisplayTitle, shouldShowVolumeLabel } from "../../data/languages";
+import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
 
 export default function PlansScreen() {
     const router = useRouter();
-    const { currentVolume, currentVolumeId } = useCurrentVolume();
-    const { progress } = useReadingProgress(currentVolumeId);
-    const { activePlan, startPlan, clearPlan } = useReadingPlan(currentVolumeId);
+    const { currentLanguage, currentLanguageId } = useCurrentLanguage();
+    const { currentVolume, currentVolumeId } = useCurrentVolume(currentLanguageId);
+    const { progress } = useReadingProgress(currentVolumeId, currentLanguageId);
+    const { activePlan, startPlan, clearPlan } = useReadingPlan(
+        currentVolumeId,
+        currentLanguageId,
+    );
+    const showVolumeLabel = shouldShowVolumeLabel(currentLanguageId);
+    const currentVolumeDisplayTitle = getVolumeDisplayTitle(
+        currentLanguageId,
+        currentVolumeId,
+        currentVolume.title,
+    );
     const currentPage = progress?.lastPage ?? 1;
     const readingPlans = currentVolume.plans;
     const currentPlanDay = activePlan
@@ -104,7 +116,9 @@ export default function PlansScreen() {
                                 fontWeight: typography.weight.extrabold,
                             }}
                         >
-                            {currentVolume.title} Plans
+                            {showVolumeLabel
+                                ? `${currentLanguage.title} • ${currentVolumeDisplayTitle} Plans`
+                                : `${currentLanguage.title} Plans`}
                         </Text>
                     </View>
                 </View>

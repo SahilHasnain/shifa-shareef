@@ -11,9 +11,13 @@ function getArgument(name, fallback) {
   return process.argv[index + 1];
 }
 
+const languageId = getArgument("language", "urdu");
 const volumeId = getArgument("volume", "volume1");
-const pagesDir = path.join(__dirname, "../assets/pages", volumeId);
-const outputFile = path.join(__dirname, `../data/volumes/${volumeId}/pages.ts`);
+const pagesDir = path.join(__dirname, "../assets/pages", languageId, volumeId);
+const outputFile = path.join(
+  __dirname,
+  `../data/languages/${languageId}/${volumeId}/pages.ts`,
+);
 
 function generatePageMappings() {
   const files = fs
@@ -34,7 +38,7 @@ export const PAGE_IMAGES: Record<number, any> = {\n`;
     }
 
     const pageNum = Number(match[1]);
-    code += `  ${pageNum}: require("../../../assets/pages/${volumeId}/${file}"),\n`;
+    code += `  ${pageNum}: require("../../../../assets/pages/${languageId}/${volumeId}/${file}"),\n`;
   }
 
   code += `};

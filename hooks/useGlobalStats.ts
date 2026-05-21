@@ -17,8 +17,16 @@ export function useGlobalStats() {
     }, {});
   }, [sessions]);
 
+  const languageStats = useMemo(() => {
+    return sessions.reduce<Record<string, number>>((stats, session) => {
+      stats[session.languageId] = (stats[session.languageId] ?? 0) + session.pagesRead;
+      return stats;
+    }, {});
+  }, [sessions]);
+
   return {
     totalPagesRead,
+    languageStats,
     volumeStats,
   };
 }

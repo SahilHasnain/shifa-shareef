@@ -5,7 +5,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors, shadows, typography } from "../../constants/theme";
 import { BOOK_TITLE } from "../../data/book";
-import { VOLUMES, getCurrentSection } from "../../data/volumes";
+import {
+  LANGUAGES,
+  getCurrentSectionByLanguage,
+  getVolumeDisplayTitle,
+  shouldShowVolumeLabel,
+} from "../../data/languages";
+import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
@@ -27,13 +33,21 @@ function formatLastRead(value?: string) {
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { currentVolume, currentVolumeId, switchVolume } = useCurrentVolume();
-  const { progress, isLoaded } = useReadingProgress(currentVolumeId);
-  const { activePlan } = useReadingPlan(currentVolumeId);
+  const { currentLanguage, currentLanguageId, switchLanguage } = useCurrentLanguage();
+  const { currentVolume, currentVolumeId, switchVolume } = useCurrentVolume(currentLanguageId);
+  const { progress, isLoaded } = useReadingProgress(currentVolumeId, currentLanguageId);
+  const { activePlan } = useReadingPlan(currentVolumeId, currentLanguageId);
 
   const currentPage = progress?.lastPage ?? 1;
   const currentSection =
-    getCurrentSection(currentVolumeId, currentPage) ?? currentVolume.sections[0];
+    getCurrentSectionByLanguage(currentLanguageId, currentVolumeId, currentPage) ??
+    currentVolume.sections[0];
+  const currentVolumeDisplayTitle = getVolumeDisplayTitle(
+    currentLanguageId,
+    currentVolumeId,
+    currentVolume.title,
+  );
+  const showVolumeChips = shouldShowVolumeLabel(currentLanguageId);
   const currentPlanDay = activePlan
     ? activePlan.items.find(
       (item) => currentPage >= item.startPage && currentPage <= item.endPage,
@@ -62,41 +76,79 @@ export default function HomeScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 12, paddingRight: 8 }}
+            contentContainerStyle={{ gap: 10, paddingRight: 8 }}
           >
-            {VOLUMES.map((volume) => {
-              const isActive = volume.id === currentVolumeId;
+            {LANGUAGES.map((language) => {
+              const isActive = language.id === currentLanguageId;
 
               return (
                 <Pressable
-                  key={volume.id}
-                  onPress={() => switchVolume(volume.id)}
+                  key={language.id}
+                  onPress={() => switchLanguage(language.id)}
                   style={({ pressed }) => ({
                     backgroundColor: isActive
-                      ? colors.secondary.warmGold
+                      ? colors.primary.deepGreen
                       : colors.surface.warmIvory,
-                    paddingHorizontal: 18,
-                    paddingVertical: 11,
-                    borderRadius: 20,
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderRadius: 18,
                     opacity: pressed ? 0.92 : 1,
                     ...shadows.sm,
                   })}
                 >
                   <Text
                     style={{
-                      color: isActive
-                        ? colors.primary.deepGreen
-                        : colors.text.tertiary,
-                      fontSize: typography.size.base,
+                      color: isActive ? "#FFF9EA" : colors.text.tertiary,
+                      fontSize: typography.size.sm,
                       fontWeight: typography.weight.bold,
                     }}
                   >
-                    {volume.title}
+                    {language.title}
                   </Text>
                 </Pressable>
               );
             })}
           </ScrollView>
+          {showVolumeChips && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 12, paddingRight: 8 }}
+            >
+              {currentLanguage.volumes.map((volume) => {
+                const isActive = volume.id === currentVolumeId;
+
+                return (
+                  <Pressable
+                    key={volume.id}
+                    onPress={() => switchVolume(volume.id)}
+                    style={({ pressed }) => ({
+                      backgroundColor: isActive
+                        ? colors.secondary.warmGold
+                        : colors.surface.warmIvory,
+                      paddingHorizontal: 18,
+                      paddingVertical: 11,
+                      borderRadius: 20,
+                      opacity: pressed ? 0.92 : 1,
+                      ...shadows.sm,
+                    })}
+                  >
+                    <Text
+                      style={{
+                        color: isActive
+                          ? colors.primary.deepGreen
+                          : colors.text.tertiary,
+                        fontSize: typography.size.base,
+                        fontWeight: typography.weight.bold,
+                      }}
+                    >
+                      {volume.title}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          )}
         </View>
 
         {/* Continue Reading Card - Hero */}
@@ -123,13 +175,22 @@ export default function HomeScreen() {
             </Text>
             <Text
               style={{
+                color: colors.text.light,
+                fontSize: typography.size.sm,
+                fontWeight: typography.weight.semibold,
+              }}
+            >
+              {currentLanguage.title}
+            </Text>
+            <Text
+              style={{
                 color: "#FFF9EA",
                 fontSize: typography.size["3xl"],
                 fontWeight: typography.weight.extrabold,
                 lineHeight: 32,
               }}
             >
-              {currentVolume.title}
+              {currentVolumeDisplayTitle}
             </Text>
             <Text
               style={{
@@ -159,7 +220,11 @@ export default function HomeScreen() {
             </Text>
           </View>
           <Pressable
-            onPress={() => router.push(`/reader/${currentVolumeId}/${currentPage}` as any)}
+            onPress={() =>
+              router.push(
+                `/reader/${currentLanguageId}/${currentVolumeId}/${currentPage}` as any,
+              )
+            }
             style={{
               alignSelf: "flex-start",
               marginTop: 4,
@@ -439,7 +504,11 @@ export default function HomeScreen() {
             Read 2 pages from your current place. The goal is consistency, not speed.
           </Text>
           <Pressable
-            onPress={() => router.push(`/reader/${currentVolumeId}/${currentPage}` as any)}
+            onPress={() =>
+              router.push(
+                `/reader/${currentLanguageId}/${currentVolumeId}/${currentPage}` as any,
+              )
+            }
             style={({ pressed }) => ({
               alignSelf: "flex-start",
               borderRadius: 999,

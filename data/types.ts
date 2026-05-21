@@ -31,6 +31,7 @@ export type ReadingProgress = {
 
 export type Bookmark = {
   id: string;
+  languageId: string;
   volumeId: string;
   page: number;
   label?: string;
@@ -39,6 +40,7 @@ export type Bookmark = {
 
 export type ReadingSession = {
   id: string;
+  languageId: string;
   volumeId: string;
   date: string;
   pagesRead: number;
@@ -54,6 +56,13 @@ export type Volume = {
   totalPages: number;
   sections: Section[];
   plans: ReadingPlan[];
+};
+
+export type Language = {
+  id: string;
+  title: string;
+  nativeTitle?: string;
+  volumes: Volume[];
 };
 
 export type VolumeProgress = {

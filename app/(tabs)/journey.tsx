@@ -6,23 +6,31 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors, shadows, typography } from "../../constants/theme";
+import {
+  getCurrentSectionByLanguage,
+  getVolumeByLanguageAndId,
+  getVolumeDisplayTitle,
+  shouldShowVolumeLabel,
+} from "../../data/languages";
 import type { Bookmark } from "../../data/types";
-import { VOLUMES, getCurrentSection, getVolumeById } from "../../data/volumes";
+import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useGlobalStats } from "../../hooks/useGlobalStats";
 import { useReadingSessions, type ReadingSession } from "../../hooks/useReadingSessions";
 
 export default function JourneyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { currentLanguage, currentLanguageId } = useCurrentLanguage();
+  const showVolumeLabel = shouldShowVolumeLabel(currentLanguageId);
   const [filterVolumeId, setFilterVolumeId] = useState<string | null>(null);
   const [allBookmarks, setAllBookmarks] = useState<Bookmark[]>([]);
-  const { totalPagesRead, volumeStats } = useGlobalStats();
+  const { volumeStats, languageStats } = useGlobalStats();
   const {
     sessions,
     getCurrentStreak,
-    getTotalSessions,
     getRecentSessions,
     hasReadToday,
+    getSessionsForLanguage,
   } = useReadingSessions();
 
   useEffect(() => {
@@ -30,9 +38,9 @@ export default function JourneyScreen() {
 
     async function loadAllBookmarks() {
       const bookmarkSets = await Promise.all(
-        VOLUMES.map(async (volume) => {
+        currentLanguage.volumes.map(async (volume) => {
           const stored = await AsyncStorage.getItem(
-            `shifa-shareef:bookmarks-${volume.id}`,
+            `shifa-shareef:bookmarks-${currentLanguageId}-${volume.id}`,
           );
           return stored ? (JSON.parse(stored) as Bookmark[]) : [];
         }),
@@ -52,20 +60,22 @@ export default function JourneyScreen() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [currentLanguage.volumes, currentLanguageId]);
 
   const currentStreak = getCurrentStreak();
-  const totalSessions = getTotalSessions();
+  const totalSessions = getSessionsForLanguage(currentLanguageId).length;
   const readToday = hasReadToday();
 
   const filteredSessions = useMemo(() => {
-    const recentSessions = getRecentSessions(7);
+    const recentSessions = getRecentSessions(7).filter(
+      (session) => session.languageId === currentLanguageId,
+    );
     if (!filterVolumeId) {
       return recentSessions;
     }
 
     return recentSessions.filter((session) => session.volumeId === filterVolumeId);
-  }, [filterVolumeId, getRecentSessions]);
+  }, [currentLanguageId, filterVolumeId, getRecentSessions]);
 
   const filteredBookmarks = useMemo(() => {
     if (!filterVolumeId) {
@@ -77,22 +87,30 @@ export default function JourneyScreen() {
 
   const filteredPagesRead = filterVolumeId
     ? volumeStats[filterVolumeId] ?? 0
-    : totalPagesRead;
+    : languageStats[currentLanguageId] ?? 0;
   const filteredSessionCount = filterVolumeId
-    ? sessions.filter((session) => session.volumeId === filterVolumeId).length
+    ? sessions.filter(
+        (session) =>
+          session.languageId === currentLanguageId &&
+          session.volumeId === filterVolumeId,
+      ).length
     : totalSessions;
 
   const filteredSectionsCompleted = filterVolumeId
     ? (() => {
-      const volume = getVolumeById(filterVolumeId);
+      const volume = getVolumeByLanguageAndId(currentLanguageId, filterVolumeId);
       const latestSession = sessions.find(
-        (session) => session.volumeId === filterVolumeId,
+        (session) =>
+          session.languageId === currentLanguageId &&
+          session.volumeId === filterVolumeId,
       );
       const latestPage = latestSession?.endPage ?? 1;
       return volume.sections.filter((section) => latestPage > section.endPage).length;
     })()
-    : sessions.reduce((maxCompleted, session) => {
-      const volume = getVolumeById(session.volumeId);
+    : sessions
+        .filter((session) => session.languageId === currentLanguageId)
+        .reduce((maxCompleted, session) => {
+      const volume = getVolumeByLanguageAndId(currentLanguageId, session.volumeId);
       const completed = volume.sections.filter(
         (section) => session.endPage > section.endPage,
       ).length;
@@ -104,11 +122,12 @@ export default function JourneyScreen() {
     filterVolumeId
       ? Math.round(
         ((volumeStats[filterVolumeId] ?? 0) /
-          getVolumeById(filterVolumeId).totalPages) *
+          getVolumeByLanguageAndId(currentLanguageId, filterVolumeId).totalPages) *
         100,
       )
       : Math.round(
-        (totalPagesRead / VOLUMES.reduce((sum, volume) => sum + volume.totalPages, 0)) *
+        ((languageStats[currentLanguageId] ?? 0) /
+          currentLanguage.volumes.reduce((sum, volume) => sum + volume.totalPages, 0)) *
         100,
       ),
   );
@@ -130,10 +149,11 @@ export default function JourneyScreen() {
     setAllBookmarks(nextBookmarks);
 
     const volumeBookmarks = nextBookmarks.filter(
-      (item) => item.volumeId === bookmark.volumeId,
+      (item) =>
+        item.languageId === bookmark.languageId && item.volumeId === bookmark.volumeId,
     );
     await AsyncStorage.setItem(
-      `shifa-shareef:bookmarks-${bookmark.volumeId}`,
+      `shifa-shareef:bookmarks-${bookmark.languageId}-${bookmark.volumeId}`,
       JSON.stringify(volumeBookmarks),
     );
   };
@@ -162,7 +182,7 @@ export default function JourneyScreen() {
               marginTop: 6,
             }}
           >
-            Combined reading history across volumes, with optional volume filters.
+            {currentLanguage.title} reading history, with optional volume filters.
           </Text>
         </View>
 
@@ -185,8 +205,12 @@ export default function JourneyScreen() {
             }}
           >
             {filterVolumeId
-              ? `${getVolumeById(filterVolumeId).title} Progress`
-              : "Combined Progress"}
+              ? `${getVolumeDisplayTitle(
+                  currentLanguageId,
+                  filterVolumeId,
+                  getVolumeByLanguageAndId(currentLanguageId, filterVolumeId).title,
+                )} Progress`
+              : `${currentLanguage.title} Progress`}
           </Text>
           <Text
             style={{
@@ -203,7 +227,13 @@ export default function JourneyScreen() {
               fontSize: typography.size.md,
             }}
           >
-            {filterVolumeId ? "Pages read in this volume" : "Pages read across all volumes"}
+            {filterVolumeId
+              ? showVolumeLabel
+                ? "Pages read in this volume"
+                : "Pages read in this edition"
+              : showVolumeLabel
+                ? "Pages read across all volumes"
+                : "Pages read in this language"}
           </Text>
           <View
             style={{
@@ -253,10 +283,10 @@ export default function JourneyScreen() {
                 fontWeight: typography.weight.bold,
               }}
             >
-              All Volumes
+              {showVolumeLabel ? `All ${currentLanguage.title}` : currentLanguage.title}
             </Text>
           </Pressable>
-          {VOLUMES.map((volume) => {
+          {currentLanguage.volumes.map((volume) => {
             const isActive = filterVolumeId === volume.id;
             return (
               <Pressable
@@ -281,7 +311,7 @@ export default function JourneyScreen() {
                     fontWeight: typography.weight.bold,
                   }}
                 >
-                  {volume.title}
+                  {getVolumeDisplayTitle(currentLanguageId, volume.id, volume.title)}
                 </Text>
               </Pressable>
             );
@@ -443,7 +473,10 @@ export default function JourneyScreen() {
                 const sessionDate = new Date(session.date);
                 const isToday =
                   sessionDate.toDateString() === new Date().toDateString();
-                const sessionVolume = getVolumeById(session.volumeId);
+                const sessionVolume = getVolumeByLanguageAndId(
+                  session.languageId,
+                  session.volumeId,
+                );
 
                 return (
                   <View
@@ -493,7 +526,19 @@ export default function JourneyScreen() {
                               fontWeight: typography.weight.bold,
                             }}
                           >
-                            {sessionVolume.title}
+                            {session.languageId === currentLanguageId
+                              ? getVolumeDisplayTitle(
+                                  session.languageId,
+                                  session.volumeId,
+                                  sessionVolume.title,
+                                )
+                              : shouldShowVolumeLabel(session.languageId)
+                                ? `${session.languageId} • ${getVolumeDisplayTitle(
+                                    session.languageId,
+                                    session.volumeId,
+                                    sessionVolume.title,
+                                  )}`
+                                : session.languageId}
                           </Text>
                           <Text
                             style={{
@@ -593,13 +638,23 @@ export default function JourneyScreen() {
           ) : (
             <View style={{ gap: 10 }}>
               {filteredBookmarks.map((bookmark) => {
-                const section = getCurrentSection(bookmark.volumeId, bookmark.page);
+                const section = getCurrentSectionByLanguage(
+                  bookmark.languageId,
+                  bookmark.volumeId,
+                  bookmark.page,
+                );
+                const bookmarkVolume = getVolumeByLanguageAndId(
+                  bookmark.languageId,
+                  bookmark.volumeId,
+                );
 
                 return (
                   <Pressable
                     key={bookmark.id}
                     onPress={() =>
-                      router.push(`/reader/${bookmark.volumeId}/${bookmark.page}` as any)
+                      router.push(
+                        `/reader/${bookmark.languageId}/${bookmark.volumeId}/${bookmark.page}` as any,
+                      )
                     }
                     style={{
                       backgroundColor: "#FBF7EE",
@@ -638,7 +693,21 @@ export default function JourneyScreen() {
                             fontWeight: "800",
                           }}
                         >
-                          {bookmark.volumeId === "volume1" ? "V1" : "V2"}: Page {bookmark.page}
+                          {bookmark.languageId === currentLanguageId
+                            ? showVolumeLabel
+                              ? `${getVolumeDisplayTitle(
+                                  bookmark.languageId,
+                                  bookmark.volumeId,
+                                  bookmarkVolume.title,
+                                )}: Page ${bookmark.page}`
+                              : `Page ${bookmark.page}`
+                            : shouldShowVolumeLabel(bookmark.languageId)
+                              ? `${bookmark.languageId} • ${getVolumeDisplayTitle(
+                                  bookmark.languageId,
+                                  bookmark.volumeId,
+                                  bookmarkVolume.title,
+                                )}: Page ${bookmark.page}`
+                              : `${bookmark.languageId} • Page ${bookmark.page}`}
                         </Text>
                         {section && (
                           <Text

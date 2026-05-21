@@ -1,7 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 
-import { DEFAULT_VOLUME_ID, getVolumeById } from "../data/volumes";
+import {
+  DEFAULT_LANGUAGE_ID,
+  DEFAULT_VOLUME_ID,
+  getVolumeByLanguageAndId,
+} from "../data/languages";
 import type { ReadingPlan } from "../data/types";
 
 type ActivePlanData = {
@@ -10,10 +14,13 @@ type ActivePlanData = {
   completedDays: number[];
 };
 
-export function useReadingPlan(volumeId: string = DEFAULT_VOLUME_ID) {
+export function useReadingPlan(
+  volumeId: string = DEFAULT_VOLUME_ID,
+  languageId: string = DEFAULT_LANGUAGE_ID,
+) {
   const [activePlanData, setActivePlanData] = useState<ActivePlanData | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const storageKey = `shifa-shareef:active-plan-${volumeId}`;
+  const storageKey = `shifa-shareef:active-plan-${languageId}-${volumeId}`;
 
   const loadActivePlan = async () => {
     try {
@@ -32,7 +39,9 @@ export function useReadingPlan(volumeId: string = DEFAULT_VOLUME_ID) {
   }, [storageKey]);
 
   const activePlan: ReadingPlan | null = activePlanData
-    ? getVolumeById(volumeId).plans.find((plan) => plan.id === activePlanData.planId) ??
+    ? getVolumeByLanguageAndId(languageId, volumeId).plans.find(
+        (plan) => plan.id === activePlanData.planId,
+      ) ??
       null
     : null;
 

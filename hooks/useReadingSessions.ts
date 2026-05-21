@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useState } from "react";
 
+import { DEFAULT_LANGUAGE_ID } from "../data/languages";
 import { DEFAULT_VOLUME_ID } from "../data/volumes";
 import type { ReadingSession } from "../data/types";
 
@@ -37,11 +38,15 @@ export function useReadingSessions() {
   }, []);
 
   const addSession = useCallback(async (
-    session: Omit<ReadingSession, "id" | "volumeId"> & { volumeId?: string },
+    session: Omit<ReadingSession, "id" | "volumeId" | "languageId"> & {
+      volumeId?: string;
+      languageId?: string;
+    },
   ) => {
     const newSession: ReadingSession = {
       ...session,
       id: Date.now().toString(),
+      languageId: session.languageId ?? DEFAULT_LANGUAGE_ID,
       volumeId: session.volumeId ?? DEFAULT_VOLUME_ID,
     };
 
@@ -130,9 +135,23 @@ export function useReadingSessions() {
     });
   }, [data.sessions]);
 
-  const getSessionsForVolume = useCallback((volumeId: string): ReadingSession[] => {
-    return data.sessions.filter((session) => session.volumeId === volumeId);
-  }, [data.sessions]);
+  const getSessionsForVolume = useCallback(
+    (volumeId: string, languageId?: string): ReadingSession[] => {
+      return data.sessions.filter(
+        (session) =>
+          session.volumeId === volumeId &&
+          (languageId ? session.languageId === languageId : true),
+      );
+    },
+    [data.sessions],
+  );
+
+  const getSessionsForLanguage = useCallback(
+    (languageId: string): ReadingSession[] => {
+      return data.sessions.filter((session) => session.languageId === languageId);
+    },
+    [data.sessions],
+  );
 
   return {
     sessions: data.sessions,
@@ -142,6 +161,7 @@ export function useReadingSessions() {
     getTotalSessions,
     getRecentSessions,
     getSessionsForVolume,
+    getSessionsForLanguage,
     hasReadToday,
   };
 }

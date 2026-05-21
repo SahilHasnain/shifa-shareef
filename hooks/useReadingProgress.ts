@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
 
+import { DEFAULT_LANGUAGE_ID } from "../data/languages";
 import { DEFAULT_VOLUME_ID } from "../data/volumes";
 import type { ReadingProgress } from "../data/types";
 
@@ -9,10 +10,13 @@ const defaultProgress: ReadingProgress = {
   lastPage: 1,
 };
 
-export function useReadingProgress(volumeId: string = DEFAULT_VOLUME_ID) {
+export function useReadingProgress(
+  volumeId: string = DEFAULT_VOLUME_ID,
+  languageId: string = DEFAULT_LANGUAGE_ID,
+) {
   const [progress, setProgress] = useState<ReadingProgress>(defaultProgress);
   const [isLoaded, setIsLoaded] = useState(false);
-  const storageKey = `shifa-shareef:reading-progress-${volumeId}`;
+  const storageKey = `shifa-shareef:reading-progress-${languageId}-${volumeId}`;
 
   const loadProgress = useCallback(async () => {
     try {

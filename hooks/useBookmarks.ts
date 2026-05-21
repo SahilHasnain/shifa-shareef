@@ -1,15 +1,19 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 
+import { DEFAULT_LANGUAGE_ID } from "../data/languages";
 import { DEFAULT_VOLUME_ID } from "../data/volumes";
 import type { Bookmark } from "../data/types";
 
 export type { Bookmark } from "../data/types";
 
-export function useBookmarks(volumeId: string = DEFAULT_VOLUME_ID) {
+export function useBookmarks(
+  volumeId: string = DEFAULT_VOLUME_ID,
+  languageId: string = DEFAULT_LANGUAGE_ID,
+) {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
-  const storageKey = `shifa-shareef:bookmarks-${volumeId}`;
+  const storageKey = `shifa-shareef:bookmarks-${languageId}-${volumeId}`;
 
   const loadBookmarks = async () => {
     try {
@@ -35,6 +39,7 @@ export function useBookmarks(volumeId: string = DEFAULT_VOLUME_ID) {
   const addBookmark = async (page: number, label?: string) => {
     const newBookmark: Bookmark = {
       id: `bookmark-${Date.now()}`,
+      languageId,
       volumeId,
       page,
       label,
