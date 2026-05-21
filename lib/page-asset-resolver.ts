@@ -136,7 +136,10 @@ export async function resolvePageAsset(
     };
   }
 
-  const bundledSource = getPageImageForLanguageVolume(languageId, volumeId, page);
+  const bundledSource =
+    volumeManifest.deliveryMode !== "remote"
+      ? getPageImageForLanguageVolume(languageId, volumeId, page)
+      : null;
   if (bundledSource) {
     return {
       kind: "bundled",
@@ -194,7 +197,7 @@ export async function downloadVolumeAssets(
       cacheRemote: true,
     });
 
-    if (result.kind === "local" || result.kind === "bundled") {
+    if (result.kind === "local") {
       completed += 1;
       onProgress?.(completed, totalPages);
     }

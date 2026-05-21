@@ -37,18 +37,13 @@ export const LANGUAGE_ASSET_MANIFESTS: LanguageAssetManifest[] = LANGUAGES.map(
   (language) => ({
     languageId: language.id,
     title: language.title,
-    version:
-      language.id === DEFAULT_LANGUAGE_ID
-        ? "2026-05-21-1"
-        : language.id === ROMAN_URDU_LANGUAGE_ID
-          ? "2026-05-21-1"
-          : "2026-05-21-1",
+    version: "2026-05-21-1",
     volumes: language.volumes.map((volume) =>
       buildVolumeManifest(
         language.id,
         volume.id,
         volume.totalPages,
-        language.id === DEFAULT_LANGUAGE_ID ? "hybrid" : "remote",
+        "remote",
       ),
     ),
   }),
