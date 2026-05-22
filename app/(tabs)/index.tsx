@@ -27,9 +27,9 @@ import {
 } from "../../data/languages";
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
-import { useVolumeDownload } from "../../hooks/useVolumeDownload";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
+import { useVolumeDownload } from "../../hooks/useVolumeDownload";
 
 function formatLastRead(value?: string) {
   if (!value) {
@@ -199,8 +199,8 @@ export default function HomeScreen() {
   const currentDisplayPage = currentDisplayProgress?.lastPage ?? 1;
   const currentPlanDay = activePlan
     ? activePlan.items.find(
-        (item) => currentPage >= item.startPage && currentPage <= item.endPage,
-      )?.day ?? 1
+      (item) => currentPage >= item.startPage && currentPage <= item.endPage,
+    )?.day ?? 1
     : 1;
   const currentPlanProgress = activePlan
     ? Math.round((currentPlanDay / activePlan.totalDays) * 100)
@@ -344,7 +344,7 @@ export default function HomeScreen() {
                 >
                   <Text
                     style={{
-                      color: isActive ? "#FFF9EA" : colors.text.tertiary,
+                      color: isActive ? colors.secondary.paleGold : colors.text.tertiary,
                       fontSize: typography.size.sm,
                       fontWeight: typography.weight.bold,
                     }}
@@ -358,260 +358,228 @@ export default function HomeScreen() {
         </View>
 
         <View
+          style={{
+            backgroundColor: colors.primary.deepGreen,
+            borderRadius: 28,
+            padding: 24,
+            gap: 18,
+            overflow: "hidden",
+            ...shadows.lg,
+          }}
+        >
+          <View
             style={{
-              backgroundColor: colors.primary.deepGreen,
-              borderRadius: 28,
-              padding: 24,
-              gap: 18,
-              overflow: "hidden",
-              ...shadows.lg,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
             }}
           >
+            <Text
+              style={{
+                color: colors.text.light,
+                fontSize: typography.size.sm,
+                fontWeight: typography.weight.bold,
+                letterSpacing: 0.5,
+                textTransform: "uppercase",
+              }}
+            >
+              Continue Reading
+            </Text>
+            {showVolumeControls && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Pressable
+                  onPress={goToPreviousVolume}
+                  disabled={currentVolumeIndex <= 0}
+                  style={({ pressed }) => ({
+                    width: 34,
+                    height: 34,
+                    borderRadius: 17,
+                    backgroundColor:
+                      currentVolumeIndex > 0
+                        ? "rgba(255, 249, 234, 0.14)"
+                        : "rgba(255, 249, 234, 0.06)",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: pressed && currentVolumeIndex > 0 ? 0.85 : 1,
+                  })}
+                >
+                  <Ionicons
+                    name="chevron-back"
+                    size={18}
+                    color={
+                      currentVolumeIndex > 0
+                        ? "#FFF9EA"
+                        : "rgba(255, 249, 234, 0.35)"
+                    }
+                  />
+                </Pressable>
+                <Pressable
+                  onPress={goToNextVolume}
+                  disabled={currentVolumeIndex >= currentLanguage.volumes.length - 1}
+                  style={({ pressed }) => ({
+                    width: 34,
+                    height: 34,
+                    borderRadius: 17,
+                    backgroundColor:
+                      currentVolumeIndex < currentLanguage.volumes.length - 1
+                        ? "rgba(255, 249, 234, 0.14)"
+                        : "rgba(255, 249, 234, 0.06)",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity:
+                      pressed &&
+                        currentVolumeIndex < currentLanguage.volumes.length - 1
+                        ? 0.85
+                        : 1,
+                  })}
+                >
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={
+                      currentVolumeIndex < currentLanguage.volumes.length - 1
+                        ? "#FFF9EA"
+                        : "rgba(255, 249, 234, 0.35)"
+                    }
+                  />
+                </Pressable>
+              </View>
+            )}
+          </View>
+
+          <Animated.View
+            style={[
+              {
+                gap: 18,
+              },
+              animatedHeroContentStyle,
+            ]}
+          >
+            <ContinueReadingContent
+              languageId={currentLanguageId}
+              languageTitle={currentLanguage.title}
+              volumeId={displayVolumeId}
+              showVolumeLabel={showVolumeControls}
+            />
+
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "space-between",
-                gap: 12,
+                gap: 16,
+              }}
+            >
+              <View style={{ flex: 1, gap: 4 }}>
+                <Text
+                  style={{
+                    color: "#D9E2DC",
+                    fontSize: typography.size.xs,
+                    fontWeight: typography.weight.bold,
+                    letterSpacing: 0.4,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Offline status
+                </Text>
+                <Text
+                  style={{
+                    color: "#FFF9EA",
+                    fontSize: typography.size.sm,
+                    fontWeight: typography.weight.semibold,
+                  }}
+                >
+                  {downloadStatusLabel}
+                  {canDownload && (isPartiallyDownloaded || isFullyDownloaded)
+                    ? ` • ${downloadProgressPercent}%`
+                    : ""}
+                </Text>
+              </View>
+
+              <Pressable
+                onPress={() => {
+                  if (canDownload) {
+                    if (isFullyDownloaded) {
+                      void removeDownload();
+                    } else {
+                      void downloadAll();
+                    }
+                  }
+                }}
+                disabled={!canDownload || isDownloading}
+              >
+                <View
+                  style={{
+                    borderRadius: 999,
+                    backgroundColor: canDownload && !isFullyDownloaded ? "#EFD997" : "rgba(255, 249, 234, 0.15)",
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: canDownload && !isFullyDownloaded ? "#173D31" : "#FFF9EA",
+                      fontSize: typography.size.sm,
+                      fontWeight: typography.weight.bold,
+                    }}
+                  >
+                    {canDownload
+                      ? isFullyDownloaded
+                        ? "Remove"
+                        : isDownloading
+                          ? "Downloading..."
+                          : "Download"
+                      : "Included"}
+                  </Text>
+                </View>
+              </Pressable>
+            </View>
+
+            {showVolumeControls && (
+              <View style={{ flexDirection: "row", justifyContent: "center", gap: 6 }}>
+                {currentLanguage.volumes.map((volume, index) => (
+                  <View
+                    key={volume.id}
+                    style={{
+                      width: index === currentVolumeIndex ? 18 : 6,
+                      height: 6,
+                      borderRadius: 999,
+                      backgroundColor:
+                        index === currentVolumeIndex
+                          ? colors.secondary.lightGold
+                          : "rgba(255, 249, 234, 0.22)",
+                    }}
+                  />
+                ))}
+              </View>
+            )}
+
+            <Pressable
+              onPress={() =>
+                router.push(
+                  `/reader/${currentLanguageId}/${displayVolumeId}/${currentDisplayPage}` as any,
+                )
+              }
+              style={{
+                alignSelf: "flex-start",
+                borderRadius: 999,
+                backgroundColor: "#F0E1A7",
+                paddingHorizontal: 20,
+                paddingVertical: 12,
               }}
             >
               <Text
                 style={{
-                  color: colors.text.light,
-                  fontSize: typography.size.sm,
-                  fontWeight: typography.weight.bold,
-                  letterSpacing: 0.5,
-                  textTransform: "uppercase",
+                  color: "#173D31",
+                  fontSize: 15,
+                  fontWeight: typography.weight.extrabold,
                 }}
               >
-                Continue Reading
+                Resume Reading
               </Text>
-              {showVolumeControls && (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Pressable
-                    onPress={goToPreviousVolume}
-                    disabled={currentVolumeIndex <= 0}
-                    style={({ pressed }) => ({
-                      width: 34,
-                      height: 34,
-                      borderRadius: 17,
-                      backgroundColor:
-                        currentVolumeIndex > 0
-                          ? "rgba(255, 249, 234, 0.14)"
-                          : "rgba(255, 249, 234, 0.06)",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      opacity: pressed && currentVolumeIndex > 0 ? 0.85 : 1,
-                    })}
-                  >
-                    <Ionicons
-                      name="chevron-back"
-                      size={18}
-                      color={
-                        currentVolumeIndex > 0
-                          ? "#FFF9EA"
-                          : "rgba(255, 249, 234, 0.35)"
-                      }
-                    />
-                  </Pressable>
-                  <Pressable
-                    onPress={goToNextVolume}
-                    disabled={currentVolumeIndex >= currentLanguage.volumes.length - 1}
-                    style={({ pressed }) => ({
-                      width: 34,
-                      height: 34,
-                      borderRadius: 17,
-                      backgroundColor:
-                        currentVolumeIndex < currentLanguage.volumes.length - 1
-                          ? "rgba(255, 249, 234, 0.14)"
-                          : "rgba(255, 249, 234, 0.06)",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      opacity:
-                        pressed &&
-                        currentVolumeIndex < currentLanguage.volumes.length - 1
-                          ? 0.85
-                          : 1,
-                    })}
-                  >
-                    <Ionicons
-                      name="chevron-forward"
-                      size={18}
-                      color={
-                        currentVolumeIndex < currentLanguage.volumes.length - 1
-                          ? "#FFF9EA"
-                          : "rgba(255, 249, 234, 0.35)"
-                      }
-                    />
-                  </Pressable>
-                </View>
-              )}
-            </View>
-
-            <Animated.View
-              style={[
-                {
-                  gap: 18,
-                },
-                animatedHeroContentStyle,
-              ]}
-            >
-              <ContinueReadingContent
-                languageId={currentLanguageId}
-                languageTitle={currentLanguage.title}
-                volumeId={displayVolumeId}
-                showVolumeLabel={showVolumeControls}
-              />
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 16,
-                }}
-              >
-                <View style={{ flex: 1, gap: 4 }}>
-                  <Text
-                    style={{
-                      color: "#D9E2DC",
-                      fontSize: typography.size.xs,
-                      fontWeight: typography.weight.bold,
-                      letterSpacing: 0.4,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Offline status
-                  </Text>
-                  <Text
-                    style={{
-                      color: "#FFF9EA",
-                      fontSize: typography.size.sm,
-                      fontWeight: typography.weight.semibold,
-                    }}
-                  >
-                    {downloadStatusLabel}
-                    {canDownload && (isPartiallyDownloaded || isFullyDownloaded)
-                      ? ` • ${downloadProgressPercent}%`
-                      : ""}
-                  </Text>
-                </View>
-
-                {canDownload ? (
-                  isFullyDownloaded ? (
-                    <Pressable
-                      onPress={() => {
-                        void removeDownload();
-                      }}
-                      style={({ pressed }) => ({
-                        borderRadius: 999,
-                        backgroundColor: "rgba(255, 249, 234, 0.12)",
-                        paddingHorizontal: 14,
-                        paddingVertical: 10,
-                        opacity: pressed ? 0.8 : 1,
-                      })}
-                    >
-                      <Text
-                        style={{
-                          color: "#FFF9EA",
-                          fontSize: typography.size.sm,
-                          fontWeight: typography.weight.bold,
-                        }}
-                      >
-                        Remove
-                      </Text>
-                    </Pressable>
-                  ) : (
-                    <Pressable
-                      onPress={() => {
-                        void downloadAll();
-                      }}
-                      disabled={isDownloading}
-                      style={({ pressed }) => ({
-                        borderRadius: 999,
-                        backgroundColor: "#EFD997",
-                        paddingHorizontal: 14,
-                        paddingVertical: 10,
-                        opacity: pressed && !isDownloading ? 0.85 : 1,
-                      })}
-                    >
-                      <Text
-                        style={{
-                          color: "#173D31",
-                          fontSize: typography.size.sm,
-                          fontWeight: typography.weight.extrabold,
-                        }}
-                      >
-                        {isDownloading ? "Downloading..." : "Download"}
-                      </Text>
-                    </Pressable>
-                  )
-                ) : (
-                  <View
-                    style={{
-                      borderRadius: 999,
-                      backgroundColor: "rgba(255, 249, 234, 0.12)",
-                      paddingHorizontal: 14,
-                      paddingVertical: 10,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: "#FFF9EA",
-                        fontSize: typography.size.sm,
-                        fontWeight: typography.weight.bold,
-                      }}
-                    >
-                      Included
-                    </Text>
-                  </View>
-                )}
-              </View>
-
-              {showVolumeControls && (
-                <View style={{ flexDirection: "row", justifyContent: "center", gap: 6 }}>
-                  {currentLanguage.volumes.map((volume, index) => (
-                    <View
-                      key={volume.id}
-                      style={{
-                        width: index === currentVolumeIndex ? 18 : 6,
-                        height: 6,
-                        borderRadius: 999,
-                        backgroundColor:
-                          index === currentVolumeIndex
-                            ? colors.secondary.lightGold
-                            : "rgba(255, 249, 234, 0.22)",
-                      }}
-                    />
-                  ))}
-                </View>
-              )}
-
-              <Pressable
-                onPress={() =>
-                  router.push(
-                    `/reader/${currentLanguageId}/${displayVolumeId}/${currentDisplayPage}` as any,
-                  )
-                }
-                style={{
-                  alignSelf: "flex-start",
-                  borderRadius: 999,
-                  backgroundColor: "#F0E1A7",
-                  paddingHorizontal: 20,
-                  paddingVertical: 12,
-                }}
-              >
-                <Text
-                  style={{
-                    color: "#173D31",
-                    fontSize: 15,
-                    fontWeight: typography.weight.extrabold,
-                  }}
-                >
-                  Resume Reading
-                </Text>
-              </Pressable>
-            </Animated.View>
+            </Pressable>
+          </Animated.View>
         </View>
 
         {activePlan ? (
@@ -840,7 +808,8 @@ export default function HomeScreen() {
               </View>
             </View>
           </Pressable>
-        )}
+        )
+        }
 
         <View
           style={{
@@ -978,7 +947,7 @@ export default function HomeScreen() {
             reading itself can remain the focus.
           </Text>
         </View>
-      </ScrollView>
-    </View>
+      </ScrollView >
+    </View >
   );
 }
