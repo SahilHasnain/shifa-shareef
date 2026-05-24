@@ -1,9 +1,2 @@
-node_modules/
-.expo/
-.git/
-.vscode/
-.kiro/
-docs/
-*.md
-*.log
-.DS_Store
+# Legacy PDF assets - not used in the app
+assets/pdf/
