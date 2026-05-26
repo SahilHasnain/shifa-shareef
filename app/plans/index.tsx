@@ -247,125 +247,91 @@ export default function PlansScreen() {
                 <View style={{ gap: 14 }}>
                     {readingPlans.map((plan) => {
                         const isActive = activePlan?.id === plan.id;
+                        const firstItem = plan.items[0];
 
                         return (
-                            <Pressable
+                            <View
                                 key={plan.id}
-                                onPress={() => !isActive && handleSelectPlan(plan.id)}
-                                disabled={isActive}
-                                style={({ pressed }) => ({
-                                    backgroundColor: isActive ? "#E8F5E9" : colors.surface.warmIvory,
+                                style={{
+                                    backgroundColor: colors.surface.warmIvory,
                                     borderRadius: 24,
-                                    padding: 20,
-                                    gap: 14,
-                                    opacity: isActive ? 0.7 : pressed ? 0.8 : 1,
+                                    padding: 18,
+                                    gap: 8,
                                     ...shadows.md,
-                                })}
+                                }}
                             >
-                                <View
+                                <Text
                                     style={{
-                                        flexDirection: "row",
-                                        alignItems: "flex-start",
-                                        justifyContent: "space-between",
-                                        gap: 12,
+                                        color: colors.text.primary,
+                                        fontSize: typography.size.xl,
+                                        fontWeight: typography.weight.extrabold,
                                     }}
                                 >
-                                    <View style={{ flex: 1 }}>
-                                        <Text
-                                            style={{
-                                                color: colors.text.primary,
-                                                fontSize: typography.size["2xl"],
-                                                fontWeight: typography.weight.extrabold,
-                                            }}
-                                        >
-                                            {plan.title}
-                                        </Text>
-                                        {isActive && (
-                                            <View
-                                                style={{
-                                                    flexDirection: "row",
-                                                    alignItems: "center",
-                                                    gap: 4,
-                                                    marginTop: 6,
-                                                }}
-                                            >
-                                                <Ionicons name="checkmark-circle" size={16} color={colors.accent.success} />
-                                                <Text
-                                                    style={{
-                                                        color: colors.accent.success,
-                                                        fontSize: typography.size.sm,
-                                                        fontWeight: typography.weight.bold,
-                                                    }}
-                                                >
-                                                    Currently Active
-                                                </Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                    <View
-                                        style={{
-                                            backgroundColor: "rgba(201, 169, 97, 0.12)",
-                                            paddingHorizontal: 12,
-                                            paddingVertical: 6,
-                                            borderRadius: 12,
-                                        }}
-                                    >
-                                        <Text
-                                            style={{
-                                                color: colors.secondary.mutedGold,
-                                                fontSize: typography.size.sm,
-                                                fontWeight: typography.weight.bold,
-                                            }}
-                                        >
-                                            {plan.totalDays} days
-                                        </Text>
-                                    </View>
-                                </View>
+                                    {plan.title}
+                                </Text>
 
                                 <Text
                                     style={{
                                         color: colors.text.muted,
                                         fontSize: typography.size.base,
-                                        lineHeight: 21,
+                                        lineHeight: 22,
                                     }}
                                 >
                                     {plan.description}
                                 </Text>
 
-                                <View
+                                <Text
                                     style={{
-                                        flexDirection: "row",
-                                        alignItems: "center",
-                                        gap: 16,
-                                        paddingTop: 4,
+                                        color: colors.secondary.mutedGold,
+                                        fontSize: typography.size.xs,
+                                        fontWeight: typography.weight.bold,
+                                        textTransform: "uppercase",
+                                        letterSpacing: 0.4,
                                     }}
                                 >
-                                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                                        <Ionicons name="book-outline" size={18} color={colors.text.subtle} />
-                                        <Text
-                                            style={{
-                                                color: colors.text.tertiary,
-                                                fontSize: typography.size.sm,
-                                                fontWeight: typography.weight.semibold,
-                                            }}
-                                        >
-                                            {plan.pagesPerDay} pages/day
-                                        </Text>
-                                    </View>
-                                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                                        <Ionicons name="time-outline" size={18} color={colors.text.subtle} />
-                                        <Text
-                                            style={{
-                                                color: colors.text.tertiary,
-                                                fontSize: typography.size.sm,
-                                                fontWeight: typography.weight.semibold,
-                                            }}
-                                        >
-                                            ~{Math.round(plan.pagesPerDay * 0.5)} min/day
-                                        </Text>
-                                    </View>
-                                </View>
-                            </Pressable>
+                                    {plan.totalDays} days
+                                    {firstItem
+                                        ? ` | Day 1 pages ${firstItem.startPage}-${firstItem.endPage}`
+                                        : ""}
+                                </Text>
+
+                                {isActive ? (
+                                    <Text
+                                        style={{
+                                            color: colors.accent.success,
+                                            fontSize: typography.size.sm,
+                                            fontWeight: typography.weight.bold,
+                                        }}
+                                    >
+                                        Current active plan
+                                    </Text>
+                                ) : null}
+
+                                <Pressable
+                                    onPress={() => {
+                                        if (!isActive) {
+                                            handleSelectPlan(plan.id);
+                                        }
+                                    }}
+                                    style={{
+                                        alignSelf: "flex-start",
+                                        borderRadius: 999,
+                                        backgroundColor: isActive ? colors.primary.deepGreen : "#EFE2B6",
+                                        paddingHorizontal: 14,
+                                        paddingVertical: 10,
+                                    }}
+                                >
+                                    <Text
+                                        style={{
+                                            color: isActive ? "#FFF9EA" : colors.text.primary,
+                                            fontSize: typography.size.xs,
+                                            fontWeight: typography.weight.extrabold,
+                                        }}
+                                    >
+                                        {isActive ? "Active plan" : "Choose plan"}
+                                    </Text>
+                                </Pressable>
+                            </View>
                         );
                     })}
                 </View>
