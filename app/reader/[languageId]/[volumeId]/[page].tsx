@@ -5,10 +5,12 @@ import {
   BackHandler,
   Dimensions,
   FlatList,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   View,
   ViewToken,
 } from "react-native";
@@ -150,7 +152,9 @@ export default function ReaderScreen() {
   const { addSession, getCurrentStreak } = useReadingSessions();
 
   const [currentPage, setCurrentPage] = useState(initialPage);
+  const [pageInput, setPageInput] = useState(String(initialPage));
   const [isZoomed, setIsZoomed] = useState(false);
+  const [isPageModalVisible, setIsPageModalVisible] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionData, setCompletionData] = useState<{
     pagesRead: number;
@@ -277,6 +281,10 @@ export default function ReaderScreen() {
   }, [currentPage]);
 
   useEffect(() => {
+    setPageInput(String(currentPage));
+  }, [currentPage]);
+
+  useEffect(() => {
     const pagesToPrefetch = Array.from(
       new Set([
         currentPage,
@@ -358,6 +366,12 @@ export default function ReaderScreen() {
       </ScrollView>
     </View>
   );
+
+  const submitPageInput = useCallback(() => {
+    const parsedPage = Number(pageInput.replace(/[^0-9]/g, ""));
+    moveToPage(Number.isFinite(parsedPage) ? parsedPage : currentPage);
+    setIsPageModalVisible(false);
+  }, [currentPage, moveToPage, pageInput]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -548,33 +562,22 @@ export default function ReaderScreen() {
             }}
           >
             <Pressable
-              disabled={currentPage <= 1}
-              onPress={() => moveToPage(currentPage - 1)}
+              onPress={() => setIsPageModalVisible(true)}
               style={({ pressed }) => ({
-                width: 48,
+                minWidth: 72,
                 height: 48,
                 borderRadius: 24,
-                backgroundColor:
-                  currentPage <= 1
-                    ? designColors.overlay.medium
-                    : designColors.secondary.lightGold,
+                paddingHorizontal: 18,
+                backgroundColor: designColors.primary.sageGreen,
                 alignItems: "center",
                 justifyContent: "center",
-                opacity: pressed && currentPage > 1 ? 0.8 : 1,
+                opacity: pressed ? 0.8 : 1,
               })}
             >
-              <Ionicons
-                name="chevron-back"
-                size={24}
-                color={
-                  currentPage <= 1
-                    ? designColors.text.subtle
-                    : designColors.primary.deepGreen
-                }
-              />
+              <Text style={{ color: "#FFF9EA", fontSize: typography.size.base, fontWeight: typography.weight.bold }}>Go</Text>
             </Pressable>
 
-            <View style={{ flex: 1, alignItems: "center", gap: 8 }}>
+            <View style={{ flex: 1, alignItems: "center", gap: 8, transform: [{ translateX: 14 }] }}>
               <Text
                 style={{
                   color: "#FFF9EA",
@@ -603,36 +606,55 @@ export default function ReaderScreen() {
                 />
               </View>
             </View>
-
-            <Pressable
-              disabled={currentPage >= totalPages}
-              onPress={() => moveToPage(currentPage + 1)}
-              style={({ pressed }) => ({
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                backgroundColor:
-                  currentPage >= totalPages
-                    ? designColors.overlay.medium
-                    : designColors.secondary.lightGold,
-                alignItems: "center",
-                justifyContent: "center",
-                opacity: pressed && currentPage < totalPages ? 0.8 : 1,
-              })}
-            >
-              <Ionicons
-                name="chevron-forward"
-                size={24}
-                color={
-                  currentPage >= totalPages
-                    ? designColors.text.subtle
-                    : designColors.primary.deepGreen
-                }
-              />
-            </Pressable>
+            <View style={{ width: 72 }} />
           </View>
         </View>
       </SafeAreaView>
+
+      <Modal
+        visible={isPageModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsPageModalVisible(false)}
+      >
+        <Pressable
+          onPress={() => setIsPageModalVisible(false)}
+          style={{ flex: 1, backgroundColor: "rgba(0, 0, 0, 0.45)", alignItems: "center", justifyContent: "center", padding: 24 }}
+        >
+          <Pressable
+            onPress={() => {}}
+            style={{ width: "100%", maxWidth: 360, borderRadius: 24, backgroundColor: colors.background, padding: 20, gap: 16 }}
+          >
+            <Text style={{ color: designColors.text.primary, fontSize: typography.size.xl, fontWeight: typography.weight.bold }}>
+              Go to page
+            </Text>
+            <TextInput
+              autoFocus
+              value={pageInput}
+              onChangeText={(value) => setPageInput(value.replace(/[^0-9]/g, ""))}
+              onSubmitEditing={submitPageInput}
+              keyboardType="number-pad"
+              placeholder={`Enter page 1-${totalPages}`}
+              placeholderTextColor={designColors.text.subtle}
+              style={{ height: 48, borderRadius: 16, paddingHorizontal: 16, backgroundColor: designColors.surface.creamyWhite, color: designColors.text.primary, fontSize: typography.size.lg, fontWeight: typography.weight.semibold }}
+            />
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10 }}>
+              <Pressable
+                onPress={() => setIsPageModalVisible(false)}
+                style={({ pressed }) => ({ height: 44, borderRadius: 22, paddingHorizontal: 18, alignItems: "center", justifyContent: "center", backgroundColor: designColors.surface.creamyWhite, opacity: pressed ? 0.8 : 1 })}
+              >
+                <Text style={{ color: designColors.text.primary, fontSize: typography.size.base, fontWeight: typography.weight.semibold }}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={submitPageInput}
+                style={({ pressed }) => ({ height: 44, borderRadius: 22, paddingHorizontal: 18, alignItems: "center", justifyContent: "center", backgroundColor: designColors.secondary.lightGold, opacity: pressed ? 0.8 : 1 })}
+              >
+                <Text style={{ color: designColors.primary.deepGreen, fontSize: typography.size.base, fontWeight: typography.weight.bold }}>Go</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {showCompletionModal && completionData && (
         <SessionCompletionModal
