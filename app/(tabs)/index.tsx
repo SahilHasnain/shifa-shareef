@@ -69,15 +69,19 @@ function ContinueReadingContent({
   );
 
   return (
-    <View style={{ gap: 14 }}>
+    <View style={{ gap: 12 }}>
       <Text
         style={{
           color: colors.text.light,
           fontSize: typography.size.sm,
-          fontWeight: typography.weight.semibold,
+          fontWeight: typography.weight.bold,
+          letterSpacing: 0.4,
+          textTransform: "uppercase",
         }}
       >
-        {languageTitle}
+        {showVolumeLabel
+          ? `${languageTitle} • ${currentVolumeDisplayTitle}`
+          : languageTitle}
       </Text>
       <Text
         style={{
@@ -87,34 +91,38 @@ function ContinueReadingContent({
           lineHeight: 32,
         }}
       >
-        {showVolumeLabel ? currentVolumeDisplayTitle : languageTitle}
-      </Text>
-      <Text
-        style={{
-          color: colors.secondary.paleGold,
-          fontSize: typography.size.lg,
-          fontWeight: typography.weight.semibold,
-        }}
-      >
         {currentSection.title}
       </Text>
-      <Text
-        style={{
-          color: "#C8D5CD",
-          fontSize: typography.size.md,
-          lineHeight: 22,
-        }}
-      >
-        Page {currentPage} of {volume.totalPages}
-      </Text>
-      <Text
-        style={{
-          color: colors.text.light,
-          fontSize: typography.size.sm,
-        }}
-      >
-        {isLoaded ? formatLastRead(progress?.lastReadAt) : "Loading progress..."}
-      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <View
+          style={{
+            borderRadius: 999,
+            backgroundColor: "rgba(255, 249, 234, 0.14)",
+            paddingHorizontal: 12,
+            paddingVertical: 7,
+          }}
+        >
+          <Text
+            style={{
+              color: "#FFF9EA",
+              fontSize: typography.size.sm,
+              fontWeight: typography.weight.bold,
+            }}
+          >
+            Page {currentPage}/{volume.totalPages}
+          </Text>
+        </View>
+        <Text
+          style={{
+            color: "#C8D5CD",
+            fontSize: typography.size.sm,
+            flex: 1,
+          }}
+          numberOfLines={1}
+        >
+          {isLoaded ? `Last read ${formatLastRead(progress?.lastReadAt)}` : "Loading progress..."}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -212,6 +220,13 @@ export default function HomeScreen() {
     isFullyDownloaded,
     isPartiallyDownloaded,
   });
+  const downloadButtonLabel = canDownload
+    ? isFullyDownloaded
+      ? "Remove"
+      : isDownloading
+        ? "Loading"
+        : "Download"
+    : "Included";
 
   const animatedHeroContentStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: slideX.value }],
@@ -333,7 +348,7 @@ export default function HomeScreen() {
                   onPress={() => switchLanguage(language.id)}
                   style={({ pressed }) => ({
                     backgroundColor: isActive
-                      ? colors.primary.deepGreen
+                      ? colors.secondary.lightGold
                       : colors.surface.warmIvory,
                     paddingHorizontal: 16,
                     paddingVertical: 10,
@@ -344,7 +359,7 @@ export default function HomeScreen() {
                 >
                   <Text
                     style={{
-                      color: isActive ? colors.secondary.paleGold : colors.text.tertiary,
+                      color: isActive ? colors.primary.deepGreen : colors.text.tertiary,
                       fontSize: typography.size.sm,
                       fontWeight: typography.weight.bold,
                     }}
@@ -451,7 +466,7 @@ export default function HomeScreen() {
           <Animated.View
             style={[
               {
-                gap: 18,
+                gap: 16,
               },
               animatedHeroContentStyle,
             ]}
@@ -465,24 +480,10 @@ export default function HomeScreen() {
 
             <View
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 16,
+                display: "none",
               }}
             >
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text
-                  style={{
-                    color: "#D9E2DC",
-                    fontSize: typography.size.xs,
-                    fontWeight: typography.weight.bold,
-                    letterSpacing: 0.4,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Offline status
-                </Text>
+              <View style={{ display: "none" }}>
                 <Text
                   style={{
                     color: "#FFF9EA",
@@ -537,7 +538,7 @@ export default function HomeScreen() {
             </View>
 
             {showVolumeControls && (
-              <View style={{ flexDirection: "row", justifyContent: "center", gap: 6 }}>
+              <View style={{ flexDirection: "row", justifyContent: "center", gap: 6, marginTop: -2 }}>
                 {currentLanguage.volumes.map((volume, index) => (
                   <View
                     key={volume.id}
@@ -555,30 +556,69 @@ export default function HomeScreen() {
               </View>
             )}
 
-            <Pressable
-              onPress={() =>
-                router.push(
-                  `/reader/${currentLanguageId}/${displayVolumeId}/${currentDisplayPage}` as any,
-                )
-              }
-              style={{
-                alignSelf: "flex-start",
-                borderRadius: 999,
-                backgroundColor: "#F0E1A7",
-                paddingHorizontal: 20,
-                paddingVertical: 12,
-              }}
-            >
-              <Text
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <Pressable
+                onPress={() => {
+                  if (canDownload) {
+                    if (isFullyDownloaded) {
+                      void removeDownload();
+                    } else {
+                      void downloadAll();
+                    }
+                  }
+                }}
+                disabled={!canDownload || isDownloading}
+                style={{ flex: 1 }}
+              >
+                <View
+                  style={{
+                    borderRadius: 999,
+                    backgroundColor: canDownload && !isFullyDownloaded ? "#EFD997" : "rgba(255, 249, 234, 0.15)",
+                    paddingHorizontal: 12,
+                    paddingVertical: 14,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: canDownload && !isFullyDownloaded ? "#173D31" : "#FFF9EA",
+                      fontSize: typography.size.sm,
+                      fontWeight: typography.weight.bold,
+                      textAlign: "center",
+                    }}
+                    numberOfLines={1}
+                  >
+                    {downloadButtonLabel}
+                  </Text>
+                </View>
+              </Pressable>
+
+              <Pressable
+                onPress={() =>
+                  router.push(
+                    `/reader/${currentLanguageId}/${displayVolumeId}/${currentDisplayPage}` as any,
+                  )
+                }
                 style={{
-                  color: "#173D31",
-                  fontSize: 15,
-                  fontWeight: typography.weight.extrabold,
+                  flex: 1.35,
+                  borderRadius: 999,
+                  backgroundColor: "#F0E1A7",
+                  paddingHorizontal: 20,
+                  paddingVertical: 14,
+                  alignItems: "center",
                 }}
               >
-                Resume Reading
-              </Text>
-            </Pressable>
+                <Text
+                  style={{
+                    color: "#173D31",
+                    fontSize: 15,
+                    fontWeight: typography.weight.extrabold,
+                  }}
+                >
+                  Resume Reading
+                </Text>
+              </Pressable>
+            </View>
           </Animated.View>
         </View>
 
@@ -773,6 +813,7 @@ export default function HomeScreen() {
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "space-between",
+                gap: 12,
               }}
             >
               <Text
@@ -780,9 +821,10 @@ export default function HomeScreen() {
                   color: colors.secondary.mutedGold,
                   fontSize: typography.size.sm,
                   fontWeight: typography.weight.bold,
+                  flex: 1,
                 }}
               >
-                7-day, 21-day, and steady daily options
+                1-week, 3-week, and flexible plans
               </Text>
               <View
                 style={{

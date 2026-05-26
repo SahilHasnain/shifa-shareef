@@ -168,6 +168,7 @@ export default function ReaderScreen() {
   const sessionStartTime = useRef(Date.now());
   const sessionMinPage = useRef(initialPage);
   const sessionMaxPage = useRef(initialPage);
+  const sessionCompletedRef = useRef(false);
 
   const currentSection =
     getCurrentSectionByLanguage(language.id, volume.id, currentPage) ??
@@ -185,6 +186,10 @@ export default function ReaderScreen() {
   }, [language.id, switchLanguage, switchVolume, volume.id]);
 
   const completeSession = useCallback(async () => {
+    if (sessionCompletedRef.current) {
+      return false;
+    }
+
     const endTime = Date.now();
     const durationMs = endTime - sessionStartTime.current;
     const durationMinutes = Math.max(1, Math.round(durationMs / 60000));
@@ -192,6 +197,7 @@ export default function ReaderScreen() {
     const shouldShowModal = durationMs >= 180000 || pagesRead >= 5;
 
     if (durationMs >= 30000) {
+      sessionCompletedRef.current = true;
       const previousStreak = getCurrentStreak();
 
       await addSession({
@@ -661,13 +667,16 @@ export default function ReaderScreen() {
           visible={showCompletionModal}
           onClose={() => {
             setShowCompletionModal(false);
+            setCompletionData(null);
           }}
           onContinue={() => {
             setShowCompletionModal(false);
+            setCompletionData(null);
           }}
           onGoHome={() => {
             setShowCompletionModal(false);
-            setTimeout(() => router.push("/(tabs)/" as any), 100);
+            setCompletionData(null);
+            router.replace("/(tabs)/" as any);
           }}
           pagesRead={completionData.pagesRead}
           durationMinutes={completionData.durationMinutes}

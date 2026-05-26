@@ -307,47 +307,62 @@ export function SessionCompletionModal({
                     </View>
 
                     {/* Actions */}
-                    <View style={{ gap: 12 }}>
-                        <Pressable
-                            onPress={handleContinue}
-                            style={({ pressed }) => ({
-                                backgroundColor: colors.primary.deepGreen,
-                                borderRadius: 16,
-                                paddingVertical: 16,
-                                alignItems: "center",
-                                opacity: pressed ? 0.8 : 1,
-                                ...shadows.md,
-                            })}
-                        >
-                            <Text
-                                style={{
-                                    color: "#FFF9EA",
-                                    fontSize: typography.size.lg,
-                                    fontWeight: typography.weight.extrabold,
-                                }}
-                            >
-                                Continue Reading
-                            </Text>
-                        </Pressable>
-
+                    <View
+                        style={{
+                            flexDirection: "row",
+                            gap: 12,
+                            alignItems: "stretch",
+                            width: "100%",
+                        }}
+                    >
                         <Pressable
                             onPress={handleGoHome}
                             style={({ pressed }) => ({
-                                backgroundColor: "transparent",
-                                borderRadius: 16,
-                                paddingVertical: 16,
+                                backgroundColor: colors.surface.creamyWhite,
+                                borderRadius: 18,
+                                paddingVertical: 14,
+                                paddingHorizontal: 14,
+                                flex: 1,
                                 alignItems: "center",
-                                opacity: pressed ? 0.6 : 1,
+                                justifyContent: "center",
+                                opacity: pressed ? 0.75 : 1,
                             })}
                         >
                             <Text
                                 style={{
                                     color: colors.text.primary,
-                                    fontSize: typography.size.lg,
+                                    fontSize: typography.size.md,
                                     fontWeight: typography.weight.bold,
                                 }}
+                                numberOfLines={1}
                             >
                                 Go to Home
+                            </Text>
+                        </Pressable>
+
+                        <Pressable
+                            onPress={handleContinue}
+                            style={({ pressed }) => ({
+                                backgroundColor: colors.secondary.lightGold,
+                                borderRadius: 18,
+                                paddingVertical: 14,
+                                paddingHorizontal: 14,
+                                flex: 1,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                opacity: pressed ? 0.85 : 1,
+                                ...shadows.md,
+                            })}
+                        >
+                            <Text
+                                style={{
+                                    color: colors.primary.deepGreen,
+                                    fontSize: typography.size.md,
+                                    fontWeight: typography.weight.extrabold,
+                                }}
+                                numberOfLines={1}
+                            >
+                                Continue Reading
                             </Text>
                         </Pressable>
                     </View>

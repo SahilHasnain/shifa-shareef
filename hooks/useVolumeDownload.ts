@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getVolumeAssetManifest } from "../data/asset-manifests";
 import { getCachedPageCount, removeVolumeCache } from "../lib/page-asset-cache";
@@ -18,6 +18,8 @@ export function useVolumeDownload(
   volumeId: string,
   totalPages: number,
 ) {
+  const scopeKey = `${languageId}:${volumeId}`;
+  const activeScopeRef = useRef(scopeKey);
   const manifest = useMemo(
     () => getVolumeAssetManifest(languageId, volumeId),
     [languageId, volumeId],
@@ -31,6 +33,18 @@ export function useVolumeDownload(
     deliveryMode: manifest?.deliveryMode ?? "bundled",
     canDownload: Boolean(manifest?.baseUrl),
   });
+
+  useEffect(() => {
+    activeScopeRef.current = scopeKey;
+    setState({
+      cachedPages: 0,
+      totalPages,
+      isDownloading: false,
+      progressPercent: 0,
+      deliveryMode: manifest?.deliveryMode ?? "bundled",
+      canDownload: Boolean(manifest?.baseUrl),
+    });
+  }, [manifest?.baseUrl, manifest?.deliveryMode, scopeKey, totalPages]);
 
   const refresh = useCallback(async () => {
     const cachedPages = await getCachedPageCount(
@@ -59,13 +73,21 @@ export function useVolumeDownload(
       return;
     }
 
-    setState((previousState) => ({
-      ...previousState,
-      isDownloading: true,
-    }));
+    const requestScope = scopeKey;
+
+    if (activeScopeRef.current === requestScope) {
+      setState((previousState) => ({
+        ...previousState,
+        isDownloading: true,
+      }));
+    }
 
     try {
       await downloadVolumeAssets(languageId, volumeId, totalPages, (completedPages) => {
+        if (activeScopeRef.current !== requestScope) {
+          return;
+        }
+
         setState((previousState) => ({
           ...previousState,
           cachedPages: completedPages,
@@ -75,13 +97,15 @@ export function useVolumeDownload(
         }));
       });
     } finally {
-      setState((previousState) => ({
-        ...previousState,
-        isDownloading: false,
-      }));
-      await refresh();
+      if (activeScopeRef.current === requestScope) {
+        setState((previousState) => ({
+          ...previousState,
+          isDownloading: false,
+        }));
+        await refresh();
+      }
     }
-  }, [languageId, manifest?.baseUrl, refresh, totalPages, volumeId]);
+  }, [languageId, manifest?.baseUrl, refresh, scopeKey, totalPages, volumeId]);
 
   const removeDownload = useCallback(async () => {
     await removeVolumeCache(languageId, volumeId);
