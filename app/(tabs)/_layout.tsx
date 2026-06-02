@@ -2,12 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useAppTheme } from "../../hooks/useAppTheme";
+
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { colors, resolvedTheme } = useAppTheme();
 
   const tabBarStyle = {
-    backgroundColor: "#143B2D",
-    borderTopColor: "#224C3B",
+    backgroundColor: colors.surface.warmIvory,
+    borderTopColor: colors.surface.softBeige,
     height: 56 + insets.bottom,
     paddingBottom: insets.bottom,
   };
@@ -16,8 +19,9 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#F6E7B0",
-        tabBarInactiveTintColor: "#BFD0C6",
+        tabBarActiveTintColor:
+          resolvedTheme === "dark" ? colors.secondary.lightGold : colors.primary.deepGreen,
+        tabBarInactiveTintColor: colors.text.subtle,
         tabBarStyle,
         tabBarLabelStyle: {
           fontSize: 12,
@@ -49,6 +53,15 @@ export default function TabsLayout() {
           title: "Journey",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="leaf-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="settings-outline" size={size} color={color} />
           ),
         }}
       />

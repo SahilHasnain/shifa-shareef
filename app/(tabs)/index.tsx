@@ -16,7 +16,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { colors, shadows, typography } from "../../constants/theme";
+import { shadows, typography } from "../../constants/theme";
 import { BOOK_TITLE } from "../../data/book";
 import {
   LANGUAGES,
@@ -27,9 +27,13 @@ import {
 } from "../../data/languages";
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
+import { useAppTheme } from "../../hooks/useAppTheme";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
 import { useVolumeDownload } from "../../hooks/useVolumeDownload";
+
+const SELECTED_CHIP_FILL = "#F1E0A4";
+const SELECTED_CHIP_TEXT = "#101815";
 
 function formatLastRead(value?: string) {
   if (!value) {
@@ -56,6 +60,7 @@ function ContinueReadingContent({
   volumeId: string;
   showVolumeLabel: boolean;
 }) {
+  const { colors } = useAppTheme();
   const volume = getVolumeByLanguageAndId(languageId, volumeId);
   const { progress, isLoaded } = useReadingProgress(volumeId, languageId);
 
@@ -162,6 +167,7 @@ function getDownloadStatusLabel({
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors, resolvedTheme } = useAppTheme();
   const isAnimatingRef = useRef(false);
   const lastLanguageIdRef = useRef<string | null>(null);
   const slideX = useSharedValue(0);
@@ -348,8 +354,12 @@ export default function HomeScreen() {
                   onPress={() => switchLanguage(language.id)}
                   style={({ pressed }) => ({
                     backgroundColor: isActive
-                      ? colors.secondary.lightGold
+                      ? resolvedTheme === "dark"
+                        ? colors.surface.softBeige
+                        : SELECTED_CHIP_FILL
                       : colors.surface.warmIvory,
+                    borderWidth: 1.5,
+                    borderColor: isActive ? SELECTED_CHIP_FILL : colors.surface.softBeige,
                     paddingHorizontal: 16,
                     paddingVertical: 10,
                     borderRadius: 18,
@@ -359,7 +369,11 @@ export default function HomeScreen() {
                 >
                   <Text
                     style={{
-                      color: isActive ? colors.primary.deepGreen : colors.text.tertiary,
+                      color: isActive
+                        ? resolvedTheme === "dark"
+                          ? SELECTED_CHIP_FILL
+                          : SELECTED_CHIP_TEXT
+                        : colors.text.tertiary,
                       fontSize: typography.size.sm,
                       fontWeight: typography.weight.bold,
                     }}
@@ -602,7 +616,7 @@ export default function HomeScreen() {
                 style={{
                   flex: 1.35,
                   borderRadius: 999,
-                  backgroundColor: "#F0E1A7",
+                  backgroundColor: colors.secondary.lightGold,
                   paddingHorizontal: 20,
                   paddingVertical: 14,
                   alignItems: "center",
@@ -610,7 +624,7 @@ export default function HomeScreen() {
               >
                 <Text
                   style={{
-                    color: "#173D31",
+                    color: colors.primary.deepGreen,
                     fontSize: 15,
                     fontWeight: typography.weight.extrabold,
                   }}
@@ -733,7 +747,7 @@ export default function HomeScreen() {
           <Pressable
             onPress={() => router.push("/plans/" as any)}
             style={({ pressed }) => ({
-              backgroundColor: "#F3E7C9",
+              backgroundColor: colors.surface.warmIvory,
               borderRadius: 24,
               padding: 22,
               gap: 16,
@@ -754,14 +768,17 @@ export default function HomeScreen() {
                   style={{
                     alignSelf: "flex-start",
                     borderRadius: 999,
-                    backgroundColor: "rgba(23, 61, 49, 0.08)",
+                    backgroundColor: colors.surface.softBeige,
                     paddingHorizontal: 10,
                     paddingVertical: 6,
                   }}
                 >
                   <Text
                     style={{
-                      color: colors.primary.deepGreen,
+                      color:
+                        resolvedTheme === "dark"
+                          ? colors.secondary.lightGold
+                          : colors.primary.deepGreen,
                       fontSize: typography.size.xs,
                       fontWeight: typography.weight.extrabold,
                       letterSpacing: 0.4,
@@ -795,7 +812,7 @@ export default function HomeScreen() {
                   width: 48,
                   height: 48,
                   borderRadius: 24,
-                  backgroundColor: "rgba(23, 61, 49, 0.08)",
+                  backgroundColor: colors.surface.softBeige,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -803,7 +820,11 @@ export default function HomeScreen() {
                 <Ionicons
                   name="calendar-clear-outline"
                   size={24}
-                  color={colors.primary.deepGreen}
+                  color={
+                    resolvedTheme === "dark"
+                      ? colors.secondary.lightGold
+                      : colors.primary.deepGreen
+                  }
                 />
               </View>
             </View>
@@ -835,7 +856,10 @@ export default function HomeScreen() {
               >
                 <Text
                   style={{
-                    color: colors.primary.deepGreen,
+                    color:
+                      resolvedTheme === "dark"
+                        ? colors.secondary.lightGold
+                        : colors.primary.deepGreen,
                     fontSize: typography.size.sm,
                     fontWeight: typography.weight.extrabold,
                   }}
@@ -845,7 +869,11 @@ export default function HomeScreen() {
                 <Ionicons
                   name="chevron-forward"
                   size={18}
-                  color={colors.primary.deepGreen}
+                  color={
+                    resolvedTheme === "dark"
+                      ? colors.secondary.lightGold
+                      : colors.primary.deepGreen
+                  }
                 />
               </View>
             </View>

@@ -1,7 +1,8 @@
 // Design System for Shifa Shareef App
 // Based on devotional, premium aesthetic from idea.md
 
-export const colors = {
+export const appThemes = {
+  light: {
   // Primary Palette
   primary: {
     deepGreen: "#173D31",
@@ -26,14 +27,15 @@ export const colors = {
   },
 
   // Text Colors
-  text: {
-    primary: "#173D31",
-    secondary: "#274236",
-    tertiary: "#55665D",
-    muted: "#64756C",
-    subtle: "#7A8A82",
-    light: "#AFC4B8",
-  },
+    text: {
+      primary: "#173D31",
+      secondary: "#274236",
+      tertiary: "#55665D",
+      muted: "#64756C",
+      subtle: "#7A8A82",
+      light: "#AFC4B8",
+      onPrimary: "#FFF9EA",
+    },
 
   // Accent Colors
   accent: {
@@ -50,7 +52,53 @@ export const colors = {
     light: "rgba(255, 249, 234, 0.2)",
     medium: "rgba(255, 249, 234, 0.1)",
   },
+  },
+  dark: {
+    primary: {
+      deepGreen: "#13201C",
+      forestGreen: "#172822",
+      sageGreen: "#284239",
+    },
+    secondary: {
+      mutedGold: "#BFA45B",
+      warmGold: "#CDB56F",
+      paleGold: "#D6C98E",
+      lightGold: "#E2D390",
+    },
+    surface: {
+      warmIvory: "#16211D",
+      creamyWhite: "#1B2823",
+      lightCream: "#101815",
+      softBeige: "#21302B",
+    },
+    text: {
+      primary: "#EAF1ED",
+      secondary: "#D8E2DD",
+      tertiary: "#A9B7B0",
+      muted: "#93A39B",
+      subtle: "#82938B",
+      light: "#C3D0CA",
+      onPrimary: "#F2F6F3",
+    },
+    accent: {
+      sepia: "#3A3022",
+      night: "#0F1714",
+      success: "#6FBE8E",
+      error: "#EF6B7A",
+    },
+    overlay: {
+      dark: "rgba(6, 10, 9, 0.94)",
+      darkLight: "rgba(6, 10, 9, 0.86)",
+      light: "rgba(219, 228, 223, 0.12)",
+      medium: "rgba(219, 228, 223, 0.08)",
+    },
+  },
 } as const;
+
+export const colors = appThemes.light;
+
+export type AppThemeVariant = keyof typeof appThemes;
+export type AppColors = (typeof appThemes)[AppThemeVariant];
 
 export const typography = {
   // Font Sizes

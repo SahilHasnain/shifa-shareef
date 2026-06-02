@@ -18,7 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { SessionCompletionModal } from "../../../../components/SessionCompletionModal";
 import { ZoomableImage } from "../../../../components/ZoomableImage";
-import { colors as designColors, typography } from "../../../../constants/theme";
+import { typography } from "../../../../constants/theme";
 import { BOOK_TITLE } from "../../../../data/book";
 import {
   getCurrentSectionByLanguage,
@@ -28,11 +28,11 @@ import {
   shouldShowVolumeLabel,
 } from "../../../../data/languages";
 import { useBookmarks } from "../../../../hooks/useBookmarks";
+import { useAppTheme } from "../../../../hooks/useAppTheme";
 import { useCurrentLanguage } from "../../../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../../../hooks/useCurrentVolume";
 import { useReadingProgress } from "../../../../hooks/useReadingProgress";
 import { useReadingSessions } from "../../../../hooks/useReadingSessions";
-import { useReadingTheme } from "../../../../hooks/useReadingTheme";
 import { useResolvedPageAsset } from "../../../../hooks/useResolvedPageAsset";
 import { prefetchPageAssets } from "../../../../lib/page-asset-resolver";
 
@@ -61,6 +61,7 @@ function ReaderPageSurface({
   onPress: () => void;
   onZoomChange: (isZoomed: boolean) => void;
 }) {
+  const { colors } = useAppTheme();
   const { asset, isLoading } = useResolvedPageAsset(languageId, volumeId, pageNum);
   const [hasLoadError, setHasLoadError] = useState(false);
 
@@ -97,7 +98,7 @@ function ReaderPageSurface({
     >
       <Text
         style={{
-          color: designColors.text.primary,
+          color: colors.text.primary,
           fontSize: typography.size.xl,
           fontWeight: typography.weight.bold,
         }}
@@ -108,7 +109,7 @@ function ReaderPageSurface({
       </Text>
       <Text
         style={{
-          color: designColors.text.tertiary,
+          color: colors.text.tertiary,
           fontSize: typography.size.base,
           textAlign: "center",
           paddingHorizontal: 40,
@@ -148,7 +149,7 @@ export default function ReaderScreen() {
   const { saveProgress } = useReadingProgress(volume.id, language.id);
   const { isBookmarked, addBookmark, removeBookmark, getBookmarkForPage } =
     useBookmarks(volume.id, language.id);
-  const { theme, cycleTheme, colors } = useReadingTheme();
+  const { colors } = useAppTheme();
   const { addSession, getCurrentStreak } = useReadingSessions();
 
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -344,7 +345,7 @@ export default function ReaderScreen() {
       style={{
         width: SCREEN_WIDTH,
         height: SCREEN_HEIGHT,
-        backgroundColor: colors.background,
+        backgroundColor: colors.surface.lightCream,
       }}
     >
       <ScrollView
@@ -365,7 +366,7 @@ export default function ReaderScreen() {
           volumeDisplayTitle={volumeDisplayTitle}
           pageNum={pageNum}
           showVolumeLabel={showVolumeLabel}
-          backgroundColor={colors.background}
+          backgroundColor={colors.surface.lightCream}
           onPress={toggleControls}
           onZoomChange={setIsZoomed}
         />
@@ -380,7 +381,7 @@ export default function ReaderScreen() {
   }, [currentPage, moveToPage, pageInput]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>
       <View style={{ flex: 1 }}>
         {Platform.OS === "web" ? (
           <View
@@ -394,7 +395,7 @@ export default function ReaderScreen() {
           >
             <Text
               style={{
-                color: designColors.text.primary,
+                color: colors.text.primary,
                 fontSize: typography.size.xl,
                 fontWeight: typography.weight.extrabold,
               }}
@@ -403,7 +404,7 @@ export default function ReaderScreen() {
             </Text>
             <Text
               style={{
-                color: designColors.text.tertiary,
+                color: colors.text.tertiary,
                 fontSize: typography.size.base,
                 lineHeight: 21,
                 textAlign: "center",
@@ -452,7 +453,7 @@ export default function ReaderScreen() {
           top: 0,
           left: 0,
           right: 0,
-          backgroundColor: designColors.overlay.dark,
+          backgroundColor: colors.overlay.dark,
           paddingTop: 50,
           paddingBottom: 12,
           paddingHorizontal: 16,
@@ -467,18 +468,18 @@ export default function ReaderScreen() {
             width: 40,
             height: 40,
             borderRadius: 20,
-            backgroundColor: designColors.overlay.light,
+            backgroundColor: colors.overlay.light,
             alignItems: "center",
             justifyContent: "center",
             opacity: pressed ? 0.7 : 1,
           })}
         >
-          <Ionicons name="chevron-back" size={24} color="#FFF9EA" />
+          <Ionicons name="chevron-back" size={24} color={colors.text.onPrimary} />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text
             style={{
-              color: "#FFF9EA",
+              color: colors.text.onPrimary,
               fontSize: typography.size.lg,
               fontWeight: typography.weight.bold,
             }}
@@ -487,7 +488,7 @@ export default function ReaderScreen() {
           </Text>
           <Text
             style={{
-              color: "#C6D4CB",
+              color: colors.text.light,
               fontSize: typography.size.base,
               fontWeight: typography.weight.semibold,
             }}
@@ -498,36 +499,12 @@ export default function ReaderScreen() {
           </Text>
         </View>
         <Pressable
-          onPress={cycleTheme}
-          style={({ pressed }) => ({
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            backgroundColor: designColors.overlay.light,
-            alignItems: "center",
-            justifyContent: "center",
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          <Ionicons
-            name={
-              theme === "light"
-                ? "sunny-outline"
-                : theme === "sepia"
-                  ? "book-outline"
-                  : "moon-outline"
-            }
-            size={22}
-            color="#FFF9EA"
-          />
-        </Pressable>
-        <Pressable
           onPress={toggleBookmark}
           style={({ pressed }) => ({
             width: 40,
             height: 40,
             borderRadius: 20,
-            backgroundColor: designColors.overlay.light,
+            backgroundColor: colors.overlay.light,
             alignItems: "center",
             justifyContent: "center",
             opacity: pressed ? 0.7 : 1,
@@ -536,7 +513,7 @@ export default function ReaderScreen() {
           <Ionicons
             name={pageIsBookmarked ? "bookmark" : "bookmark-outline"}
             size={22}
-            color="#FFF9EA"
+            color={colors.text.onPrimary}
           />
         </Pressable>
       </View>
@@ -548,7 +525,7 @@ export default function ReaderScreen() {
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: designColors.overlay.dark,
+          backgroundColor: colors.overlay.dark,
         }}
       >
         <View
@@ -574,19 +551,19 @@ export default function ReaderScreen() {
                 height: 48,
                 borderRadius: 24,
                 paddingHorizontal: 18,
-                backgroundColor: designColors.primary.sageGreen,
+                backgroundColor: colors.primary.sageGreen,
                 alignItems: "center",
                 justifyContent: "center",
                 opacity: pressed ? 0.8 : 1,
               })}
             >
-              <Text style={{ color: "#FFF9EA", fontSize: typography.size.base, fontWeight: typography.weight.bold }}>Go</Text>
+              <Text style={{ color: colors.text.onPrimary, fontSize: typography.size.base, fontWeight: typography.weight.bold }}>Go</Text>
             </Pressable>
 
             <View style={{ flex: 1, alignItems: "center", gap: 8, transform: [{ translateX: 14 }] }}>
               <Text
                 style={{
-                  color: "#FFF9EA",
+                  color: colors.text.onPrimary,
                   fontSize: typography.size.lg,
                   fontWeight: typography.weight.bold,
                 }}
@@ -597,7 +574,7 @@ export default function ReaderScreen() {
                 style={{
                   width: "100%",
                   height: 6,
-                  backgroundColor: "rgba(255, 249, 234, 0.2)",
+                  backgroundColor: colors.overlay.light,
                   borderRadius: 3,
                   overflow: "hidden",
                 }}
@@ -606,7 +583,7 @@ export default function ReaderScreen() {
                   style={{
                     height: "100%",
                     width: `${Math.round((currentPage / totalPages) * 100)}%`,
-                    backgroundColor: designColors.secondary.lightGold,
+                    backgroundColor: colors.secondary.lightGold,
                     borderRadius: 3,
                   }}
                 />
@@ -625,13 +602,13 @@ export default function ReaderScreen() {
       >
         <Pressable
           onPress={() => setIsPageModalVisible(false)}
-          style={{ flex: 1, backgroundColor: "rgba(0, 0, 0, 0.45)", alignItems: "center", justifyContent: "center", padding: 24 }}
+            style={{ flex: 1, backgroundColor: colors.overlay.darkLight, alignItems: "center", justifyContent: "center", padding: 24 }}
         >
           <Pressable
             onPress={() => {}}
-            style={{ width: "100%", maxWidth: 360, borderRadius: 24, backgroundColor: colors.background, padding: 20, gap: 16 }}
+            style={{ width: "100%", maxWidth: 360, borderRadius: 24, backgroundColor: colors.surface.warmIvory, padding: 20, gap: 16 }}
           >
-            <Text style={{ color: designColors.text.primary, fontSize: typography.size.xl, fontWeight: typography.weight.bold }}>
+            <Text style={{ color: colors.text.primary, fontSize: typography.size.xl, fontWeight: typography.weight.bold }}>
               Go to page
             </Text>
             <TextInput
@@ -641,21 +618,21 @@ export default function ReaderScreen() {
               onSubmitEditing={submitPageInput}
               keyboardType="number-pad"
               placeholder={`Enter page 1-${totalPages}`}
-              placeholderTextColor={designColors.text.subtle}
-              style={{ height: 48, borderRadius: 16, paddingHorizontal: 16, backgroundColor: designColors.surface.creamyWhite, color: designColors.text.primary, fontSize: typography.size.lg, fontWeight: typography.weight.semibold }}
+              placeholderTextColor={colors.text.subtle}
+              style={{ height: 48, borderRadius: 16, paddingHorizontal: 16, backgroundColor: colors.surface.creamyWhite, color: colors.text.primary, fontSize: typography.size.lg, fontWeight: typography.weight.semibold }}
             />
             <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10 }}>
               <Pressable
                 onPress={() => setIsPageModalVisible(false)}
-                style={({ pressed }) => ({ height: 44, borderRadius: 22, paddingHorizontal: 18, alignItems: "center", justifyContent: "center", backgroundColor: designColors.surface.creamyWhite, opacity: pressed ? 0.8 : 1 })}
+                style={({ pressed }) => ({ height: 44, borderRadius: 22, paddingHorizontal: 18, alignItems: "center", justifyContent: "center", backgroundColor: colors.surface.creamyWhite, opacity: pressed ? 0.8 : 1 })}
               >
-                <Text style={{ color: designColors.text.primary, fontSize: typography.size.base, fontWeight: typography.weight.semibold }}>Cancel</Text>
+                <Text style={{ color: colors.text.primary, fontSize: typography.size.base, fontWeight: typography.weight.semibold }}>Cancel</Text>
               </Pressable>
               <Pressable
                 onPress={submitPageInput}
-                style={({ pressed }) => ({ height: 44, borderRadius: 22, paddingHorizontal: 18, alignItems: "center", justifyContent: "center", backgroundColor: designColors.secondary.lightGold, opacity: pressed ? 0.8 : 1 })}
+                style={({ pressed }) => ({ height: 44, borderRadius: 22, paddingHorizontal: 18, alignItems: "center", justifyContent: "center", backgroundColor: colors.secondary.lightGold, opacity: pressed ? 0.8 : 1 })}
               >
-                <Text style={{ color: designColors.primary.deepGreen, fontSize: typography.size.base, fontWeight: typography.weight.bold }}>Go</Text>
+                <Text style={{ color: colors.primary.deepGreen, fontSize: typography.size.base, fontWeight: typography.weight.bold }}>Go</Text>
               </Pressable>
             </View>
           </Pressable>

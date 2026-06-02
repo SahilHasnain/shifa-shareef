@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { colors, shadows, typography } from "../../constants/theme";
+import { shadows, typography } from "../../constants/theme";
 import {
   getCurrentSectionByLanguage,
   getVolumeByLanguageAndId,
@@ -13,13 +13,18 @@ import {
   shouldShowVolumeLabel,
 } from "../../data/languages";
 import type { Bookmark } from "../../data/types";
+import { useAppTheme } from "../../hooks/useAppTheme";
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useGlobalStats } from "../../hooks/useGlobalStats";
 import { useReadingSessions, type ReadingSession } from "../../hooks/useReadingSessions";
 
+const SELECTED_CHIP_FILL = "#F1E0A4";
+const SELECTED_CHIP_TEXT = "#101815";
+
 export default function JourneyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors, resolvedTheme } = useAppTheme();
   const { currentLanguage, currentLanguageId } = useCurrentLanguage();
   const showVolumeLabel = shouldShowVolumeLabel(currentLanguageId);
   const [filterVolumeId, setFilterVolumeId] = useState<string | null>(null);
@@ -265,8 +270,13 @@ export default function JourneyScreen() {
             style={({ pressed }) => ({
               backgroundColor:
                 filterVolumeId === null
-                  ? colors.secondary.warmGold
+                  ? resolvedTheme === "dark"
+                    ? colors.surface.softBeige
+                    : SELECTED_CHIP_FILL
                   : colors.surface.warmIvory,
+              borderWidth: filterVolumeId === null ? 2 : 1,
+              borderColor:
+                filterVolumeId === null ? SELECTED_CHIP_FILL : colors.surface.softBeige,
               paddingHorizontal: 18,
               paddingVertical: 11,
               borderRadius: 20,
@@ -278,7 +288,9 @@ export default function JourneyScreen() {
               style={{
                 color:
                   filterVolumeId === null
-                    ? colors.primary.deepGreen
+                    ? resolvedTheme === "dark"
+                      ? SELECTED_CHIP_FILL
+                      : SELECTED_CHIP_TEXT
                     : colors.text.tertiary,
                 fontWeight: typography.weight.bold,
               }}
@@ -294,8 +306,12 @@ export default function JourneyScreen() {
                 onPress={() => setFilterVolumeId(volume.id)}
                 style={({ pressed }) => ({
                   backgroundColor: isActive
-                    ? colors.secondary.warmGold
+                    ? resolvedTheme === "dark"
+                      ? colors.surface.softBeige
+                      : SELECTED_CHIP_FILL
                     : colors.surface.warmIvory,
+                  borderWidth: isActive ? 2 : 1,
+                  borderColor: isActive ? SELECTED_CHIP_FILL : colors.surface.softBeige,
                   paddingHorizontal: 18,
                   paddingVertical: 11,
                   borderRadius: 20,
@@ -306,7 +322,9 @@ export default function JourneyScreen() {
                 <Text
                   style={{
                     color: isActive
-                      ? colors.primary.deepGreen
+                      ? resolvedTheme === "dark"
+                        ? SELECTED_CHIP_FILL
+                        : SELECTED_CHIP_TEXT
                       : colors.text.tertiary,
                     fontWeight: typography.weight.bold,
                   }}
@@ -586,18 +604,18 @@ export default function JourneyScreen() {
               justifyContent: "space-between",
             }}
           >
-            <Text style={{ color: "#173D31", fontSize: 20, fontWeight: "800" }}>
+            <Text style={{ color: colors.text.primary, fontSize: 20, fontWeight: "800" }}>
               Bookmarks
             </Text>
             <View
               style={{
-                backgroundColor: "#173D31",
+                backgroundColor: colors.primary.deepGreen,
                 paddingHorizontal: 12,
                 paddingVertical: 6,
                 borderRadius: 12,
               }}
             >
-              <Text style={{ color: "#FFF9EA", fontSize: 13, fontWeight: "700" }}>
+              <Text style={{ color: colors.text.onPrimary, fontSize: 13, fontWeight: "700" }}>
                 {filteredBookmarks.length}
               </Text>
             </View>
@@ -606,17 +624,17 @@ export default function JourneyScreen() {
           {filteredBookmarks.length === 0 ? (
             <View
               style={{
-                backgroundColor: "#FBF7EE",
+                backgroundColor: colors.surface.warmIvory,
                 borderRadius: 22,
                 padding: 32,
                 alignItems: "center",
                 gap: 8,
               }}
             >
-              <Ionicons name="bookmark-outline" size={48} color="#C8D5CD" />
+              <Ionicons name="bookmark-outline" size={48} color={colors.text.light} />
               <Text
                 style={{
-                  color: "#55665D",
+                  color: colors.text.tertiary,
                   fontSize: 16,
                   fontWeight: "600",
                   textAlign: "center",
@@ -626,7 +644,7 @@ export default function JourneyScreen() {
               </Text>
               <Text
                 style={{
-                  color: "#7A8A82",
+                  color: colors.text.subtle,
                   fontSize: 14,
                   textAlign: "center",
                   marginTop: 4,
@@ -657,7 +675,7 @@ export default function JourneyScreen() {
                       )
                     }
                     style={{
-                      backgroundColor: "#FBF7EE",
+                      backgroundColor: colors.surface.warmIvory,
                       borderRadius: 18,
                       padding: 16,
                       gap: 8,
@@ -675,7 +693,7 @@ export default function JourneyScreen() {
                         justifyContent: "center",
                       }}
                     >
-                      <Ionicons name="bookmark" size={22} color="#173D31" />
+                        <Ionicons name="bookmark" size={22} color={colors.primary.deepGreen} />
                     </View>
 
                     <View style={{ flex: 1, gap: 4 }}>
@@ -688,7 +706,7 @@ export default function JourneyScreen() {
                       >
                         <Text
                           style={{
-                            color: "#173D31",
+                            color: colors.text.primary,
                             fontSize: 16,
                             fontWeight: "800",
                           }}
@@ -712,7 +730,7 @@ export default function JourneyScreen() {
                         {section && (
                           <Text
                             style={{
-                              color: "#7C6E3F",
+                              color: colors.secondary.mutedGold,
                               fontSize: 13,
                               fontWeight: "600",
                             }}
@@ -721,7 +739,7 @@ export default function JourneyScreen() {
                           </Text>
                         )}
                       </View>
-                      <Text style={{ color: "#7A8A82", fontSize: 13 }}>
+                      <Text style={{ color: colors.text.subtle, fontSize: 13 }}>
                         {formatDate(bookmark.createdAt)}
                       </Text>
                     </View>

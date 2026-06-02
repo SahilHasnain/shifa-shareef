@@ -3,15 +3,17 @@ import { useRouter } from "expo-router";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { colors, shadows, typography } from "../../constants/theme";
+import { shadows, typography } from "../../constants/theme";
 import { getVolumeDisplayTitle, shouldShowVolumeLabel } from "../../data/languages";
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
+import { useAppTheme } from "../../hooks/useAppTheme";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
 
 export default function PlansScreen() {
     const router = useRouter();
+    const { colors } = useAppTheme();
     const { currentLanguage, currentLanguageId } = useCurrentLanguage();
     const { currentVolume, currentVolumeId } = useCurrentVolume(currentLanguageId);
     const { progress } = useReadingProgress(currentVolumeId, currentLanguageId);
@@ -316,14 +318,14 @@ export default function PlansScreen() {
                                     style={{
                                         alignSelf: "flex-start",
                                         borderRadius: 999,
-                                        backgroundColor: isActive ? colors.primary.deepGreen : "#EFE2B6",
+                                        backgroundColor: isActive ? colors.primary.deepGreen : colors.surface.softBeige,
                                         paddingHorizontal: 14,
                                         paddingVertical: 10,
                                     }}
                                 >
                                     <Text
                                         style={{
-                                            color: isActive ? "#FFF9EA" : colors.text.primary,
+                                            color: isActive ? colors.text.onPrimary : colors.text.primary,
                                             fontSize: typography.size.xs,
                                             fontWeight: typography.weight.extrabold,
                                         }}

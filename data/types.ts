@@ -107,3 +107,5 @@ export type ResolvedPageAsset = {
   volumeId: string;
   page: number;
 };
+
+export type AppThemePreference = "system" | "light" | "dark";

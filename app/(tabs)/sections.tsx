@@ -3,16 +3,18 @@ import { useRouter } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { colors, typography } from "../../constants/theme";
+import { typography } from "../../constants/theme";
 import { getVolumeDisplayTitle, shouldShowVolumeLabel } from "../../data/languages";
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
+import { useAppTheme } from "../../hooks/useAppTheme";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
 import { useVolumeDownload } from "../../hooks/useVolumeDownload";
 
 export default function SectionsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
   const { currentLanguage, currentLanguageId } = useCurrentLanguage();
   const { currentVolume, currentVolumeId } = useCurrentVolume(currentLanguageId);
   const { progress } = useReadingProgress(currentVolumeId, currentLanguageId);
