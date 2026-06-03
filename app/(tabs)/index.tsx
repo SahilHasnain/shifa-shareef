@@ -95,6 +95,7 @@ function ContinueReadingContent({
           fontWeight: typography.weight.extrabold,
           lineHeight: 32,
         }}
+        numberOfLines={2}
       >
         {currentSection.title}
       </Text>
@@ -964,15 +965,18 @@ export default function HomeScreen() {
               }}
             >
               <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    color: colors.primary.forestGreen,
-                    fontSize: typography.size.md,
-                    fontWeight: typography.weight.bold,
-                  }}
-                >
-                  {section.title}
-                </Text>
+               <Text
+                   style={{
+                     color:
+                       resolvedTheme === "dark"
+                         ? colors.secondary.lightGold
+                         : colors.primary.forestGreen,
+                     fontSize: typography.size.md,
+                     fontWeight: typography.weight.bold,
+                   }}
+                 >
+                   {section.title}
+                 </Text>
                 <Text
                   style={{
                     color: colors.text.muted,
