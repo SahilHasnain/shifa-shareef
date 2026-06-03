@@ -946,15 +946,43 @@ export default function HomeScreen() {
             ...shadows.sm,
           }}
         >
-          <Text
+          <View
             style={{
-              color: colors.text.primary,
-              fontSize: typography.size.xl,
-              fontWeight: typography.weight.extrabold,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
             }}
           >
-            Reading Structure
-          </Text>
+            <Text
+              style={{
+                color: colors.text.primary,
+                fontSize: typography.size.xl,
+                fontWeight: typography.weight.extrabold,
+              }}
+            >
+              Reading Structure
+            </Text>
+            <Pressable
+              onPress={() => router.push("/sections/" as any)}
+              style={({ pressed }) => ({
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 8,
+                backgroundColor: "rgba(201, 169, 97, 0.12)",
+                opacity: pressed ? 0.8 : 1,
+              })}
+            >
+              <Text
+                style={{
+                  color: colors.secondary.mutedGold,
+                  fontSize: typography.size.sm,
+                  fontWeight: typography.weight.bold,
+                }}
+              >
+                View all
+              </Text>
+            </Pressable>
+          </View>
           {currentVolume.sections.slice(0, 3).map((section) => (
             <View
               key={section.id}
@@ -966,17 +994,17 @@ export default function HomeScreen() {
             >
               <View style={{ flex: 1 }}>
                <Text
-                   style={{
-                     color:
-                       resolvedTheme === "dark"
-                         ? colors.secondary.lightGold
-                         : colors.primary.forestGreen,
-                     fontSize: typography.size.md,
-                     fontWeight: typography.weight.bold,
-                   }}
-                 >
-                   {section.title}
-                 </Text>
+                    style={{
+                      color:
+                        resolvedTheme === "dark"
+                          ? "rgba(255, 255, 255, 0.92)"
+                          : colors.primary.forestGreen,
+                      fontSize: typography.size.md,
+                      fontWeight: typography.weight.bold,
+                    }}
+                  >
+                    {section.title}
+                  </Text>
                 <Text
                   style={{
                     color: colors.text.muted,
@@ -998,28 +1026,6 @@ export default function HomeScreen() {
               </Text>
             </View>
           ))}
-        </View>
-
-        <View
-          style={{
-            backgroundColor: colors.surface.warmIvory,
-            borderRadius: 24,
-            padding: 22,
-            ...shadows.sm,
-          }}
-        >
-          <Text
-            style={{
-              color: colors.text.secondary,
-              fontSize: typography.size.lg,
-              lineHeight: 28,
-              fontWeight: typography.weight.semibold,
-              textAlign: "center",
-            }}
-          >
-            Begin with calm. Continue with steadiness. Let the app remove friction so the
-            reading itself can remain the focus.
-          </Text>
         </View>
       </ScrollView >
     </View >
