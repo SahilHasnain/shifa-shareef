@@ -13,7 +13,7 @@ import { useReadingProgress } from "../../hooks/useReadingProgress";
 
 export default function PlansScreen() {
     const router = useRouter();
-    const { colors } = useAppTheme();
+    const { colors, resolvedTheme } = useAppTheme();
     const { currentLanguage, currentLanguageId } = useCurrentLanguage();
     const { currentVolume, currentVolumeId } = useCurrentVolume(currentLanguageId);
     const { progress } = useReadingProgress(currentVolumeId, currentLanguageId);
@@ -37,6 +37,14 @@ export default function PlansScreen() {
     const currentPlanProgress = activePlan
         ? Math.round((currentPlanDay / activePlan.totalDays) * 100)
         : 0;
+    const isDark = resolvedTheme === "dark";
+    const screenBackground = isDark ? "#0B100D" : colors.surface.lightCream;
+    const cardBackground = isDark ? "#151B17" : colors.surface.warmIvory;
+    const elevatedCardBackground = isDark ? "#1B211D" : colors.surface.warmIvory;
+    const cardBorderColor = isDark ? "rgba(255, 230, 128, 0.08)" : "transparent";
+    const descriptionColor = isDark ? "#B8B6AC" : colors.text.muted;
+    const buttonBackground = isDark ? colors.secondary.lightGold : colors.surface.softBeige;
+    const buttonTextColor = isDark ? "#171A14" : colors.text.primary;
 
     const handleSelectPlan = (planId: string) => {
         if (activePlan) {
@@ -91,7 +99,7 @@ export default function PlansScreen() {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: screenBackground }}>
             <ScrollView contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 40 }}>
                 {/* Header */}
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
@@ -101,14 +109,18 @@ export default function PlansScreen() {
                             width: 40,
                             height: 40,
                             borderRadius: 20,
-                            backgroundColor: colors.surface.warmIvory,
+                            backgroundColor: cardBackground,
                             alignItems: "center",
                             justifyContent: "center",
                             opacity: pressed ? 0.7 : 1,
                             ...shadows.sm,
                         })}
                     >
-                        <Ionicons name="chevron-back" size={24} color={colors.primary.deepGreen} />
+                        <Ionicons
+                            name="chevron-back"
+                            size={24}
+                            color={isDark ? colors.secondary.lightGold : colors.primary.deepGreen}
+                        />
                     </Pressable>
                     <View style={{ flex: 1 }}>
                         <Text
@@ -255,10 +267,12 @@ export default function PlansScreen() {
                             <View
                                 key={plan.id}
                                 style={{
-                                    backgroundColor: colors.surface.warmIvory,
+                                    backgroundColor: cardBackground,
                                     borderRadius: 24,
+                                    borderWidth: isDark ? 1 : 0,
+                                    borderColor: cardBorderColor,
                                     padding: 18,
-                                    gap: 8,
+                                    gap: 12,
                                     ...shadows.md,
                                 }}
                             >
@@ -274,9 +288,9 @@ export default function PlansScreen() {
 
                                 <Text
                                     style={{
-                                        color: colors.text.muted,
+                                        color: descriptionColor,
                                         fontSize: typography.size.base,
-                                        lineHeight: 22,
+                                        lineHeight: 24,
                                     }}
                                 >
                                     {plan.description}
@@ -318,14 +332,14 @@ export default function PlansScreen() {
                                     style={{
                                         alignSelf: "flex-start",
                                         borderRadius: 999,
-                                        backgroundColor: isActive ? colors.primary.deepGreen : colors.surface.softBeige,
-                                        paddingHorizontal: 14,
-                                        paddingVertical: 10,
+                                        backgroundColor: isActive ? colors.primary.deepGreen : buttonBackground,
+                                        paddingHorizontal: 16,
+                                        paddingVertical: 11,
                                     }}
                                 >
                                     <Text
                                         style={{
-                                            color: isActive ? colors.text.onPrimary : colors.text.primary,
+                                            color: isActive ? colors.text.onPrimary : buttonTextColor,
                                             fontSize: typography.size.xs,
                                             fontWeight: typography.weight.extrabold,
                                         }}
@@ -341,8 +355,10 @@ export default function PlansScreen() {
                 {/* Info Card */}
                 <View
                     style={{
-                        backgroundColor: colors.surface.warmIvory,
+                        backgroundColor: elevatedCardBackground,
                         borderRadius: 22,
+                        borderWidth: isDark ? 1 : 0,
+                        borderColor: cardBorderColor,
                         padding: 20,
                         gap: 10,
                         ...shadows.sm,
@@ -362,7 +378,7 @@ export default function PlansScreen() {
                     </View>
                     <Text
                         style={{
-                            color: colors.text.muted,
+                            color: descriptionColor,
                             fontSize: typography.size.base,
                             lineHeight: 21,
                         }}
