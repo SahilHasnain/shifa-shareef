@@ -30,24 +30,9 @@ import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useReadingProgress } from "../../hooks/useReadingProgress";
-import { useVolumeDownload } from "../../hooks/useVolumeDownload";
 
 const SELECTED_CHIP_FILL = "#F1E0A4";
 const SELECTED_CHIP_TEXT = "#101815";
-
-function formatLastRead(value?: string) {
-  if (!value) {
-    return "Not started yet";
-  }
-
-  const date = new Date(value);
-  return date.toLocaleString([], {
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 function ContinueReadingContent({
   languageId,
@@ -62,7 +47,7 @@ function ContinueReadingContent({
 }) {
   const { colors } = useAppTheme();
   const volume = getVolumeByLanguageAndId(languageId, volumeId);
-  const { progress, isLoaded } = useReadingProgress(volumeId, languageId);
+  const { progress } = useReadingProgress(volumeId, languageId);
 
   const currentPage = progress?.lastPage ?? 1;
   const currentSection =
@@ -118,51 +103,9 @@ function ContinueReadingContent({
             Page {currentPage}/{volume.totalPages}
           </Text>
         </View>
-        <Text
-          style={{
-            color: "#C8D5CD",
-            fontSize: typography.size.sm,
-            flex: 1,
-          }}
-          numberOfLines={1}
-        >
-          {isLoaded ? `Last read ${formatLastRead(progress?.lastReadAt)}` : "Loading progress..."}
-        </Text>
       </View>
     </View>
   );
-}
-
-function getDownloadStatusLabel({
-  canDownload,
-  deliveryMode,
-  isDownloading,
-  isFullyDownloaded,
-  isPartiallyDownloaded,
-}: {
-  canDownload: boolean;
-  deliveryMode: "bundled" | "remote" | "hybrid";
-  isDownloading: boolean;
-  isFullyDownloaded: boolean;
-  isPartiallyDownloaded: boolean;
-}) {
-  if (deliveryMode === "bundled" && !canDownload) {
-    return "Included in app";
-  }
-
-  if (isDownloading) {
-    return "Downloading";
-  }
-
-  if (isFullyDownloaded) {
-    return "Ready offline";
-  }
-
-  if (isPartiallyDownloaded) {
-    return "Partially offline";
-  }
-
-  return "Available online";
 }
 
 export default function HomeScreen() {
@@ -197,20 +140,6 @@ export default function HomeScreen() {
     currentDisplayVolume.id,
     currentLanguageId,
   ).progress;
-  const {
-    canDownload,
-    deliveryMode,
-    downloadAll,
-    isDownloading,
-    isFullyDownloaded,
-    isPartiallyDownloaded,
-    progressPercent: downloadProgressPercent,
-    removeDownload,
-  } = useVolumeDownload(
-    currentLanguageId,
-    currentDisplayVolume.id,
-    currentDisplayVolume.totalPages,
-  );
   const currentDisplayPage = currentDisplayProgress?.lastPage ?? 1;
   const currentPlanDay = activePlan
     ? activePlan.items.find(
@@ -220,20 +149,14 @@ export default function HomeScreen() {
   const currentPlanProgress = activePlan
     ? Math.round((currentPlanDay / activePlan.totalDays) * 100)
     : 0;
-  const downloadStatusLabel = getDownloadStatusLabel({
-    canDownload,
-    deliveryMode,
-    isDownloading,
-    isFullyDownloaded,
-    isPartiallyDownloaded,
-  });
-  const downloadButtonLabel = canDownload
-    ? isFullyDownloaded
-      ? "Remove"
-      : isDownloading
-        ? "Loading"
-        : "Download"
-    : "Included";
+  const isDark = resolvedTheme === "dark";
+  const homeBackground = isDark ? "#0B100D" : colors.surface.lightCream;
+  const primaryCardBackground = isDark ? "#151B17" : colors.surface.warmIvory;
+  const secondaryCardBackground = isDark ? "#1B211D" : colors.surface.creamyWhite;
+  const quietCardBackground = isDark ? "rgba(21, 27, 23, 0.58)" : colors.surface.warmIvory;
+  const darkCardBorder = isDark ? "rgba(255, 230, 128, 0.08)" : "transparent";
+  const quietCardBorder = isDark ? "rgba(255, 255, 255, 0.05)" : "transparent";
+  const darkGoldWash = isDark ? "rgba(255, 230, 128, 0.12)" : "rgba(201, 169, 97, 0.12)";
 
   const animatedHeroContentStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: slideX.value }],
@@ -321,7 +244,7 @@ export default function HomeScreen() {
   }, [animateToVolume, currentVolumeIndex]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>
+    <View style={{ flex: 1, backgroundColor: homeBackground }}>
       <ScrollView
         contentContainerStyle={{
           paddingTop: insets.top + 5,
@@ -355,7 +278,7 @@ export default function HomeScreen() {
                   onPress={() => switchLanguage(language.id)}
                   style={({ pressed }) => ({
                     backgroundColor: isActive
-                      ? resolvedTheme === "dark"
+                      ? isDark
                         ? colors.surface.softBeige
                         : SELECTED_CHIP_FILL
                       : colors.surface.warmIvory,
@@ -371,7 +294,7 @@ export default function HomeScreen() {
                   <Text
                     style={{
                       color: isActive
-                        ? resolvedTheme === "dark"
+                        ? isDark
                           ? SELECTED_CHIP_FILL
                           : SELECTED_CHIP_TEXT
                         : colors.text.tertiary,
@@ -493,65 +416,6 @@ export default function HomeScreen() {
               showVolumeLabel={showVolumeControls}
             />
 
-            <View
-              style={{
-                display: "none",
-              }}
-            >
-              <View style={{ display: "none" }}>
-                <Text
-                  style={{
-                    color: "#FFF9EA",
-                    fontSize: typography.size.sm,
-                    fontWeight: typography.weight.semibold,
-                  }}
-                >
-                  {downloadStatusLabel}
-                  {canDownload && (isPartiallyDownloaded || isFullyDownloaded)
-                    ? ` • ${downloadProgressPercent}%`
-                    : ""}
-                </Text>
-              </View>
-
-              <Pressable
-                onPress={() => {
-                  if (canDownload) {
-                    if (isFullyDownloaded) {
-                      void removeDownload();
-                    } else {
-                      void downloadAll();
-                    }
-                  }
-                }}
-                disabled={!canDownload || isDownloading}
-              >
-                <View
-                  style={{
-                    borderRadius: 999,
-                    backgroundColor: canDownload && !isFullyDownloaded ? "#EFD997" : "rgba(255, 249, 234, 0.15)",
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: canDownload && !isFullyDownloaded ? "#173D31" : "#FFF9EA",
-                      fontSize: typography.size.sm,
-                      fontWeight: typography.weight.bold,
-                    }}
-                  >
-                    {canDownload
-                      ? isFullyDownloaded
-                        ? "Remove"
-                        : isDownloading
-                          ? "Downloading..."
-                          : "Download"
-                      : "Included"}
-                  </Text>
-                </View>
-              </Pressable>
-            </View>
-
             {showVolumeControls && (
               <View style={{ flexDirection: "row", justifyContent: "center", gap: 6, marginTop: -2 }}>
                 {currentLanguage.volumes.map((volume, index) => (
@@ -573,49 +437,13 @@ export default function HomeScreen() {
 
             <View style={{ flexDirection: "row", gap: 10 }}>
               <Pressable
-                onPress={() => {
-                  if (canDownload) {
-                    if (isFullyDownloaded) {
-                      void removeDownload();
-                    } else {
-                      void downloadAll();
-                    }
-                  }
-                }}
-                disabled={!canDownload || isDownloading}
-                style={{ flex: 1 }}
-              >
-                <View
-                  style={{
-                    borderRadius: 999,
-                    backgroundColor: canDownload && !isFullyDownloaded ? "#EFD997" : "rgba(255, 249, 234, 0.15)",
-                    paddingHorizontal: 12,
-                    paddingVertical: 14,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: canDownload && !isFullyDownloaded ? "#173D31" : "#FFF9EA",
-                      fontSize: typography.size.sm,
-                      fontWeight: typography.weight.bold,
-                      textAlign: "center",
-                    }}
-                    numberOfLines={1}
-                  >
-                    {downloadButtonLabel}
-                  </Text>
-                </View>
-              </Pressable>
-
-              <Pressable
                 onPress={() =>
                   router.push(
                     `/reader/${currentLanguageId}/${displayVolumeId}/${currentDisplayPage}` as any,
                   )
                 }
                 style={{
-                  flex: 1.35,
+                  flex: 1,
                   borderRadius: 999,
                   backgroundColor: colors.secondary.lightGold,
                   paddingHorizontal: 20,
@@ -748,8 +576,10 @@ export default function HomeScreen() {
           <Pressable
             onPress={() => router.push("/plans/" as any)}
             style={({ pressed }) => ({
-              backgroundColor: colors.surface.warmIvory,
+              backgroundColor: primaryCardBackground,
               borderRadius: 24,
+              borderWidth: isDark ? 1 : 0,
+              borderColor: darkCardBorder,
               padding: 22,
               gap: 16,
               opacity: pressed ? 0.95 : 1,
@@ -769,7 +599,9 @@ export default function HomeScreen() {
                   style={{
                     alignSelf: "flex-start",
                     borderRadius: 999,
-                    backgroundColor: colors.surface.softBeige,
+                    backgroundColor: isDark
+                      ? "rgba(255, 230, 128, 0.14)"
+                      : colors.surface.softBeige,
                     paddingHorizontal: 10,
                     paddingVertical: 6,
                   }}
@@ -777,7 +609,7 @@ export default function HomeScreen() {
                   <Text
                     style={{
                       color:
-                        resolvedTheme === "dark"
+                        isDark
                           ? colors.secondary.lightGold
                           : colors.primary.deepGreen,
                       fontSize: typography.size.xs,
@@ -798,22 +630,15 @@ export default function HomeScreen() {
                 >
                   Choose a Reading Plan
                 </Text>
-                <Text
-                  style={{
-                    color: colors.text.secondary,
-                    fontSize: typography.size.base,
-                    lineHeight: 22,
-                  }}
-                >
-                  Build consistency with a gentle structure that fits your pace.
-                </Text>
               </View>
               <View
                 style={{
                   width: 48,
                   height: 48,
                   borderRadius: 24,
-                  backgroundColor: colors.surface.softBeige,
+                  backgroundColor: isDark
+                    ? "rgba(255, 230, 128, 0.14)"
+                    : colors.surface.softBeige,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -822,7 +647,7 @@ export default function HomeScreen() {
                   name="calendar-clear-outline"
                   size={24}
                   color={
-                    resolvedTheme === "dark"
+                    isDark
                       ? colors.secondary.lightGold
                       : colors.primary.deepGreen
                   }
@@ -858,7 +683,7 @@ export default function HomeScreen() {
                 <Text
                   style={{
                     color:
-                      resolvedTheme === "dark"
+                      isDark
                         ? colors.secondary.lightGold
                         : colors.primary.deepGreen,
                     fontSize: typography.size.sm,
@@ -871,7 +696,7 @@ export default function HomeScreen() {
                   name="chevron-forward"
                   size={18}
                   color={
-                    resolvedTheme === "dark"
+                    isDark
                       ? colors.secondary.lightGold
                       : colors.primary.deepGreen
                   }
@@ -884,17 +709,20 @@ export default function HomeScreen() {
 
         <View
           style={{
-            backgroundColor: colors.surface.warmIvory,
-            borderRadius: 24,
-            padding: 20,
+            backgroundColor: quietCardBackground,
+            borderRadius: 22,
+            borderWidth: isDark ? 1 : 0,
+            borderColor: quietCardBorder,
+            paddingHorizontal: 20,
+            paddingVertical: 18,
             gap: 12,
-            ...shadows.sm,
+            ...(isDark ? {} : shadows.sm),
           }}
         >
           <Text
             style={{
               color: colors.text.primary,
-              fontSize: typography.size.xl,
+              fontSize: typography.size.lg,
               fontWeight: typography.weight.extrabold,
             }}
           >
@@ -904,7 +732,7 @@ export default function HomeScreen() {
             style={{
               color: colors.text.tertiary,
               fontSize: typography.size.md,
-              lineHeight: 23,
+              lineHeight: 24,
             }}
           >
             Read 2 pages from your current place. The goal is consistency, not speed.
@@ -918,10 +746,11 @@ export default function HomeScreen() {
             style={({ pressed }) => ({
               alignSelf: "flex-start",
               borderRadius: 999,
-              borderWidth: 1.5,
+              backgroundColor: isDark ? "transparent" : "rgba(201, 169, 97, 0.12)",
+              borderWidth: isDark ? 0 : 1,
               borderColor: colors.secondary.warmGold,
-              paddingHorizontal: 18,
-              paddingVertical: 11,
+              paddingHorizontal: isDark ? 0 : 16,
+              paddingVertical: isDark ? 2 : 10,
               opacity: pressed ? 0.8 : 1,
             })}
           >
@@ -939,8 +768,10 @@ export default function HomeScreen() {
 
         <View
           style={{
-            backgroundColor: colors.surface.creamyWhite,
+            backgroundColor: primaryCardBackground,
             borderRadius: 24,
+            borderWidth: isDark ? 1 : 0,
+            borderColor: darkCardBorder,
             padding: 20,
             gap: 14,
             ...shadows.sm,
@@ -968,7 +799,7 @@ export default function HomeScreen() {
                 paddingHorizontal: 12,
                 paddingVertical: 8,
                 borderRadius: 8,
-                backgroundColor: "rgba(201, 169, 97, 0.12)",
+                backgroundColor: darkGoldWash,
                 opacity: pressed ? 0.8 : 1,
               })}
             >
@@ -993,18 +824,17 @@ export default function HomeScreen() {
               }}
             >
               <View style={{ flex: 1 }}>
-               <Text
-                    style={{
-                      color:
-                        resolvedTheme === "dark"
-                          ? "rgba(255, 255, 255, 0.92)"
-                          : colors.primary.forestGreen,
-                      fontSize: typography.size.md,
-                      fontWeight: typography.weight.bold,
-                    }}
-                  >
-                    {section.title}
-                  </Text>
+                <Text
+                  style={{
+                    color: isDark
+                      ? "rgba(255, 255, 255, 0.92)"
+                      : colors.primary.forestGreen,
+                    fontSize: typography.size.md,
+                    fontWeight: typography.weight.bold,
+                  }}
+                >
+                  {section.title}
+                </Text>
                 <Text
                   style={{
                     color: colors.text.muted,
