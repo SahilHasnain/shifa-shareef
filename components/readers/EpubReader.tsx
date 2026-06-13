@@ -1,14 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import * as FileSystem from "expo-file-system/legacy";
+import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, Text, View, Modal, ScrollView, TouchableOpacity } from "react-native";
-import { WebView } from "react-native-webview";
+import { Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { WebView } from "react-native-webview";
 
 import { typography } from "../../constants/theme";
 import { BOOK_TITLE } from "../../data/book";
-import type { Volume, Language } from "../../data/types";
+import type { Language, Volume } from "../../data/types";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useBookmarks } from "../../hooks/useBookmarks";
 
@@ -66,9 +66,26 @@ const EPUB_HTML = `
           }
           if (rendition) {
             try {
-              rendition.themes.fontSize(message.size + 'px');
-              if (typeof window.ReactNativeWebView !== 'undefined') {
-                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'DEBUG', message: 'Font size applied successfully' }));
+              // For continuous scroll mode, we need to inject CSS into the iframe
+              var iframe = document.querySelector('iframe');
+              if (iframe && iframe.contentDocument) {
+                var style = iframe.contentDocument.getElementById('dynamic-font-size');
+                if (!style) {
+                  style = iframe.contentDocument.createElement('style');
+                  style.id = 'dynamic-font-size';
+                  iframe.contentDocument.head.appendChild(style);
+                }
+                style.textContent = 'body, p, div, span { font-size: ' + message.size + 'px !important; }';
+                
+                if (typeof window.ReactNativeWebView !== 'undefined') {
+                  window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'DEBUG', message: 'Font size applied via CSS injection' }));
+                }
+              } else {
+                // Fallback to themes API
+                rendition.themes.fontSize(message.size + 'px');
+                if (typeof window.ReactNativeWebView !== 'undefined') {
+                  window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'DEBUG', message: 'Font size applied via themes API' }));
+                }
               }
             } catch (err) {
               if (typeof window.ReactNativeWebView !== 'undefined') {
@@ -89,8 +106,26 @@ const EPUB_HTML = `
             }
           }
         } else if (message.type === 'JUMP_TO_HREF') {
-          if (rendition) {
-            rendition.display(message.href);
+          if (rendition && book) {
+            if (typeof window.ReactNativeWebView !== 'undefined') {
+              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'DEBUG', message: 'Navigating to href: ' + message.href }));
+            }
+            // Use book.spine to resolve href to CFI
+            var href = message.href;
+            // Remove leading slash if present
+            if (href.startsWith('/')) {
+              href = href.substring(1);
+            }
+            // Display using the href directly - epub.js will resolve it
+            rendition.display(href).then(function() {
+              if (typeof window.ReactNativeWebView !== 'undefined') {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'DEBUG', message: 'Navigation successful' }));
+              }
+            }).catch(function(err) {
+              if (typeof window.ReactNativeWebView !== 'undefined') {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'ERROR', message: 'Navigation failed: ' + err.message }));
+              }
+            });
           }
         }
       } catch (err) {}
@@ -124,9 +159,13 @@ const EPUB_HTML = `
             manager: 'continuous'
           });
 
+          // Apply theme styles
           if (theme) {
             rendition.themes.default({
-              body: { background: theme.background + ' !important', color: theme.color + ' !important' }
+              'body': {
+                'background': theme.background + ' !important',
+                'color': theme.color + ' !important'
+              }
             });
           }
 
@@ -207,7 +246,7 @@ export function EpubReader({
       try {
         console.log("[EPUB] Downloading EPUB from CDN");
         const epubUri = FileSystem.documentDirectory + "roman-urdu-volume1.epub";
-        
+
         const fileInfo = await FileSystem.getInfoAsync(epubUri);
         if (!fileInfo.exists) {
           console.log("[EPUB] Downloading from CDN...");
@@ -219,11 +258,11 @@ export function EpubReader({
         } else {
           console.log("[EPUB] Using cached file");
         }
-        
+
         const base64 = await FileSystem.readAsStringAsync(epubUri, {
           encoding: FileSystem.EncodingType.Base64,
         });
-        
+
         console.log("[EPUB] Base64 loaded, length:", base64.length);
         setEpubBase64(base64);
       } catch (err: any) {
@@ -231,13 +270,13 @@ export function EpubReader({
         setError("Failed to load EPUB: " + err.message);
       }
     }
-    
+
     loadBundledEpub();
   }, []);
 
   useEffect(() => {
     if (!epubBase64) return;
-    
+
     console.log("[EPUB] Sending LOAD_EPUB message");
     const timer = setTimeout(() => {
       webViewRef.current?.postMessage(
@@ -270,7 +309,7 @@ export function EpubReader({
     try {
       const data = event.nativeEvent.data;
       if (!data || typeof data !== 'string' || (!data.startsWith('{') && !data.startsWith('['))) return;
-      
+
       const message = JSON.parse(data);
       if (message.type === "DEBUG") {
         console.log("[EPUB DEBUG]", message.message);
@@ -293,7 +332,7 @@ export function EpubReader({
         console.error("[EPUB ERROR]", message.message);
         setError(message.message);
       }
-    } catch (err) {}
+    } catch (err) { }
   };
 
   return (
@@ -340,85 +379,89 @@ export function EpubReader({
 
       {controlsVisible && (
         <SafeAreaView edges={["bottom"]} style={{ position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: colors.overlay.dark }}>
-          <View style={{ paddingTop: 16, paddingBottom: 16, paddingHorizontal: 16, gap: 12 }}>
+          <View style={{ paddingTop: 20, paddingBottom: 20, paddingHorizontal: 20, gap: 20 }}>
             {/* Progress Bar */}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <Text style={{ color: colors.text.onPrimary, fontSize: typography.size.base, fontWeight: typography.weight.semibold }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+              <Text style={{ color: colors.text.onPrimary, fontSize: typography.size.base, fontWeight: typography.weight.semibold, minWidth: 50 }}>
                 {Math.round(currentProgress * 100)}%
               </Text>
-              <View style={{ flex: 1, height: 6, backgroundColor: colors.overlay.light, borderRadius: 3, overflow: "hidden" }}>
-                <View style={{ height: "100%", width: `${Math.round(currentProgress * 100)}%`, backgroundColor: colors.secondary.lightGold, borderRadius: 3 }} />
+              <View style={{ flex: 1, height: 8, backgroundColor: colors.overlay.light, borderRadius: 4, overflow: "hidden" }}>
+                <View style={{ height: "100%", width: `${Math.round(currentProgress * 100)}%`, backgroundColor: colors.secondary.lightGold, borderRadius: 4 }} />
               </View>
             </View>
-            
+
             {/* Font Size Controls */}
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 16 }}>
-              <Pressable 
-                onPress={() => setFontSize(prev => Math.max(12, prev - 2))}
-                style={({ pressed }) => ({
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: colors.overlay.light,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  opacity: pressed ? 0.7 : 1,
-                })}
-              >
-                <Text style={{ color: colors.text.onPrimary, fontSize: 18, fontWeight: typography.weight.bold }}>A-</Text>
-              </Pressable>
-              
-              <Text style={{ color: colors.text.onPrimary, fontSize: typography.size.sm, minWidth: 60, textAlign: "center" }}>
-                {fontSize}px
-              </Text>
-              
-              <Pressable 
-                onPress={() => setFontSize(prev => Math.min(40, prev + 2))}
-                style={({ pressed }) => ({
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: colors.overlay.light,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  opacity: pressed ? 0.7 : 1,
-                })}
-              >
-                <Text style={{ color: colors.text.onPrimary, fontSize: 20, fontWeight: typography.weight.bold }}>A+</Text>
-              </Pressable>
-              
-              <Pressable 
-                onPress={async () => {
-                  const estimatedPage = Math.round(currentProgress * volume.totalPages) || 1;
-                  await addBookmark(estimatedPage);
-                }}
-                style={({ pressed }) => ({
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: colors.overlay.light,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  opacity: pressed ? 0.7 : 1,
-                })}
-              >
-                <Ionicons name="bookmark" size={20} color={colors.text.onPrimary} />
-              </Pressable>
-              
-              <Pressable 
-                onPress={() => setBookmarksVisible(true)}
-                style={({ pressed }) => ({
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: colors.overlay.light,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  opacity: pressed ? 0.7 : 1,
-                })}
-              >
-                <Ionicons name="bookmarks" size={20} color={colors.text.onPrimary} />
-              </Pressable>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                <Pressable
+                  onPress={() => setFontSize(prev => Math.max(12, prev - 2))}
+                  style={({ pressed }) => ({
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: colors.overlay.light,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text style={{ color: colors.text.onPrimary, fontSize: 18, fontWeight: typography.weight.bold }}>A-</Text>
+                </Pressable>
+
+                <Text style={{ color: colors.text.onPrimary, fontSize: typography.size.sm, minWidth: 50, textAlign: "center" }}>
+                  {fontSize}px
+                </Text>
+
+                <Pressable
+                  onPress={() => setFontSize(prev => Math.min(40, prev + 2))}
+                  style={({ pressed }) => ({
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: colors.overlay.light,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text style={{ color: colors.text.onPrimary, fontSize: 20, fontWeight: typography.weight.bold }}>A+</Text>
+                </Pressable>
+              </View>
+
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                <Pressable
+                  onPress={async () => {
+                    const estimatedPage = Math.round(currentProgress * volume.totalPages) || 1;
+                    await addBookmark(estimatedPage);
+                  }}
+                  style={({ pressed }) => ({
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: colors.overlay.light,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Ionicons name="bookmark" size={20} color={colors.text.onPrimary} />
+                </Pressable>
+
+                <Pressable
+                  onPress={() => setBookmarksVisible(true)}
+                  style={({ pressed }) => ({
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: colors.overlay.light,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Ionicons name="bookmarks" size={20} color={colors.text.onPrimary} />
+                </Pressable>
+              </View>
             </View>
           </View>
         </SafeAreaView>
