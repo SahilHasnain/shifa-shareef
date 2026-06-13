@@ -56,6 +56,7 @@ export type Volume = {
   totalPages: number;
   sections: Section[];
   plans: ReadingPlan[];
+  format: "image" | "epub";
 };
 
 export type Language = {
@@ -72,6 +73,8 @@ export type VolumeProgress = {
   completedPages: number[];
   bookmarks: Bookmark[];
   activePlanId?: string;
+  lastCfi?: string;
+  progressPercent?: number;
 };
 
 export type RemoteDeliveryMode = "bundled" | "remote" | "hybrid";
@@ -86,6 +89,7 @@ export type VolumeAssetManifest = {
   extension: string;
   samplePages?: number[];
   hashes?: Record<string, string>;
+  epubUrl?: string;
 };
 
 export type LanguageAssetManifest = {

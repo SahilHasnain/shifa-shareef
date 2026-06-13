@@ -30,6 +30,7 @@ const URDU_VOLUMES: Volume[] = [
     totalPages: VOLUME1_TOTAL_PAGES,
     sections: VOLUME1_SECTIONS,
     plans: VOLUME1_PLANS,
+    format: "image",
   },
   {
     id: "volume2",
@@ -37,6 +38,7 @@ const URDU_VOLUMES: Volume[] = [
     totalPages: VOLUME2_TOTAL_PAGES,
     sections: VOLUME2_SECTIONS,
     plans: VOLUME2_PLANS,
+    format: "image",
   },
 ];
 
@@ -48,6 +50,7 @@ const ROMAN_URDU_VOLUMES: Volume[] = [
     totalPages: ROMAN_URDU_VOLUME1_TOTAL_PAGES,
     sections: ROMAN_URDU_VOLUME1_SECTIONS,
     plans: ROMAN_URDU_VOLUME1_PLANS,
+    format: "epub",
   },
 ];
 

@@ -125,6 +125,9 @@ function ReaderPageSurface({
   );
 }
 
+import { EpubReader } from "../../../../components/readers/EpubReader";
+import { useEpubProgress } from "../../../../hooks/useEpubProgress";
+
 export default function ReaderScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
@@ -138,6 +141,29 @@ export default function ReaderScreen() {
   const volumeDisplayTitle = getVolumeDisplayTitle(language.id, volume.id, volume.title);
   const { switchLanguage } = useCurrentLanguage();
   const { switchVolume } = useCurrentVolume(language.id);
+
+  const { progress: epubProgress, saveProgress: saveEpubProgress } = useEpubProgress(
+    volume.id,
+    language.id,
+  );
+
+  if (volume.format === "epub") {
+    const epubUrl = `https://cdn.jsdelivr.net/gh/SahilHasnain/shifa-shareef-assets@main/epub/${language.id}/${volume.id}.epub`;
+
+    return (
+      <EpubReader
+        language={language}
+        volume={volume}
+        volumeDisplayTitle={volumeDisplayTitle}
+        showVolumeLabel={showVolumeLabel}
+        epubUrl={epubUrl}
+        initialCfi={epubProgress.lastCfi}
+        onProgressChange={(cfi, progress) => {
+          void saveEpubProgress(cfi, progress);
+        }}
+      />
+    );
+  }
   const totalPages = volume.totalPages;
   const clampPage = useCallback(
     (value: number) => Math.min(Math.max(value, 1), totalPages),
