@@ -8,8 +8,13 @@ import { getVolumeDisplayTitle, shouldShowVolumeLabel } from "../../data/languag
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useAppTheme } from "../../hooks/useAppTheme";
-import { useReadingProgress } from "../../hooks/useReadingProgress";
-import { useVolumeDownload } from "../../hooks/useVolumeDownload";
+import { useVolumeProgress } from "../../hooks/useVolumeProgress";
+import {
+  buildReaderHref,
+  getSectionNavigationTarget,
+  getSectionPageLabel,
+  getSectionStatus,
+} from "../../lib/section-resolver";
 
 export default function SectionsScreen() {
   const router = useRouter();
@@ -17,33 +22,17 @@ export default function SectionsScreen() {
   const { colors } = useAppTheme();
   const { currentLanguage, currentLanguageId } = useCurrentLanguage();
   const { currentVolume, currentVolumeId } = useCurrentVolume(currentLanguageId);
-  const { progress } = useReadingProgress(currentVolumeId, currentLanguageId);
+  const { progress } = useVolumeProgress(currentVolumeId, currentLanguageId);
   const showVolumeLabel = shouldShowVolumeLabel(currentLanguageId);
   const currentVolumeDisplayTitle = getVolumeDisplayTitle(
     currentLanguageId,
     currentVolumeId,
     currentVolume.title,
   );
-  const {
-    canDownload,
-    downloadAll,
-    isDownloading,
-    isFullyDownloaded,
-    isPartiallyDownloaded,
-    progressPercent,
-    removeDownload,
-  } = useVolumeDownload(
-    currentLanguageId,
-    currentVolumeId,
-    currentVolume.totalPages,
-  );
 
-  const getSectionStatus = (section: (typeof currentVolume.sections)[number]) => {
-    if (!progress) return "unread";
-    const { lastPage } = progress;
-    if (lastPage > section.endPage) return "completed";
-    if (lastPage >= section.startPage && lastPage <= section.endPage) return "current";
-    return "unread";
+  const handleSectionPress = (section: (typeof currentVolume.sections)[number]) => {
+    const target = getSectionNavigationTarget(currentVolume, section);
+    router.push(buildReaderHref(currentLanguageId, currentVolumeId, target) as any);
   };
 
   return (
@@ -78,18 +67,14 @@ export default function SectionsScreen() {
 
         <View style={{ paddingHorizontal: 20, gap: 2 }}>
           {currentVolume.sections.map((section, index) => {
-            const status = getSectionStatus(section);
+            const status = getSectionStatus(currentVolume, section, progress);
             const isCurrent = status === "current";
             const isCompleted = status === "completed";
 
             return (
               <Pressable
                 key={section.id}
-                onPress={() =>
-                  router.push(
-                    `/reader/${currentLanguageId}/${currentVolumeId}/${section.startPage}` as any,
-                  )
-                }
+                onPress={() => handleSectionPress(section)}
                 style={({ pressed }) => ({
                   backgroundColor: isCurrent ? "#F8F0D8" : "transparent",
                   borderRadius: 16,
@@ -154,7 +139,7 @@ export default function SectionsScreen() {
                         fontWeight: typography.weight.medium,
                       }}
                     >
-                      Pages {section.startPage}-{section.endPage}
+                      {getSectionPageLabel(currentVolume, section)}
                     </Text>
                     <View
                       style={{

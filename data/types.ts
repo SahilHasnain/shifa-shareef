@@ -5,6 +5,23 @@ export type Section = {
   endPage: number;
   estimatedMinutes: number;
   description: string;
+  /** EPUB volumes: cached percentage range for section status and navigation */
+  startProgressPercent?: number;
+  endProgressPercent?: number;
+  /** EPUB volumes: precise anchors when mapped from the EPUB file */
+  startCfi?: string;
+  endCfi?: string;
+  startHref?: string;
+};
+
+export type UnifiedProgress = {
+  format: "image" | "epub";
+  lastReadAt?: string;
+  lastPage?: number;
+  lastCfi?: string;
+  progressPercent?: number;
+  currentSectionId?: string;
+  currentSectionTitle?: string;
 };
 
 export type ReadingPlanItem = {

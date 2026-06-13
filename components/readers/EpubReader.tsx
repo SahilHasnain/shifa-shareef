@@ -19,6 +19,7 @@ type EpubReaderProps = {
   showVolumeLabel: boolean;
   epubUrl: string;
   initialCfi?: string;
+  initialProgressPercent?: number;
   onProgressChange: (cfi: string, progress: number) => void;
 };
 
@@ -59,7 +60,7 @@ const EPUB_HTML = `
         }
         
         if (message.type === 'LOAD_EPUB') {
-          loadEpub(message.base64, message.cfi, message.theme);
+          loadEpub(message.base64, message.cfi, message.progressPercent, message.theme);
         } else if (message.type === 'SET_FONT_SIZE') {
           if (typeof window.ReactNativeWebView !== 'undefined') {
             window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'DEBUG', message: 'Setting font size: ' + message.size + 'px, rendition exists: ' + (!!rendition) }));
@@ -127,11 +128,30 @@ const EPUB_HTML = `
               }
             });
           }
+        } else if (message.type === 'GO_TO_CFI') {
+          if (rendition && message.cfi) {
+            rendition.display(message.cfi).catch(function(err) {
+              if (typeof window.ReactNativeWebView !== 'undefined') {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'ERROR', message: 'CFI navigation failed: ' + err.message }));
+              }
+            });
+          }
+        } else if (message.type === 'GO_TO_PERCENT') {
+          if (rendition && book && book.locations && typeof message.progress === 'number') {
+            var targetCfi = book.locations.cfiFromPercentage(message.progress);
+            if (targetCfi) {
+              rendition.display(targetCfi).catch(function(err) {
+                if (typeof window.ReactNativeWebView !== 'undefined') {
+                  window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'ERROR', message: 'Percent navigation failed: ' + err.message }));
+                }
+              });
+            }
+          }
         }
       } catch (err) {}
     }
 
-    function loadEpub(base64Data, startCfi, theme) {
+    function loadEpub(base64Data, startCfi, startProgressPercent, theme) {
       try {
         if (typeof window.ReactNativeWebView !== 'undefined') {
           window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'DEBUG', message: 'Converting base64' }));
@@ -172,7 +192,20 @@ const EPUB_HTML = `
           // Set initial font size
           rendition.themes.fontSize('16px');
 
-          return startCfi ? rendition.display(startCfi) : rendition.display();
+          return book.locations.generate(1024);
+        }).then(function() {
+          if (startCfi) {
+            return rendition.display(startCfi);
+          }
+
+          if (typeof startProgressPercent === 'number' && startProgressPercent > 0) {
+            var progressCfi = book.locations.cfiFromPercentage(startProgressPercent);
+            if (progressCfi) {
+              return rendition.display(progressCfi);
+            }
+          }
+
+          return rendition.display();
         }).then(function() {
           if (typeof window.ReactNativeWebView !== 'undefined') {
             window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'READY' }));
@@ -225,6 +258,7 @@ export function EpubReader({
   showVolumeLabel,
   epubUrl,
   initialCfi,
+  initialProgressPercent,
   onProgressChange,
 }: EpubReaderProps) {
   const router = useRouter();
@@ -284,13 +318,14 @@ export function EpubReader({
           type: "LOAD_EPUB",
           base64: epubBase64,
           cfi: initialCfi,
+          progressPercent: initialProgressPercent,
           theme: { background: colors.surface.lightCream, color: colors.text.primary },
         }),
       );
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [epubBase64, initialCfi, colors]);
+  }, [epubBase64, initialCfi, initialProgressPercent, colors]);
 
   useEffect(() => {
     // Update font size when it changes

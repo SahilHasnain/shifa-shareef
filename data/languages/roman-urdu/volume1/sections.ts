@@ -2,7 +2,7 @@ import type { Section } from "../../../types";
 
 export const ROMAN_URDU_VOLUME1_TOTAL_PAGES = 306;
 
-export const ROMAN_URDU_VOLUME1_SECTIONS: Section[] = [
+const ROMAN_URDU_VOLUME1_SECTION_DEFINITIONS = [
   {
     id: "front-matter-muqaddima",
     title: "Publisher Note, Musannif Aur Muqaddima",
@@ -156,4 +156,22 @@ export const ROMAN_URDU_VOLUME1_SECTIONS: Section[] = [
     description:
       "Be ikhteyar kalima-e-kufr, Ambiya, farishton, Quran, Ahle bait, Azwaaj aur Sahaba ki tauheen ke ahkam.",
   },
-];
+] as const satisfies ReadonlyArray<
+  Pick<
+    Section,
+    | "id"
+    | "title"
+    | "startPage"
+    | "endPage"
+    | "estimatedMinutes"
+    | "description"
+  >
+>;
+
+export const ROMAN_URDU_VOLUME1_SECTIONS: Section[] =
+  ROMAN_URDU_VOLUME1_SECTION_DEFINITIONS.map((section) => ({
+    ...section,
+    startProgressPercent:
+      (section.startPage - 1) / ROMAN_URDU_VOLUME1_TOTAL_PAGES,
+    endProgressPercent: section.endPage / ROMAN_URDU_VOLUME1_TOTAL_PAGES,
+  }));

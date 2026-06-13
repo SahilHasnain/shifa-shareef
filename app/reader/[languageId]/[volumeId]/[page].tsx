@@ -134,6 +134,8 @@ export default function ReaderScreen() {
     languageId?: string;
     volumeId?: string;
     page?: string;
+    cfi?: string;
+    progressPercent?: string;
   }>();
   const language = getLanguageById(params.languageId);
   const volume = getVolumeByLanguageAndId(language.id, params.volumeId);
@@ -149,6 +151,18 @@ export default function ReaderScreen() {
 
   if (volume.format === "epub") {
     const epubUrl = `https://cdn.jsdelivr.net/gh/SahilHasnain/shifa-shareef-assets@main/epub/${language.id}/${volume.id}.epub`;
+    const navigationCfi =
+      typeof params.cfi === "string" && params.cfi.length > 0
+        ? params.cfi
+        : undefined;
+    const navigationProgressPercent =
+      typeof params.progressPercent === "string" &&
+      params.progressPercent.length > 0
+        ? Number(params.progressPercent)
+        : undefined;
+    const hasExplicitNavigation =
+      navigationCfi != null ||
+      (navigationProgressPercent != null && !Number.isNaN(navigationProgressPercent));
 
     return (
       <EpubReader
@@ -157,7 +171,12 @@ export default function ReaderScreen() {
         volumeDisplayTitle={volumeDisplayTitle}
         showVolumeLabel={showVolumeLabel}
         epubUrl={epubUrl}
-        initialCfi={epubProgress.lastCfi}
+        initialCfi={
+          navigationCfi ?? (hasExplicitNavigation ? undefined : epubProgress.lastCfi)
+        }
+        initialProgressPercent={
+          navigationCfi == null ? navigationProgressPercent : undefined
+        }
         onProgressChange={(cfi, progress) => {
           void saveEpubProgress(cfi, progress);
         }}

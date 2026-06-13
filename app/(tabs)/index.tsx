@@ -20,7 +20,6 @@ import { shadows, typography } from "../../constants/theme";
 import { BOOK_TITLE } from "../../data/book";
 import {
   LANGUAGES,
-  getCurrentSectionByLanguage,
   getVolumeByLanguageAndId,
   getVolumeDisplayTitle,
   shouldShowVolumeLabel,
@@ -29,7 +28,13 @@ import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
-import { useReadingProgress } from "../../hooks/useReadingProgress";
+import { useVolumeProgress } from "../../hooks/useVolumeProgress";
+import {
+  buildReaderHref,
+  getCurrentSection,
+  getProgressDisplayLabel,
+  getResumeNavigationTarget,
+} from "../../lib/section-resolver";
 
 const SELECTED_CHIP_FILL = "#F1E0A4";
 const SELECTED_CHIP_TEXT = "#101815";
@@ -47,11 +52,10 @@ function ContinueReadingContent({
 }) {
   const { colors } = useAppTheme();
   const volume = getVolumeByLanguageAndId(languageId, volumeId);
-  const { progress } = useReadingProgress(volumeId, languageId);
+  const { progress } = useVolumeProgress(volumeId, languageId);
 
-  const currentPage = progress?.lastPage ?? 1;
   const currentSection =
-    getCurrentSectionByLanguage(languageId, volumeId, currentPage) ?? volume.sections[0];
+    getCurrentSection(volume, progress) ?? volume.sections[0];
   const currentVolumeDisplayTitle = getVolumeDisplayTitle(
     languageId,
     volumeId,
@@ -100,7 +104,7 @@ function ContinueReadingContent({
               fontWeight: typography.weight.bold,
             }}
           >
-            Page {currentPage}/{volume.totalPages}
+            {getProgressDisplayLabel(volume, progress)}
           </Text>
         </View>
       </View>
@@ -119,12 +123,12 @@ export default function HomeScreen() {
 
   const { currentLanguage, currentLanguageId, switchLanguage } = useCurrentLanguage();
   const { currentVolume, currentVolumeId, switchVolume } = useCurrentVolume(currentLanguageId);
-  const { progress } = useReadingProgress(currentVolumeId, currentLanguageId);
+  const { progress } = useVolumeProgress(currentVolumeId, currentLanguageId);
   const { activePlan } = useReadingPlan(currentVolumeId, currentLanguageId);
 
   const [displayVolumeId, setDisplayVolumeId] = useState(currentVolumeId);
 
-  const currentPage = progress?.lastPage ?? 1;
+  const currentPage = progress.lastPage ?? 1;
   const showVolumeControls = shouldShowVolumeLabel(currentLanguageId);
   const currentVolumeIndex = useMemo(
     () =>
@@ -136,11 +140,10 @@ export default function HomeScreen() {
   );
   const currentDisplayVolume =
     currentLanguage.volumes[currentVolumeIndex] ?? currentLanguage.volumes[0];
-  const currentDisplayProgress = useReadingProgress(
+  const { progress: currentDisplayProgress } = useVolumeProgress(
     currentDisplayVolume.id,
     currentLanguageId,
-  ).progress;
-  const currentDisplayPage = currentDisplayProgress?.lastPage ?? 1;
+  );
   const currentPlanDay = activePlan
     ? activePlan.items.find(
       (item) => currentPage >= item.startPage && currentPage <= item.endPage,
@@ -439,7 +442,14 @@ export default function HomeScreen() {
               <Pressable
                 onPress={() =>
                   router.push(
-                    `/reader/${currentLanguageId}/${displayVolumeId}/${currentDisplayPage}` as any,
+                    buildReaderHref(
+                      currentLanguageId,
+                      displayVolumeId,
+                      getResumeNavigationTarget(
+                        currentDisplayVolume,
+                        currentDisplayProgress,
+                      ),
+                    ) as any,
                   )
                 }
                 style={{
@@ -740,7 +750,11 @@ export default function HomeScreen() {
           <Pressable
             onPress={() =>
               router.push(
-                `/reader/${currentLanguageId}/${currentVolumeId}/${currentPage}` as any,
+                buildReaderHref(
+                  currentLanguageId,
+                  currentVolumeId,
+                  getResumeNavigationTarget(currentVolume, progress),
+                ) as any,
               )
             }
             style={({ pressed }) => ({
