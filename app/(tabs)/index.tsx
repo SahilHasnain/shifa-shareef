@@ -20,7 +20,6 @@ import { shadows, typography } from "../../constants/theme";
 import { BOOK_TITLE } from "../../data/book";
 import {
   LANGUAGES,
-  getVolumeByLanguageAndId,
   getVolumeDisplayTitle,
   shouldShowVolumeLabel,
 } from "../../data/languages";
@@ -166,12 +165,11 @@ export default function HomeScreen() {
   );
   const isDark = resolvedTheme === "dark";
   const homeBackground = isDark ? "#0B100D" : colors.surface.lightCream;
-  const primaryCardBackground = isDark ? "#151B17" : colors.surface.warmIvory;
-  const secondaryCardBackground = isDark ? "#1B211D" : colors.surface.creamyWhite;
-  const quietCardBackground = isDark ? "rgba(21, 27, 23, 0.58)" : colors.surface.warmIvory;
-  const darkCardBorder = isDark ? "rgba(255, 230, 128, 0.08)" : "transparent";
+  const primaryCardBackground = isDark ? "#1A2520" : colors.surface.warmIvory;
+  const quietCardBackground = isDark ? "rgba(26, 37, 32, 0.58)" : colors.surface.warmIvory;
+  const darkCardBorder = isDark ? "rgba(241, 224, 164, 0.08)" : "transparent";
   const quietCardBorder = isDark ? "rgba(255, 255, 255, 0.05)" : "transparent";
-  const darkGoldWash = isDark ? "rgba(255, 230, 128, 0.12)" : "rgba(201, 169, 97, 0.12)";
+  const darkGoldWash = isDark ? "rgba(241, 224, 164, 0.12)" : "rgba(201, 169, 97, 0.12)";
 
   const animatedHeroContentStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: slideX.value }],
@@ -490,10 +488,12 @@ export default function HomeScreen() {
         {activePlan ? (
           <View
             style={{
-              backgroundColor: colors.surface.warmIvory,
+              backgroundColor: primaryCardBackground,
               borderRadius: 24,
+              borderWidth: isDark ? 1 : 0,
+              borderColor: darkCardBorder,
               padding: 20,
-              gap: 14,
+              gap: 16,
               ...shadows.md,
             }}
           >
@@ -501,14 +501,32 @@ export default function HomeScreen() {
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                justifyContent: "space-between",
+                gap: 12,
               }}
             >
+              <View
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 26,
+                  backgroundColor: isDark
+                    ? "rgba(241, 224, 164, 0.14)"
+                    : colors.surface.softBeige,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons
+                  name="calendar"
+                  size={26}
+                  color={colors.secondary.mutedGold}
+                />
+              </View>
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
                     color: colors.secondary.mutedGold,
-                    fontSize: typography.size.sm,
+                    fontSize: typography.size.xs,
                     fontWeight: typography.weight.bold,
                     letterSpacing: 0.5,
                     textTransform: "uppercase",
@@ -521,7 +539,7 @@ export default function HomeScreen() {
                     color: colors.text.primary,
                     fontSize: typography.size.xl,
                     fontWeight: typography.weight.extrabold,
-                    marginTop: 4,
+                    marginTop: 2,
                   }}
                 >
                   {activePlan.title}
@@ -530,26 +548,33 @@ export default function HomeScreen() {
               <Pressable
                 onPress={() => router.push("/plans/" as any)}
                 style={({ pressed }) => ({
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 12,
-                  backgroundColor: "rgba(201, 169, 97, 0.12)",
-                  opacity: pressed ? 0.8 : 1,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: darkGoldWash,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: pressed ? 0.7 : 1,
                 })}
               >
-                <Text
-                  style={{
-                    color: colors.secondary.mutedGold,
-                    fontSize: typography.size.sm,
-                    fontWeight: typography.weight.bold,
-                  }}
-                >
-                  View
-                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={colors.secondary.mutedGold}
+                />
               </Pressable>
             </View>
 
-            <View style={{ gap: 8 }}>
+            <View
+              style={{
+                backgroundColor: isDark
+                  ? "rgba(241, 224, 164, 0.08)"
+                  : "rgba(201, 169, 97, 0.10)",
+                borderRadius: 16,
+                padding: 16,
+                gap: 12,
+              }}
+            >
               <View
                 style={{
                   flexDirection: "row",
@@ -559,27 +584,41 @@ export default function HomeScreen() {
               >
                 <Text
                   style={{
-                    color: colors.text.muted,
-                    fontSize: typography.size.base,
+                    color: colors.text.primary,
+                    fontSize: typography.size["3xl"],
+                    fontWeight: typography.weight.extrabold,
                   }}
                 >
-                  Day {currentPlanDay} of {activePlan.totalDays}
+                  Day {currentPlanDay}
                 </Text>
-                <Text
-                  style={{
-                    color: colors.secondary.mutedGold,
-                    fontSize: typography.size.base,
-                    fontWeight: typography.weight.bold,
-                  }}
-                >
-                  {currentPlanProgress}%
-                </Text>
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text
+                    style={{
+                      color: colors.secondary.mutedGold,
+                      fontSize: typography.size["2xl"],
+                      fontWeight: typography.weight.extrabold,
+                    }}
+                  >
+                    {currentPlanProgress}%
+                  </Text>
+                  <Text
+                    style={{
+                      color: colors.text.muted,
+                      fontSize: typography.size.sm,
+                      marginTop: 2,
+                    }}
+                  >
+                    of {activePlan.totalDays} days
+                  </Text>
+                </View>
               </View>
               <View
                 style={{
-                  height: 8,
-                  backgroundColor: "rgba(201, 169, 97, 0.15)",
-                  borderRadius: 4,
+                  height: 10,
+                  backgroundColor: isDark
+                    ? "rgba(201, 169, 97, 0.12)"
+                    : "rgba(201, 169, 97, 0.18)",
+                  borderRadius: 5,
                   overflow: "hidden",
                 }}
               >
@@ -588,7 +627,7 @@ export default function HomeScreen() {
                     height: "100%",
                     width: `${currentPlanProgress}%`,
                     backgroundColor: colors.secondary.mutedGold,
-                    borderRadius: 4,
+                    borderRadius: 5,
                   }}
                 />
               </View>
@@ -607,20 +646,25 @@ export default function HomeScreen() {
                 }
                 style={({ pressed }) => ({
                   borderRadius: 999,
-                  backgroundColor: "rgba(201, 169, 97, 0.12)",
-                  paddingHorizontal: 16,
-                  paddingVertical: 12,
+                  backgroundColor: isDark
+                    ? colors.surface.softBeige
+                    : colors.secondary.lightGold,
+                  paddingHorizontal: 20,
+                  paddingVertical: 14,
+                  alignItems: "center",
                   opacity: pressed ? 0.85 : 1,
                 })}
               >
                 <Text
                   style={{
-                    color: colors.secondary.mutedGold,
-                    fontSize: typography.size.sm,
-                    fontWeight: typography.weight.bold,
+                    color: isDark
+                      ? colors.secondary.lightGold
+                      : colors.primary.deepGreen,
+                    fontSize: typography.size.base,
+                    fontWeight: typography.weight.extrabold,
                   }}
                 >
-                  Continue Day {currentPlanDay}: {todayPlanItem.label}
+                  Continue: {todayPlanItem.label}
                 </Text>
               </Pressable>
             ) : null}
@@ -629,292 +673,65 @@ export default function HomeScreen() {
           <Pressable
             onPress={() => router.push("/plans/" as any)}
             style={({ pressed }) => ({
-              backgroundColor: primaryCardBackground,
-              borderRadius: 24,
+              backgroundColor: quietCardBackground,
+              borderRadius: 16,
               borderWidth: isDark ? 1 : 0,
-              borderColor: darkCardBorder,
-              padding: 22,
-              gap: 16,
-              opacity: pressed ? 0.95 : 1,
-              ...shadows.md,
+              borderColor: quietCardBorder,
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+              opacity: pressed ? 0.85 : 1,
+              ...(isDark ? {} : shadows.sm),
             })}
           >
             <View
               style={{
-                flexDirection: "row",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                gap: 16,
-              }}
-            >
-              <View style={{ flex: 1, gap: 8 }}>
-                <View
-                  style={{
-                    alignSelf: "flex-start",
-                    borderRadius: 999,
-                    backgroundColor: isDark
-                      ? "rgba(255, 230, 128, 0.14)"
-                      : colors.surface.softBeige,
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color:
-                        isDark
-                          ? colors.secondary.lightGold
-                          : colors.primary.deepGreen,
-                      fontSize: typography.size.xs,
-                      fontWeight: typography.weight.extrabold,
-                      letterSpacing: 0.4,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Reading Plan
-                  </Text>
-                </View>
-                <Text
-                  style={{
-                    color: colors.text.primary,
-                    fontSize: typography.size["2xl"],
-                    fontWeight: typography.weight.extrabold,
-                  }}
-                >
-                  Choose a Reading Plan
-                </Text>
-              </View>
-              <View
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  backgroundColor: isDark
-                    ? "rgba(255, 230, 128, 0.14)"
-                    : colors.surface.softBeige,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Ionicons
-                  name="calendar-clear-outline"
-                  size={24}
-                  color={
-                    isDark
-                      ? colors.secondary.lightGold
-                      : colors.primary.deepGreen
-                  }
-                />
-              </View>
-            </View>
-
-            <View
-              style={{
-                flexDirection: "row",
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: isDark
+                  ? "rgba(241, 224, 164, 0.10)"
+                  : "rgba(201, 169, 97, 0.14)",
                 alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
+                justifyContent: "center",
               }}
             >
+              <Ionicons
+                name="calendar-outline"
+                size={18}
+                color={colors.secondary.mutedGold}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
               <Text
                 style={{
-                  color: colors.secondary.mutedGold,
-                  fontSize: typography.size.sm,
+                  color: colors.text.primary,
+                  fontSize: typography.size.base,
                   fontWeight: typography.weight.bold,
-                  flex: 1,
+                }}
+              >
+                Want structure? Try a reading plan
+              </Text>
+              <Text
+                style={{
+                  color: colors.text.tertiary,
+                  fontSize: typography.size.sm,
+                  marginTop: 2,
                 }}
               >
                 1-week, 3-week, and flexible plans
               </Text>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                <Text
-                  style={{
-                    color:
-                      isDark
-                        ? colors.secondary.lightGold
-                        : colors.primary.deepGreen,
-                    fontSize: typography.size.sm,
-                    fontWeight: typography.weight.extrabold,
-                  }}
-                >
-                  View plans
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={
-                    isDark
-                      ? colors.secondary.lightGold
-                      : colors.primary.deepGreen
-                  }
-                />
-              </View>
             </View>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={colors.text.tertiary}
+            />
           </Pressable>
-        )
-        }
-
-        <View
-          style={{
-            backgroundColor: quietCardBackground,
-            borderRadius: 22,
-            borderWidth: isDark ? 1 : 0,
-            borderColor: quietCardBorder,
-            paddingHorizontal: 20,
-            paddingVertical: 18,
-            gap: 12,
-            ...(isDark ? {} : shadows.sm),
-          }}
-        >
-          <Text
-            style={{
-              color: colors.text.primary,
-              fontSize: typography.size.lg,
-              fontWeight: typography.weight.extrabold,
-            }}
-          >
-            Today&apos;s gentle target
-          </Text>
-          <Text
-            style={{
-              color: colors.text.tertiary,
-              fontSize: typography.size.md,
-              lineHeight: 24,
-            }}
-          >
-            Read 2 pages from your current place. The goal is consistency, not speed.
-          </Text>
-          <Pressable
-            onPress={() =>
-              router.push(
-                buildReaderHref(
-                  currentLanguageId,
-                  currentVolumeId,
-                  getResumeNavigationTarget(resolvedCurrentVolume, progress),
-                ) as any,
-              )
-            }
-            style={({ pressed }) => ({
-              alignSelf: "flex-start",
-              borderRadius: 999,
-              backgroundColor: isDark ? "transparent" : "rgba(201, 169, 97, 0.12)",
-              borderWidth: isDark ? 0 : 1,
-              borderColor: colors.secondary.warmGold,
-              paddingHorizontal: isDark ? 0 : 16,
-              paddingVertical: isDark ? 2 : 10,
-              opacity: pressed ? 0.8 : 1,
-            })}
-          >
-            <Text
-              style={{
-                color: colors.text.primary,
-                fontSize: typography.size.base,
-                fontWeight: typography.weight.bold,
-              }}
-            >
-              Read for 5 minutes
-            </Text>
-          </Pressable>
-        </View>
-
-        <View
-          style={{
-            backgroundColor: primaryCardBackground,
-            borderRadius: 24,
-            borderWidth: isDark ? 1 : 0,
-            borderColor: darkCardBorder,
-            padding: 20,
-            gap: 14,
-            ...shadows.sm,
-          }}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Text
-              style={{
-                color: colors.text.primary,
-                fontSize: typography.size.xl,
-                fontWeight: typography.weight.extrabold,
-              }}
-            >
-              Reading Structure
-            </Text>
-            <Pressable
-              onPress={() => router.push("/sections/" as any)}
-              style={({ pressed }) => ({
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 8,
-                backgroundColor: darkGoldWash,
-                opacity: pressed ? 0.8 : 1,
-              })}
-            >
-              <Text
-                style={{
-                  color: colors.secondary.mutedGold,
-                  fontSize: typography.size.sm,
-                  fontWeight: typography.weight.bold,
-                }}
-              >
-                View all
-              </Text>
-            </Pressable>
-          </View>
-          {resolvedCurrentVolume.sections.slice(0, 3).map((section) => (
-            <View
-              key={section.id}
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                gap: 16,
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    color: isDark
-                      ? "rgba(255, 255, 255, 0.92)"
-                      : colors.primary.forestGreen,
-                    fontSize: typography.size.md,
-                    fontWeight: typography.weight.bold,
-                  }}
-                >
-                  {section.title}
-                </Text>
-                <Text
-                  style={{
-                    color: colors.text.muted,
-                    fontSize: typography.size.sm,
-                    marginTop: 2,
-                  }}
-                >
-                  Pages {section.startPage}-{section.endPage}
-                </Text>
-              </View>
-              <Text
-                style={{
-                  color: colors.secondary.mutedGold,
-                  fontSize: typography.size.sm,
-                  fontWeight: typography.weight.bold,
-                }}
-              >
-                {section.estimatedMinutes} min
-              </Text>
-            </View>
-          ))}
-        </View>
-      </ScrollView >
-    </View >
+        )}
+      </ScrollView>
+    </View>
   );
 }

@@ -195,6 +195,21 @@ const EPUB_HTML = `
               'body': {
                 'background': theme.background + ' !important',
                 'color': theme.color + ' !important'
+              },
+              'p': {
+                'color': theme.color + ' !important'
+              },
+              'div': {
+                'color': theme.color + ' !important'
+              },
+              'span': {
+                'color': theme.color + ' !important'
+              },
+              'h1, h2, h3, h4, h5, h6': {
+                'color': theme.color + ' !important'
+              },
+              '*': {
+                'color': theme.color + ' !important'
               }
             });
           }
@@ -322,16 +337,14 @@ export function EpubReader({
   useEffect(() => {
     async function loadBundledEpub() {
       try {
-        console.log("[EPUB] Downloading EPUB from CDN");
-        const epubUri = FileSystem.documentDirectory + "roman-urdu-volume1.epub";
+        console.log("[EPUB] Downloading EPUB from CDN:", epubUrl);
+        const filename = epubUrl.split('/').pop() || 'book.epub';
+        const epubUri = FileSystem.documentDirectory + filename;
 
         const fileInfo = await FileSystem.getInfoAsync(epubUri);
         if (!fileInfo.exists) {
           console.log("[EPUB] Downloading from CDN...");
-          await FileSystem.downloadAsync(
-            "https://cdn.jsdelivr.net/gh/SahilHasnain/shifa-shareef-assets@main/epub/roman-urdu/volume1.epub",
-            epubUri
-          );
+          await FileSystem.downloadAsync(epubUrl, epubUri);
           console.log("[EPUB] Download complete");
         } else {
           console.log("[EPUB] Using cached file");
@@ -350,7 +363,7 @@ export function EpubReader({
     }
 
     loadBundledEpub();
-  }, []);
+  }, [epubUrl]);
 
   useEffect(() => {
     if (!epubBase64) return;

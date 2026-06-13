@@ -38,7 +38,7 @@ function getDownloadStatusLabel({
   isPartiallyDownloaded: boolean;
 }) {
   if (deliveryMode === "bundled" && !canDownload) {
-    return "Included in app";
+    return "Included";
   }
 
   if (isDownloading) {
@@ -50,10 +50,10 @@ function getDownloadStatusLabel({
   }
 
   if (isPartiallyDownloaded) {
-    return "Partially offline";
+    return "Partially cached";
   }
 
-  return "Available online";
+  return "Online only";
 }
 
 function FormatOption({
@@ -164,8 +164,9 @@ export default function SettingsScreen() {
   } = useVolumeDownload(currentLanguageId, currentVolumeId, currentVolume.totalPages);
   const isDark = resolvedTheme === "dark";
   const screenBackground = isDark ? "#0B100D" : colors.surface.lightCream;
-  const cardBackground = isDark ? "#151B17" : colors.surface.warmIvory;
-  const cardBorderColor = isDark ? "rgba(255, 230, 128, 0.08)" : "transparent";
+  const cardBackground = isDark ? "#1A2520" : colors.surface.warmIvory;
+  const compactCardBackground = isDark ? "rgba(26, 37, 32, 0.6)" : colors.surface.warmIvory;
+  const cardBorderColor = isDark ? "rgba(241, 224, 164, 0.08)" : "transparent";
   const selectedBackground = isDark ? colors.surface.softBeige : SELECTED_FILL;
   const selectedText = isDark ? SELECTED_FILL : SELECTED_TEXT;
   const volumeDisplayTitle = getVolumeDisplayTitle(
@@ -202,11 +203,11 @@ export default function SettingsScreen() {
         contentContainerStyle={{
           paddingTop: insets.top + 5,
           paddingHorizontal: 20,
-          gap: 20,
+          gap: 16,
           paddingBottom: 40,
         }}
       >
-        <View>
+        <View style={{ marginBottom: 4 }}>
           <Text
             style={{
               color: colors.text.primary,
@@ -216,18 +217,9 @@ export default function SettingsScreen() {
           >
             Settings
           </Text>
-          <Text
-            style={{
-              color: colors.text.tertiary,
-              fontSize: typography.size.md,
-              lineHeight: 22,
-              marginTop: 6,
-            }}
-          >
-            Customize your reading experience.
-          </Text>
         </View>
 
+        {/* Appearance - Prominent */}
         <View
           style={{
             backgroundColor: cardBackground,
@@ -235,15 +227,15 @@ export default function SettingsScreen() {
             borderWidth: isDark ? 1 : 0,
             borderColor: cardBorderColor,
             padding: 20,
-            gap: 16,
+            gap: 14,
             ...shadows.sm,
           }}
         >
-          <View style={{ gap: 6 }}>
+          <View style={{ gap: 4 }}>
             <Text
               style={{
                 color: colors.secondary.mutedGold,
-                fontSize: typography.size.sm,
+                fontSize: typography.size.xs,
                 fontWeight: typography.weight.bold,
                 letterSpacing: 0.5,
                 textTransform: "uppercase",
@@ -282,22 +274,23 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Reading Format - Compact */}
         <View
           style={{
             backgroundColor: cardBackground,
-            borderRadius: 24,
+            borderRadius: 20,
             borderWidth: isDark ? 1 : 0,
             borderColor: cardBorderColor,
-            padding: 20,
-            gap: 16,
+            padding: 18,
+            gap: 12,
             ...shadows.sm,
           }}
         >
-          <View style={{ gap: 6 }}>
+          <View style={{ gap: 4 }}>
             <Text
               style={{
                 color: colors.secondary.mutedGold,
-                fontSize: typography.size.sm,
+                fontSize: typography.size.xs,
                 fontWeight: typography.weight.bold,
                 letterSpacing: 0.5,
                 textTransform: "uppercase",
@@ -308,34 +301,23 @@ export default function SettingsScreen() {
             <Text
               style={{
                 color: colors.text.primary,
-                fontSize: typography.size.xl,
+                fontSize: typography.size.lg,
                 fontWeight: typography.weight.extrabold,
               }}
             >
               {getReadingFormatLabel(readingFormatPreference)}
               {activeReadingFormatLabel !== getReadingFormatLabel(readingFormatPreference)
-                ? ` (${activeReadingFormatLabel})`
+                ? ` (Using ${activeReadingFormatLabel})`
                 : ""}
             </Text>
           </View>
 
-          <Text
-            style={{
-              color: colors.text.tertiary,
-              fontSize: typography.size.base,
-              lineHeight: 22,
-            }}
-          >
-            Choose how you want to read. If your preferred format is not available for an
-            edition, the app will use the other format automatically.
-          </Text>
-
           {readingFormatStatusMessage ? (
             <Text
               style={{
-                color: colors.text.secondary,
+                color: colors.text.tertiary,
                 fontSize: typography.size.sm,
-                lineHeight: 20,
+                lineHeight: 18,
               }}
             >
               {readingFormatStatusMessage}
@@ -356,25 +338,26 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Offline Reading - Most Compact */}
         <View
           style={{
-            backgroundColor: cardBackground,
-            borderRadius: 24,
+            backgroundColor: compactCardBackground,
+            borderRadius: 18,
             borderWidth: isDark ? 1 : 0,
             borderColor: cardBorderColor,
-            padding: 20,
-            gap: 16,
-            ...shadows.sm,
+            padding: 16,
+            gap: 12,
+            ...(isDark ? {} : shadows.sm),
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <View
               style={{
-                width: 42,
-                height: 42,
-                borderRadius: 21,
+                width: 36,
+                height: 36,
+                borderRadius: 18,
                 backgroundColor: isDark
-                  ? "rgba(255, 230, 128, 0.14)"
+                  ? "rgba(241, 224, 164, 0.12)"
                   : colors.surface.softBeige,
                 alignItems: "center",
                 justifyContent: "center",
@@ -382,15 +365,15 @@ export default function SettingsScreen() {
             >
               <Ionicons
                 name="cloud-download-outline"
-                size={22}
-                color={isDark ? colors.secondary.lightGold : colors.primary.deepGreen}
+                size={18}
+                color={colors.secondary.mutedGold}
               />
             </View>
-            <View style={{ flex: 1, gap: 3 }}>
+            <View style={{ flex: 1 }}>
               <Text
                 style={{
                   color: colors.secondary.mutedGold,
-                  fontSize: typography.size.sm,
+                  fontSize: typography.size.xs,
                   fontWeight: typography.weight.bold,
                   letterSpacing: 0.5,
                   textTransform: "uppercase",
@@ -401,8 +384,9 @@ export default function SettingsScreen() {
               <Text
                 style={{
                   color: colors.text.primary,
-                  fontSize: typography.size.xl,
-                  fontWeight: typography.weight.extrabold,
+                  fontSize: typography.size.base,
+                  fontWeight: typography.weight.bold,
+                  marginTop: 2,
                 }}
               >
                 {offlineTitle}
@@ -410,30 +394,19 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          <Text
-            style={{
-              color: colors.text.tertiary,
-              fontSize: typography.size.base,
-              lineHeight: 22,
-            }}
-          >
-            Pages are cached quietly as you read. Use this only if you want the whole volume ready offline.
-          </Text>
-
-          <View style={{ gap: 8 }}>
+          <View style={{ gap: 6 }}>
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "space-between",
-                gap: 12,
               }}
             >
               <Text
                 style={{
-                  color: colors.text.secondary,
+                  color: colors.text.tertiary,
                   fontSize: typography.size.sm,
-                  fontWeight: typography.weight.bold,
+                  fontWeight: typography.weight.semibold,
                 }}
               >
                 {downloadStatusLabel}
@@ -450,10 +423,10 @@ export default function SettingsScreen() {
             </View>
             <View
               style={{
-                height: 8,
+                height: 6,
                 borderRadius: 999,
                 backgroundColor: isDark
-                  ? "rgba(255, 255, 255, 0.08)"
+                  ? "rgba(241, 224, 164, 0.10)"
                   : "rgba(201, 169, 97, 0.16)",
                 overflow: "hidden",
               }}
@@ -469,40 +442,41 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          <Pressable
-            onPress={() => {
-              if (!canDownload) return;
-
-              if (isFullyDownloaded) {
-                void removeDownload();
-              } else {
-                void downloadAll();
-              }
-            }}
-            disabled={!canDownload || isDownloading}
-            style={({ pressed }) => ({
-              borderRadius: 999,
-              backgroundColor:
-                canDownload && !isFullyDownloaded
-                  ? selectedBackground
-                  : colors.surface.softBeige,
-              paddingHorizontal: 18,
-              paddingVertical: 13,
-              alignItems: "center",
-              opacity: pressed ? 0.82 : !canDownload || isDownloading ? 0.65 : 1,
-            })}
-          >
-            <Text
-              style={{
-                color:
-                  canDownload && !isFullyDownloaded ? selectedText : colors.text.primary,
-                fontSize: typography.size.sm,
-                fontWeight: typography.weight.extrabold,
+          {canDownload && (
+            <Pressable
+              onPress={() => {
+                if (isFullyDownloaded) {
+                  void removeDownload();
+                } else {
+                  void downloadAll();
+                }
               }}
+              disabled={isDownloading}
+              style={({ pressed }) => ({
+                borderRadius: 999,
+                backgroundColor:
+                  !isFullyDownloaded
+                    ? selectedBackground
+                    : isDark
+                      ? "rgba(241, 224, 164, 0.12)"
+                      : colors.surface.softBeige,
+                paddingHorizontal: 16,
+                paddingVertical: 11,
+                alignItems: "center",
+                opacity: pressed ? 0.82 : isDownloading ? 0.65 : 1,
+              })}
             >
-              {downloadButtonLabel}
-            </Text>
-          </Pressable>
+              <Text
+                style={{
+                  color: !isFullyDownloaded ? selectedText : colors.text.primary,
+                  fontSize: typography.size.sm,
+                  fontWeight: typography.weight.extrabold,
+                }}
+              >
+                {downloadButtonLabel}
+              </Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
     </View>
