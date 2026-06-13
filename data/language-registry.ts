@@ -31,6 +31,7 @@ const URDU_VOLUMES: Volume[] = [
     sections: VOLUME1_SECTIONS,
     plans: VOLUME1_PLANS,
     format: "image",
+    availableFormats: ["image"],
   },
   {
     id: "volume2",
@@ -39,6 +40,7 @@ const URDU_VOLUMES: Volume[] = [
     sections: VOLUME2_SECTIONS,
     plans: VOLUME2_PLANS,
     format: "image",
+    availableFormats: ["image"],
   },
 ];
 
@@ -51,6 +53,7 @@ const ROMAN_URDU_VOLUMES: Volume[] = [
     sections: ROMAN_URDU_VOLUME1_SECTIONS,
     plans: ROMAN_URDU_VOLUME1_PLANS,
     format: "epub",
+    availableFormats: ["epub", "image"],
   },
 ];
 

@@ -8,7 +8,13 @@ import type { AppThemePreference } from "../../data/types";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
+import { useReadingFormatPreference } from "../../hooks/useReadingFormatPreference";
+import { useResolvedVolume } from "../../hooks/useResolvedVolume";
 import { useVolumeDownload } from "../../hooks/useVolumeDownload";
+import {
+  getReadingFormatLabel,
+  getReadingFormatStatusMessage,
+} from "../../lib/reading-format-resolver";
 
 const SELECTED_FILL = "#F1E0A4";
 const SELECTED_TEXT = "#101815";
@@ -48,6 +54,50 @@ function getDownloadStatusLabel({
   }
 
   return "Available online";
+}
+
+function FormatOption({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const { colors, resolvedTheme } = useAppTheme();
+  const selectedBackground = resolvedTheme === "dark" ? colors.surface.softBeige : SELECTED_FILL;
+  const selectedText = resolvedTheme === "dark" ? SELECTED_FILL : SELECTED_TEXT;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flex: 1,
+        borderRadius: 999,
+        backgroundColor: selected ? selectedBackground : colors.surface.softBeige,
+        borderWidth: 1.5,
+        borderColor: selected ? SELECTED_FILL : colors.surface.softBeige,
+        paddingHorizontal: 14,
+        paddingVertical: 11,
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: 44,
+        opacity: pressed ? 0.82 : 1,
+      })}
+    >
+      <Text
+        style={{
+          color: selected ? selectedText : colors.text.primary,
+          fontSize: typography.size.sm,
+          fontWeight: typography.weight.extrabold,
+          textAlign: "center",
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
 }
 
 function ThemeOption({
@@ -99,6 +149,9 @@ export default function SettingsScreen() {
   const { colors, resolvedTheme, themePreference, setThemePreference } = useAppTheme();
   const { currentLanguage, currentLanguageId } = useCurrentLanguage();
   const { currentVolume, currentVolumeId } = useCurrentVolume(currentLanguageId);
+  const resolvedVolume = useResolvedVolume(currentLanguageId, currentVolumeId);
+  const { preference: readingFormatPreference, setPreference: setReadingFormatPreference } =
+    useReadingFormatPreference();
   const {
     canDownload,
     deliveryMode,
@@ -137,6 +190,11 @@ export default function SettingsScreen() {
         ? "Downloading..."
         : "Download volume"
     : "Included";
+  const readingFormatStatusMessage = getReadingFormatStatusMessage(
+    readingFormatPreference,
+    resolvedVolume,
+  );
+  const activeReadingFormatLabel = getReadingFormatLabel(resolvedVolume.format);
 
   return (
     <View style={{ flex: 1, backgroundColor: screenBackground }}>
@@ -220,6 +278,80 @@ export default function SettingsScreen() {
               label="Dark"
               selected={themePreference === "dark"}
               onPress={() => void setThemePreference("dark")}
+            />
+          </View>
+        </View>
+
+        <View
+          style={{
+            backgroundColor: cardBackground,
+            borderRadius: 24,
+            borderWidth: isDark ? 1 : 0,
+            borderColor: cardBorderColor,
+            padding: 20,
+            gap: 16,
+            ...shadows.sm,
+          }}
+        >
+          <View style={{ gap: 6 }}>
+            <Text
+              style={{
+                color: colors.secondary.mutedGold,
+                fontSize: typography.size.sm,
+                fontWeight: typography.weight.bold,
+                letterSpacing: 0.5,
+                textTransform: "uppercase",
+              }}
+            >
+              Reading Format
+            </Text>
+            <Text
+              style={{
+                color: colors.text.primary,
+                fontSize: typography.size.xl,
+                fontWeight: typography.weight.extrabold,
+              }}
+            >
+              {getReadingFormatLabel(readingFormatPreference)}
+              {activeReadingFormatLabel !== getReadingFormatLabel(readingFormatPreference)
+                ? ` (${activeReadingFormatLabel})`
+                : ""}
+            </Text>
+          </View>
+
+          <Text
+            style={{
+              color: colors.text.tertiary,
+              fontSize: typography.size.base,
+              lineHeight: 22,
+            }}
+          >
+            Choose how you want to read. If your preferred format is not available for an
+            edition, the app will use the other format automatically.
+          </Text>
+
+          {readingFormatStatusMessage ? (
+            <Text
+              style={{
+                color: colors.text.secondary,
+                fontSize: typography.size.sm,
+                lineHeight: 20,
+              }}
+            >
+              {readingFormatStatusMessage}
+            </Text>
+          ) : null}
+
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <FormatOption
+              label="EPUB"
+              selected={readingFormatPreference === "epub"}
+              onPress={() => void setReadingFormatPreference("epub")}
+            />
+            <FormatOption
+              label="PDF"
+              selected={readingFormatPreference === "image"}
+              onPress={() => void setReadingFormatPreference("image")}
             />
           </View>
         </View>

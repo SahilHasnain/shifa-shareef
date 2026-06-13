@@ -30,6 +30,9 @@ export type ReadingPlanItem = {
   startPage: number;
   endPage: number;
   estimatedMinutes: number;
+  /** EPUB volumes: cached percentage range for plan status and navigation */
+  startProgressPercent?: number;
+  endProgressPercent?: number;
 };
 
 export type ReadingPlan = {
@@ -53,6 +56,9 @@ export type Bookmark = {
   page: number;
   label?: string;
   createdAt: string;
+  /** EPUB volumes: precise reading position */
+  cfi?: string;
+  progressPercent?: number;
 };
 
 export type ReadingSession = {
@@ -74,6 +80,8 @@ export type Volume = {
   sections: Section[];
   plans: ReadingPlan[];
   format: "image" | "epub";
+  /** When omitted, only `format` is available. */
+  availableFormats?: ReadingFormatPreference[];
 };
 
 export type Language = {
@@ -130,3 +138,6 @@ export type ResolvedPageAsset = {
 };
 
 export type AppThemePreference = "system" | "light" | "dark";
+
+/** User-facing PDF maps to the internal image-based reader. */
+export type ReadingFormatPreference = "epub" | "image";

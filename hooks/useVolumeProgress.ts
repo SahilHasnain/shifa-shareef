@@ -2,8 +2,10 @@ import { useMemo } from "react";
 
 import { getVolumeByLanguageAndId } from "../data/languages";
 import type { UnifiedProgress } from "../data/types";
+import { getResolvedVolume } from "../lib/reading-format-resolver";
 import { getCurrentSection } from "../lib/section-resolver";
 import { useEpubProgress } from "./useEpubProgress";
+import { useReadingFormatPreference } from "./useReadingFormatPreference";
 import { useReadingProgress } from "./useReadingProgress";
 
 export function useVolumeProgress(
@@ -15,7 +17,12 @@ export function useVolumeProgress(
   savePage: (page: number) => Promise<void>;
   saveEpub: (cfi: string, progressPercent: number) => Promise<void>;
 } {
-  const volume = getVolumeByLanguageAndId(languageId, volumeId);
+  const baseVolume = getVolumeByLanguageAndId(languageId, volumeId);
+  const { preference } = useReadingFormatPreference();
+  const volume = useMemo(
+    () => getResolvedVolume(baseVolume, preference),
+    [baseVolume, preference],
+  );
   const imageProgress = useReadingProgress(volumeId, languageId);
   const epubProgress = useEpubProgress(volumeId, languageId);
 

@@ -9,15 +9,25 @@ import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
-import { useReadingProgress } from "../../hooks/useReadingProgress";
+import { useResolvedVolume } from "../../hooks/useResolvedVolume";
+import { useVolumeProgress } from "../../hooks/useVolumeProgress";
+import { buildReaderHref } from "../../lib/section-resolver";
+import {
+  getCurrentPlanDay,
+  getPlanDayProgress,
+  getPlanItemForDay,
+  getPlanItemNavigationTarget,
+  getPlanItemPageLabel,
+} from "../../lib/plan-resolver";
 
 export default function PlansScreen() {
     const router = useRouter();
     const { colors, resolvedTheme } = useAppTheme();
     const { currentLanguage, currentLanguageId } = useCurrentLanguage();
     const { currentVolume, currentVolumeId } = useCurrentVolume(currentLanguageId);
-    const { progress } = useReadingProgress(currentVolumeId, currentLanguageId);
-    const { activePlan, startPlan, clearPlan } = useReadingPlan(
+    const resolvedVolume = useResolvedVolume(currentLanguageId, currentVolumeId);
+    const { progress } = useVolumeProgress(currentVolumeId, currentLanguageId);
+    const { activePlan, activePlanData, startPlan, clearPlan, isDayCompleted } = useReadingPlan(
         currentVolumeId,
         currentLanguageId,
     );
@@ -27,16 +37,17 @@ export default function PlansScreen() {
         currentVolumeId,
         currentVolume.title,
     );
-    const currentPage = progress?.lastPage ?? 1;
-    const readingPlans = currentVolume.plans;
     const currentPlanDay = activePlan
-        ? activePlan.items.find(
-            (item) => currentPage >= item.startPage && currentPage <= item.endPage,
-        )?.day ?? 1
+        ? getCurrentPlanDay(resolvedVolume, activePlan, progress)
         : 1;
     const currentPlanProgress = activePlan
-        ? Math.round((currentPlanDay / activePlan.totalDays) * 100)
+        ? getPlanDayProgress(resolvedVolume, activePlan, progress)
         : 0;
+    const todayPlanItem = activePlan
+        ? getPlanItemForDay(activePlan, currentPlanDay)
+        : undefined;
+    const completedPlanDays = activePlanData?.completedDays.length ?? 0;
+    const readingPlans = currentVolume.plans;
     const isDark = resolvedTheme === "dark";
     const screenBackground = isDark ? "#0B100D" : colors.surface.lightCream;
     const cardBackground = isDark ? "#151B17" : colors.surface.warmIvory;
@@ -254,6 +265,76 @@ export default function PlansScreen() {
                                 />
                             </View>
                         </View>
+
+                        {todayPlanItem ? (
+                            <View style={{ gap: 12 }}>
+                                <Text
+                                    style={{
+                                        color: "#C6D4CB",
+                                        fontSize: typography.size.base,
+                                        lineHeight: 22,
+                                    }}
+                                >
+                                    Today: {todayPlanItem.label}
+                                </Text>
+                                <Text
+                                    style={{
+                                        color: colors.text.light,
+                                        fontSize: typography.size.sm,
+                                    }}
+                                >
+                                    {getPlanItemPageLabel(resolvedVolume, todayPlanItem)}
+                                    {" • "}
+                                    {todayPlanItem.estimatedMinutes} min
+                                    {isDayCompleted(currentPlanDay) ? " • Completed" : ""}
+                                </Text>
+                                <Pressable
+                                    onPress={() =>
+                                        router.push(
+                                            buildReaderHref(
+                                                currentLanguageId,
+                                                currentVolumeId,
+                                                getPlanItemNavigationTarget(
+                                                    resolvedVolume,
+                                                    todayPlanItem,
+                                                ),
+                                            ) as any,
+                                        )
+                                    }
+                                    style={({ pressed }) => ({
+                                        alignSelf: "flex-start",
+                                        borderRadius: 999,
+                                        backgroundColor: colors.secondary.lightGold,
+                                        paddingHorizontal: 18,
+                                        paddingVertical: 12,
+                                        opacity: pressed ? 0.85 : 1,
+                                    })}
+                                >
+                                    <Text
+                                        style={{
+                                            color: colors.primary.deepGreen,
+                                            fontSize: typography.size.sm,
+                                            fontWeight: typography.weight.extrabold,
+                                        }}
+                                    >
+                                        {isDayCompleted(currentPlanDay)
+                                            ? "Review today's reading"
+                                            : "Start today's reading"}
+                                    </Text>
+                                </Pressable>
+                                {completedPlanDays > 0 ? (
+                                    <Text
+                                        style={{
+                                            color: "#C6D4CB",
+                                            fontSize: typography.size.sm,
+                                        }}
+                                    >
+                                        {completedPlanDays} day
+                                        {completedPlanDays === 1 ? "" : "s"} completed
+                                    </Text>
+                                ) : null}
+                            </View>
+                        ) : null}
                     </View>
                 )}
 
@@ -307,7 +388,7 @@ export default function PlansScreen() {
                                 >
                                     {plan.totalDays} days
                                     {firstItem
-                                        ? ` | Day 1 pages ${firstItem.startPage}-${firstItem.endPage}`
+                                        ? ` | Day 1 ${getPlanItemPageLabel(resolvedVolume, firstItem)}`
                                         : ""}
                                 </Text>
 

@@ -7,6 +7,22 @@ import type { Bookmark } from "../data/types";
 
 export type { Bookmark } from "../data/types";
 
+type AddBookmarkOptions = {
+  label?: string;
+  cfi?: string;
+  progressPercent?: number;
+};
+
+function sortBookmarks(bookmarks: Bookmark[]): Bookmark[] {
+  return [...bookmarks].sort((a, b) => {
+    if (a.progressPercent != null && b.progressPercent != null) {
+      return a.progressPercent - b.progressPercent;
+    }
+
+    return a.page - b.page;
+  });
+}
+
 export function useBookmarks(
   volumeId: string = DEFAULT_VOLUME_ID,
   languageId: string = DEFAULT_LANGUAGE_ID,
@@ -24,9 +40,7 @@ export function useBookmarks(
       }
 
       const parsed = JSON.parse(stored) as Bookmark[];
-      // Sort by page number
-      const sorted = parsed.sort((a, b) => a.page - b.page);
-      setBookmarks(sorted);
+      setBookmarks(sortBookmarks(parsed));
     } finally {
       setIsLoaded(true);
     }
@@ -36,17 +50,22 @@ export function useBookmarks(
     void loadBookmarks();
   }, [storageKey]);
 
-  const addBookmark = async (page: number, label?: string) => {
+  const addBookmark = async (
+    page: number,
+    options?: AddBookmarkOptions,
+  ) => {
     const newBookmark: Bookmark = {
       id: `bookmark-${Date.now()}`,
       languageId,
       volumeId,
       page,
-      label,
+      label: options?.label,
+      cfi: options?.cfi,
+      progressPercent: options?.progressPercent,
       createdAt: new Date().toISOString(),
     };
 
-    const updated = [...bookmarks, newBookmark].sort((a, b) => a.page - b.page);
+    const updated = sortBookmarks([...bookmarks, newBookmark]);
     setBookmarks(updated);
     await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
   };
@@ -57,12 +76,44 @@ export function useBookmarks(
     await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
   };
 
-  const isBookmarked = (page: number) => {
-    return bookmarks.some((b) => b.page === page);
+  const isBookmarked = (
+    page: number,
+    cfi?: string,
+    progressPercent?: number,
+  ) => {
+    if (cfi) {
+      return bookmarks.some((bookmark) => bookmark.cfi === cfi);
+    }
+
+    if (progressPercent != null) {
+      return bookmarks.some(
+        (bookmark) =>
+          bookmark.progressPercent != null &&
+          Math.abs(bookmark.progressPercent - progressPercent) < 0.005,
+      );
+    }
+
+    return bookmarks.some((bookmark) => bookmark.page === page);
   };
 
   const getBookmarkForPage = (page: number) => {
-    return bookmarks.find((b) => b.page === page);
+    return bookmarks.find((bookmark) => bookmark.page === page);
+  };
+
+  const getBookmarkForLocation = (cfi?: string, progressPercent?: number) => {
+    if (cfi) {
+      return bookmarks.find((bookmark) => bookmark.cfi === cfi);
+    }
+
+    if (progressPercent != null) {
+      return bookmarks.find(
+        (bookmark) =>
+          bookmark.progressPercent != null &&
+          Math.abs(bookmark.progressPercent - progressPercent) < 0.005,
+      );
+    }
+
+    return undefined;
   };
 
   return {
@@ -72,5 +123,6 @@ export function useBookmarks(
     removeBookmark,
     isBookmarked,
     getBookmarkForPage,
+    getBookmarkForLocation,
   };
 }

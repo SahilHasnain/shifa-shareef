@@ -28,6 +28,7 @@ import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
+import { useResolvedVolume } from "../../hooks/useResolvedVolume";
 import { useVolumeProgress } from "../../hooks/useVolumeProgress";
 import {
   buildReaderHref,
@@ -35,6 +36,12 @@ import {
   getProgressDisplayLabel,
   getResumeNavigationTarget,
 } from "../../lib/section-resolver";
+import {
+  getCurrentPlanDay,
+  getPlanDayProgress,
+  getPlanItemForDay,
+  getPlanItemNavigationTarget,
+} from "../../lib/plan-resolver";
 
 const SELECTED_CHIP_FILL = "#F1E0A4";
 const SELECTED_CHIP_TEXT = "#101815";
@@ -51,7 +58,7 @@ function ContinueReadingContent({
   showVolumeLabel: boolean;
 }) {
   const { colors } = useAppTheme();
-  const volume = getVolumeByLanguageAndId(languageId, volumeId);
+  const volume = useResolvedVolume(languageId, volumeId);
   const { progress } = useVolumeProgress(volumeId, languageId);
 
   const currentSection =
@@ -122,13 +129,22 @@ export default function HomeScreen() {
   const fade = useSharedValue(1);
 
   const { currentLanguage, currentLanguageId, switchLanguage } = useCurrentLanguage();
-  const { currentVolume, currentVolumeId, switchVolume } = useCurrentVolume(currentLanguageId);
+  const { currentVolumeId, switchVolume } = useCurrentVolume(currentLanguageId);
+  const resolvedCurrentVolume = useResolvedVolume(currentLanguageId, currentVolumeId);
   const { progress } = useVolumeProgress(currentVolumeId, currentLanguageId);
   const { activePlan } = useReadingPlan(currentVolumeId, currentLanguageId);
 
   const [displayVolumeId, setDisplayVolumeId] = useState(currentVolumeId);
 
-  const currentPage = progress.lastPage ?? 1;
+  const currentPlanDay = activePlan
+    ? getCurrentPlanDay(resolvedCurrentVolume, activePlan, progress)
+    : 1;
+  const currentPlanProgress = activePlan
+    ? getPlanDayProgress(resolvedCurrentVolume, activePlan, progress)
+    : 0;
+  const todayPlanItem = activePlan
+    ? getPlanItemForDay(activePlan, currentPlanDay)
+    : undefined;
   const showVolumeControls = shouldShowVolumeLabel(currentLanguageId);
   const currentVolumeIndex = useMemo(
     () =>
@@ -138,20 +154,16 @@ export default function HomeScreen() {
       ),
     [currentLanguage.volumes, displayVolumeId],
   );
-  const currentDisplayVolume =
+  const currentDisplayVolumeBase =
     currentLanguage.volumes[currentVolumeIndex] ?? currentLanguage.volumes[0];
+  const currentDisplayVolume = useResolvedVolume(
+    currentLanguageId,
+    currentDisplayVolumeBase.id,
+  );
   const { progress: currentDisplayProgress } = useVolumeProgress(
     currentDisplayVolume.id,
     currentLanguageId,
   );
-  const currentPlanDay = activePlan
-    ? activePlan.items.find(
-      (item) => currentPage >= item.startPage && currentPage <= item.endPage,
-    )?.day ?? 1
-    : 1;
-  const currentPlanProgress = activePlan
-    ? Math.round((currentPlanDay / activePlan.totalDays) * 100)
-    : 0;
   const isDark = resolvedTheme === "dark";
   const homeBackground = isDark ? "#0B100D" : colors.surface.lightCream;
   const primaryCardBackground = isDark ? "#151B17" : colors.surface.warmIvory;
@@ -581,6 +593,37 @@ export default function HomeScreen() {
                 />
               </View>
             </View>
+
+            {todayPlanItem ? (
+              <Pressable
+                onPress={() =>
+                  router.push(
+                    buildReaderHref(
+                      currentLanguageId,
+                      currentVolumeId,
+                      getPlanItemNavigationTarget(resolvedCurrentVolume, todayPlanItem),
+                    ) as any,
+                  )
+                }
+                style={({ pressed }) => ({
+                  borderRadius: 999,
+                  backgroundColor: "rgba(201, 169, 97, 0.12)",
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  opacity: pressed ? 0.85 : 1,
+                })}
+              >
+                <Text
+                  style={{
+                    color: colors.secondary.mutedGold,
+                    fontSize: typography.size.sm,
+                    fontWeight: typography.weight.bold,
+                  }}
+                >
+                  Continue Day {currentPlanDay}: {todayPlanItem.label}
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : (
           <Pressable
@@ -753,7 +796,7 @@ export default function HomeScreen() {
                 buildReaderHref(
                   currentLanguageId,
                   currentVolumeId,
-                  getResumeNavigationTarget(currentVolume, progress),
+                  getResumeNavigationTarget(resolvedCurrentVolume, progress),
                 ) as any,
               )
             }
@@ -828,7 +871,7 @@ export default function HomeScreen() {
               </Text>
             </Pressable>
           </View>
-          {currentVolume.sections.slice(0, 3).map((section) => (
+          {resolvedCurrentVolume.sections.slice(0, 3).map((section) => (
             <View
               key={section.id}
               style={{

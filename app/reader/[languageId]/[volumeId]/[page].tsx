@@ -31,9 +31,17 @@ import { useBookmarks } from "../../../../hooks/useBookmarks";
 import { useAppTheme } from "../../../../hooks/useAppTheme";
 import { useCurrentLanguage } from "../../../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../../../hooks/useCurrentVolume";
+import { useReadingPlan } from "../../../../hooks/useReadingPlan";
 import { useReadingProgress } from "../../../../hooks/useReadingProgress";
 import { useReadingSessions } from "../../../../hooks/useReadingSessions";
+import {
+  getCurrentPlanDay,
+  getPlanItemForDay,
+  isPlanDayComplete,
+} from "../../../../lib/plan-resolver";
 import { useResolvedPageAsset } from "../../../../hooks/useResolvedPageAsset";
+import { useResolvedVolume } from "../../../../hooks/useResolvedVolume";
+import { getEpubUrl } from "../../../../lib/reading-format-resolver";
 import { prefetchPageAssets } from "../../../../lib/page-asset-resolver";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -138,7 +146,8 @@ export default function ReaderScreen() {
     progressPercent?: string;
   }>();
   const language = getLanguageById(params.languageId);
-  const volume = getVolumeByLanguageAndId(language.id, params.volumeId);
+  const baseVolume = getVolumeByLanguageAndId(language.id, params.volumeId);
+  const volume = useResolvedVolume(language.id, baseVolume.id);
   const showVolumeLabel = shouldShowVolumeLabel(language.id);
   const volumeDisplayTitle = getVolumeDisplayTitle(language.id, volume.id, volume.title);
   const { switchLanguage } = useCurrentLanguage();
@@ -150,7 +159,7 @@ export default function ReaderScreen() {
   );
 
   if (volume.format === "epub") {
-    const epubUrl = `https://cdn.jsdelivr.net/gh/SahilHasnain/shifa-shareef-assets@main/epub/${language.id}/${volume.id}.epub`;
+    const epubUrl = getEpubUrl(language.id, volume.id);
     const navigationCfi =
       typeof params.cfi === "string" && params.cfi.length > 0
         ? params.cfi
@@ -196,6 +205,7 @@ export default function ReaderScreen() {
     useBookmarks(volume.id, language.id);
   const { colors } = useAppTheme();
   const { addSession, getCurrentStreak } = useReadingSessions();
+  const { activePlan, completePlanDay } = useReadingPlan(volume.id, language.id);
 
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [pageInput, setPageInput] = useState(String(initialPage));
@@ -256,6 +266,23 @@ export default function ReaderScreen() {
         durationMinutes,
       });
 
+      if (activePlan) {
+        const currentDay = getCurrentPlanDay(volume, activePlan, {
+          format: "image",
+          lastPage: sessionMaxPage.current,
+        });
+        const planItem = getPlanItemForDay(activePlan, currentDay);
+        if (
+          planItem &&
+          isPlanDayComplete(volume, planItem, {
+            format: "image",
+            lastPage: sessionMaxPage.current,
+          })
+        ) {
+          await completePlanDay(currentDay);
+        }
+      }
+
       if (shouldShowModal) {
         const newStreak = getCurrentStreak();
 
@@ -271,7 +298,7 @@ export default function ReaderScreen() {
     }
 
     return false;
-  }, [addSession, getCurrentStreak, language.id, volume.id]);
+  }, [activePlan, addSession, completePlanDay, getCurrentStreak, language.id, volume]);
 
   const moveToPage = useCallback(
     (nextPageNum: number) => {

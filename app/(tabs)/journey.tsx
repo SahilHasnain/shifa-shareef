@@ -7,7 +7,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { shadows, typography } from "../../constants/theme";
 import {
-  getCurrentSectionByLanguage,
   getVolumeByLanguageAndId,
   getVolumeDisplayTitle,
   shouldShowVolumeLabel,
@@ -16,7 +15,19 @@ import type { Bookmark } from "../../data/types";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useGlobalStats } from "../../hooks/useGlobalStats";
+import { useLanguageVolumeProgresses } from "../../hooks/useLanguageVolumeProgresses";
+import { useReadingFormatPreference } from "../../hooks/useReadingFormatPreference";
 import { useReadingSessions, type ReadingSession } from "../../hooks/useReadingSessions";
+import {
+  buildReaderHref,
+  getSectionStatus,
+} from "../../lib/section-resolver";
+import {
+  getBookmarkDisplayLabel,
+  getBookmarkNavigationTarget,
+  getBookmarkSection,
+} from "../../lib/bookmark-resolver";
+import { getResolvedVolume } from "../../lib/reading-format-resolver";
 
 const SELECTED_CHIP_FILL = "#F1E0A4";
 const SELECTED_CHIP_TEXT = "#101815";
@@ -30,6 +41,8 @@ export default function JourneyScreen() {
   const [filterVolumeId, setFilterVolumeId] = useState<string | null>(null);
   const [allBookmarks, setAllBookmarks] = useState<Bookmark[]>([]);
   const { volumeStats, languageStats } = useGlobalStats();
+  const { progressByVolume } = useLanguageVolumeProgresses(currentLanguageId);
+  const { preference: readingFormatPreference } = useReadingFormatPreference();
   const {
     sessions,
     getCurrentStreak,
@@ -103,39 +116,75 @@ export default function JourneyScreen() {
 
   const filteredSectionsCompleted = filterVolumeId
     ? (() => {
-      const volume = getVolumeByLanguageAndId(currentLanguageId, filterVolumeId);
-      const latestSession = sessions.find(
-        (session) =>
-          session.languageId === currentLanguageId &&
-          session.volumeId === filterVolumeId,
-      );
-      const latestPage = latestSession?.endPage ?? 1;
-      return volume.sections.filter((section) => latestPage > section.endPage).length;
-    })()
-    : sessions
-        .filter((session) => session.languageId === currentLanguageId)
-        .reduce((maxCompleted, session) => {
-      const volume = getVolumeByLanguageAndId(currentLanguageId, session.volumeId);
-      const completed = volume.sections.filter(
-        (section) => session.endPage > section.endPage,
-      ).length;
-      return Math.max(maxCompleted, completed);
-    }, 0);
+        const volume = getResolvedVolume(
+          getVolumeByLanguageAndId(currentLanguageId, filterVolumeId),
+          readingFormatPreference,
+        );
+        const progress = progressByVolume[filterVolumeId];
+        if (!progress) return 0;
 
-  const progressPercent = Math.min(
-    100,
-    filterVolumeId
-      ? Math.round(
-        ((volumeStats[filterVolumeId] ?? 0) /
-          getVolumeByLanguageAndId(currentLanguageId, filterVolumeId).totalPages) *
-        100,
-      )
-      : Math.round(
-        ((languageStats[currentLanguageId] ?? 0) /
-          currentLanguage.volumes.reduce((sum, volume) => sum + volume.totalPages, 0)) *
-        100,
-      ),
-  );
+        return volume.sections.filter(
+          (section) =>
+            getSectionStatus(volume, section, progress) === "completed",
+        ).length;
+      })()
+    : currentLanguage.volumes.reduce((total, volume) => {
+        const resolvedVolume = getResolvedVolume(volume, readingFormatPreference);
+        const progress = progressByVolume[volume.id];
+        if (!progress) return total;
+
+        return (
+          total +
+          resolvedVolume.sections.filter(
+            (section) =>
+              getSectionStatus(resolvedVolume, section, progress) === "completed",
+          ).length
+        );
+      }, 0);
+
+  const filteredProgressPercent = filterVolumeId
+    ? (() => {
+        const volume = getResolvedVolume(
+          getVolumeByLanguageAndId(currentLanguageId, filterVolumeId),
+          readingFormatPreference,
+        );
+        const progress = progressByVolume[filterVolumeId];
+
+        if (volume.format === "epub" && progress?.progressPercent != null) {
+          return Math.round(progress.progressPercent * 100);
+        }
+
+        return Math.min(
+          100,
+          Math.round(
+            ((volumeStats[filterVolumeId] ?? 0) / volume.totalPages) * 100,
+          ),
+        );
+      })()
+    : (() => {
+        const totalPages = currentLanguage.volumes.reduce(
+          (sum, volume) => sum + volume.totalPages,
+          0,
+        );
+        const imagePagesRead = languageStats[currentLanguageId] ?? 0;
+        const epubEquivalentPages = currentLanguage.volumes.reduce((sum, volume) => {
+          const resolvedVolume = getResolvedVolume(volume, readingFormatPreference);
+          if (resolvedVolume.format !== "epub") {
+            return sum;
+          }
+
+          const progress = progressByVolume[volume.id];
+          return (
+            sum +
+            Math.round((progress?.progressPercent ?? 0) * volume.totalPages)
+          );
+        }, 0);
+
+        return Math.min(
+          100,
+          Math.round(((imagePagesRead + epubEquivalentPages) / totalPages) * 100),
+        );
+      })();
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -252,7 +301,7 @@ export default function JourneyScreen() {
             <View
               style={{
                 height: "100%",
-                width: `${progressPercent}%`,
+                width: `${filteredProgressPercent}%`,
                 backgroundColor: colors.secondary.lightGold,
                 borderRadius: 5,
               }}
@@ -491,9 +540,12 @@ export default function JourneyScreen() {
                 const sessionDate = new Date(session.date);
                 const isToday =
                   sessionDate.toDateString() === new Date().toDateString();
-                const sessionVolume = getVolumeByLanguageAndId(
-                  session.languageId,
-                  session.volumeId,
+                const sessionVolume = getResolvedVolume(
+                  getVolumeByLanguageAndId(
+                    session.languageId,
+                    session.volumeId,
+                  ),
+                  readingFormatPreference,
                 );
 
                 return (
@@ -585,7 +637,9 @@ export default function JourneyScreen() {
                             marginTop: 2,
                           }}
                         >
-                          Pages {session.startPage}-{session.endPage}
+                          {sessionVolume.format === "epub"
+                            ? `~Pages ${session.startPage}-${session.endPage}`
+                            : `Pages ${session.startPage}-${session.endPage}`}
                         </Text>
                       </View>
                     </View>
@@ -656,22 +710,26 @@ export default function JourneyScreen() {
           ) : (
             <View style={{ gap: 10 }}>
               {filteredBookmarks.map((bookmark) => {
-                const section = getCurrentSectionByLanguage(
-                  bookmark.languageId,
-                  bookmark.volumeId,
-                  bookmark.page,
+                const bookmarkVolume = getResolvedVolume(
+                  getVolumeByLanguageAndId(
+                    bookmark.languageId,
+                    bookmark.volumeId,
+                  ),
+                  readingFormatPreference,
                 );
-                const bookmarkVolume = getVolumeByLanguageAndId(
-                  bookmark.languageId,
-                  bookmark.volumeId,
-                );
+                const section = getBookmarkSection(bookmarkVolume, bookmark);
+                const bookmarkLabel = getBookmarkDisplayLabel(bookmarkVolume, bookmark);
 
                 return (
                   <Pressable
                     key={bookmark.id}
                     onPress={() =>
                       router.push(
-                        `/reader/${bookmark.languageId}/${bookmark.volumeId}/${bookmark.page}` as any,
+                        buildReaderHref(
+                          bookmark.languageId,
+                          bookmark.volumeId,
+                          getBookmarkNavigationTarget(bookmarkVolume, bookmark),
+                        ) as any,
                       )
                     }
                     style={{
@@ -717,15 +775,15 @@ export default function JourneyScreen() {
                                   bookmark.languageId,
                                   bookmark.volumeId,
                                   bookmarkVolume.title,
-                                )}: Page ${bookmark.page}`
-                              : `Page ${bookmark.page}`
+                                )}: ${bookmarkLabel}`
+                              : bookmarkLabel
                             : shouldShowVolumeLabel(bookmark.languageId)
                               ? `${bookmark.languageId} • ${getVolumeDisplayTitle(
                                   bookmark.languageId,
                                   bookmark.volumeId,
                                   bookmarkVolume.title,
-                                )}: Page ${bookmark.page}`
-                              : `${bookmark.languageId} • Page ${bookmark.page}`}
+                                )}: ${bookmarkLabel}`
+                              : `${bookmark.languageId} • ${bookmarkLabel}`}
                         </Text>
                         {section && (
                           <Text

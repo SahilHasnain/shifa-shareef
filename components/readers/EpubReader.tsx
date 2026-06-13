@@ -1,16 +1,26 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
-import { Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { BackHandler, Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
+import { SessionCompletionModal } from "../SessionCompletionModal";
 import { typography } from "../../constants/theme";
 import { BOOK_TITLE } from "../../data/book";
 import type { Language, Volume } from "../../data/types";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useBookmarks } from "../../hooks/useBookmarks";
+import { useReadingPlan } from "../../hooks/useReadingPlan";
+import { useReadingSessions } from "../../hooks/useReadingSessions";
+import { getBookmarkDisplayLabel } from "../../lib/bookmark-resolver";
+import {
+  getCurrentPlanDay,
+  getPlanItemForDay,
+  isPlanDayComplete,
+} from "../../lib/plan-resolver";
+import { getCurrentSection } from "../../lib/section-resolver";
 
 type EpubReaderProps = {
   language: Language;
@@ -273,7 +283,41 @@ export function EpubReader({
   const [toc, setToc] = useState<Array<{ label: string; href: string }>>([]);
   const [bookmarksVisible, setBookmarksVisible] = useState(false);
   const [currentCfi, setCurrentCfi] = useState<string>("");
-  const { isBookmarked, addBookmark, removeBookmark, bookmarks } = useBookmarks(volume.id, language.id);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [completionData, setCompletionData] = useState<{
+    pagesRead: number;
+    durationMinutes: number;
+    currentStreak: number;
+    isNewStreak: boolean;
+    sectionsCompleted?: number;
+  } | null>(null);
+  const {
+    isBookmarked,
+    addBookmark,
+    removeBookmark,
+    bookmarks,
+    getBookmarkForLocation,
+  } = useBookmarks(volume.id, language.id);
+  const { activePlan, completePlanDay } = useReadingPlan(volume.id, language.id);
+  const { addSession, getCurrentStreak } = useReadingSessions();
+
+  const sessionStartTime = useRef(Date.now());
+  const sessionMinProgress = useRef(0);
+  const sessionMaxProgress = useRef(0);
+  const sessionStartProgress = useRef<number | null>(null);
+  const sessionCompletedRef = useRef(false);
+
+  const estimatedPage = Math.max(1, Math.round(currentProgress * volume.totalPages) || 1);
+  const locationIsBookmarked = isBookmarked(
+    estimatedPage,
+    currentCfi || undefined,
+    currentProgress,
+  );
+  const currentSection = getCurrentSection(volume, {
+    format: "epub",
+    progressPercent: currentProgress,
+    lastCfi: currentCfi,
+  }) ?? volume.sections[0];
 
   useEffect(() => {
     async function loadBundledEpub() {
@@ -340,6 +384,164 @@ export function EpubReader({
     }
   }, [fontSize, epubBase64]);
 
+  useEffect(() => {
+    sessionMinProgress.current = Math.min(sessionMinProgress.current, currentProgress);
+    sessionMaxProgress.current = Math.max(sessionMaxProgress.current, currentProgress);
+  }, [currentProgress]);
+
+  const completeSession = useCallback(async () => {
+    if (sessionCompletedRef.current) {
+      return false;
+    }
+
+    const endTime = Date.now();
+    const durationMs = endTime - sessionStartTime.current;
+    const durationMinutes = Math.max(1, Math.round(durationMs / 60000));
+    const progressDelta = sessionMaxProgress.current - sessionMinProgress.current;
+    const pagesRead = Math.max(
+      1,
+      Math.round(progressDelta * volume.totalPages) || 1,
+    );
+    const startPage = Math.max(
+      1,
+      Math.round(sessionMinProgress.current * volume.totalPages) || 1,
+    );
+    const endPage = Math.max(
+      startPage,
+      Math.round(sessionMaxProgress.current * volume.totalPages) || startPage,
+    );
+    const shouldShowModal = durationMs >= 180000 || pagesRead >= 5;
+
+    if (durationMs >= 30000) {
+      sessionCompletedRef.current = true;
+      const previousStreak = getCurrentStreak();
+
+      await addSession({
+        languageId: language.id,
+        volumeId: volume.id,
+        date: new Date().toISOString(),
+        pagesRead,
+        startPage,
+        endPage,
+        durationMinutes,
+      });
+
+      if (activePlan) {
+        const currentDay = getCurrentPlanDay(volume, activePlan, {
+          format: "epub",
+          progressPercent: sessionMaxProgress.current,
+        });
+        const planItem = getPlanItemForDay(activePlan, currentDay);
+        if (
+          planItem &&
+          isPlanDayComplete(volume, planItem, {
+            format: "epub",
+            progressPercent: sessionMaxProgress.current,
+          })
+        ) {
+          await completePlanDay(currentDay);
+        }
+      }
+
+      if (shouldShowModal) {
+        const newStreak = getCurrentStreak();
+        const sectionsCompleted = volume.sections.filter((section) => {
+          const end =
+            section.endProgressPercent ?? section.endPage / volume.totalPages;
+          return sessionStartProgress.current != null
+            ? sessionStartProgress.current <= end &&
+                sessionMaxProgress.current > end
+            : false;
+        }).length;
+
+        setCompletionData({
+          pagesRead,
+          durationMinutes,
+          currentStreak: newStreak,
+          isNewStreak: newStreak > previousStreak,
+          sectionsCompleted,
+        });
+        setShowCompletionModal(true);
+        return true;
+      }
+    }
+
+    return false;
+  }, [
+    activePlan,
+    addSession,
+    completePlanDay,
+    getCurrentStreak,
+    language.id,
+    volume,
+  ]);
+
+  useEffect(() => {
+    if (sessionStartProgress.current == null && currentProgress > 0) {
+      sessionStartProgress.current = currentProgress;
+    }
+  }, [currentProgress]);
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (showCompletionModal) {
+        setShowCompletionModal(false);
+        return true;
+      }
+
+      void completeSession().then((showingModal) => {
+        if (!showingModal) {
+          router.back();
+        }
+      });
+      return true;
+    });
+
+    return () => backHandler.remove();
+  }, [completeSession, router, showCompletionModal]);
+
+  const handleBack = () => {
+    void completeSession().then((showingModal) => {
+      if (!showingModal) {
+        router.back();
+      }
+    });
+  };
+
+  const toggleBookmark = async () => {
+    if (locationIsBookmarked) {
+      const bookmarkData = getBookmarkForLocation(
+        currentCfi || undefined,
+        currentProgress,
+      );
+      if (bookmarkData) {
+        await removeBookmark(bookmarkData.id);
+      }
+    } else {
+      await addBookmark(estimatedPage, {
+        cfi: currentCfi || undefined,
+        progressPercent: currentProgress,
+        label: currentSection.title,
+      });
+    }
+  };
+
+  const jumpToBookmark = (bookmark: (typeof bookmarks)[number]) => {
+    if (bookmark.cfi) {
+      webViewRef.current?.postMessage(
+        JSON.stringify({ type: "GO_TO_CFI", cfi: bookmark.cfi }),
+      );
+    } else if (bookmark.progressPercent != null) {
+      webViewRef.current?.postMessage(
+        JSON.stringify({
+          type: "GO_TO_PERCENT",
+          progress: bookmark.progressPercent,
+        }),
+      );
+    }
+    setBookmarksVisible(false);
+  };
+
   const handleMessage = (event: any) => {
     try {
       const data = event.nativeEvent.data;
@@ -374,7 +576,7 @@ export function EpubReader({
     <View style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>
       {controlsVisible && (
         <View style={{ position: "absolute", top: 0, left: 0, right: 0, backgroundColor: colors.overlay.dark, paddingTop: 50, paddingBottom: 12, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 12, zIndex: 10 }}>
-          <Pressable onPress={() => router.back()} style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+          <Pressable onPress={handleBack} style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
             <Ionicons name="chevron-back" size={24} color={colors.text.onPrimary} />
           </Pressable>
           <View style={{ flex: 1 }}>
@@ -465,10 +667,7 @@ export function EpubReader({
 
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                 <Pressable
-                  onPress={async () => {
-                    const estimatedPage = Math.round(currentProgress * volume.totalPages) || 1;
-                    await addBookmark(estimatedPage);
-                  }}
+                  onPress={toggleBookmark}
                   style={({ pressed }) => ({
                     width: 44,
                     height: 44,
@@ -479,7 +678,11 @@ export function EpubReader({
                     opacity: pressed ? 0.7 : 1,
                   })}
                 >
-                  <Ionicons name="bookmark" size={20} color={colors.text.onPrimary} />
+                  <Ionicons
+                    name={locationIsBookmarked ? "bookmark" : "bookmark-outline"}
+                    size={20}
+                    color={colors.text.onPrimary}
+                  />
                 </Pressable>
 
                 <Pressable
@@ -567,15 +770,19 @@ export function EpubReader({
                 bookmarks.map((bookmark) => (
                   <TouchableOpacity
                     key={bookmark.id}
-                    onPress={() => {
-                      // Jump to bookmark - for now we'll use page estimation
-                      setBookmarksVisible(false);
-                    }}
+                    onPress={() => jumpToBookmark(bookmark)}
                     style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.surface.creamyWhite, flexDirection: 'row', alignItems: 'center', gap: 12 }}
                   >
                     <Ionicons name="bookmark" size={20} color={colors.primary.sageGreen} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: typography.size.base, fontWeight: typography.weight.semibold, color: colors.text.primary }}>Page {bookmark.page}</Text>
+                      <Text style={{ fontSize: typography.size.base, fontWeight: typography.weight.semibold, color: colors.text.primary }}>
+                        {getBookmarkDisplayLabel(volume, bookmark)}
+                      </Text>
+                      {bookmark.label ? (
+                        <Text style={{ fontSize: typography.size.sm, color: colors.text.tertiary, marginTop: 2 }}>
+                          {bookmark.label}
+                        </Text>
+                      ) : null}
                       <Text style={{ fontSize: typography.size.sm, color: colors.text.tertiary, marginTop: 4 }}>{new Date(bookmark.createdAt).toLocaleDateString()}</Text>
                     </View>
                     <Pressable
@@ -593,6 +800,30 @@ export function EpubReader({
           </View>
         </View>
       </Modal>
+
+      {showCompletionModal && completionData && (
+        <SessionCompletionModal
+          visible={showCompletionModal}
+          onClose={() => {
+            setShowCompletionModal(false);
+            setCompletionData(null);
+          }}
+          onContinue={() => {
+            setShowCompletionModal(false);
+            setCompletionData(null);
+          }}
+          onGoHome={() => {
+            setShowCompletionModal(false);
+            setCompletionData(null);
+            router.replace("/(tabs)/" as any);
+          }}
+          pagesRead={completionData.pagesRead}
+          durationMinutes={completionData.durationMinutes}
+          currentStreak={completionData.currentStreak}
+          isNewStreak={completionData.isNewStreak}
+          sectionsCompleted={completionData.sectionsCompleted}
+        />
+      )}
     </View>
   );
 }
