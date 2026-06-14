@@ -1,9 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system/legacy";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BackHandler, Modal, Pressable, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, BackHandler, Modal, Pressable, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
@@ -35,13 +36,14 @@ type EpubReaderProps = {
   onProgressChange: (cfi: string, progress: number) => void;
 };
 
-const EPUB_HTML = `
+function buildEpubHtml(jszipUri: string, epubJsUri: string): string {
+  return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
+  <script src="${jszipUri}"></script>
+  <script src="${epubJsUri}"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { margin: 0; padding: 0; overflow: hidden; background: #FFF9F0; }
@@ -65,19 +67,9 @@ const EPUB_HTML = `
         const message = JSON.parse(data);
         
         if (message.type === 'LOAD_EPUB') {
-          loadEpub(message.base64, message.cfi, message.progressPercent, message.theme, message.cachedLocations);
+          loadEpub(message.fileUri, message.cfi, message.progressPercent, message.theme, message.cachedLocations);
         } else if (message.type === 'SET_THEME') {
-          if (rendition) {
-            if (message.theme.isDark) {
-              rendition.themes.default({
-                'body': { 'background': message.theme.background + ' !important', 'color': message.theme.text + ' !important' },
-                '*': { 'color': message.theme.text + ' !important' }
-              });
-            } else {
-              rendition.themes.default({ 'body': { 'background': message.theme.background + ' !important', 'color': message.theme.text + ' !important' } });
-            }
-            document.body.style.background = message.theme.background;
-          }
+          applyTheme(message.theme);
         } else if (message.type === 'SET_FONT_SIZE') {
             if (rendition) {
             try {
@@ -136,17 +128,26 @@ const EPUB_HTML = `
       } catch (err) {}
     }
 
-    function loadEpub(base64Data, startCfi, startProgressPercent, theme, cachedLocations) {
-      try {
-        const binary = atob(base64Data);
-        const len = binary.length;
-        const buffer = new ArrayBuffer(len);
-        const view = new Uint8Array(buffer);
-        for (let i = 0; i < len; i++) {
-          view[i] = binary.charCodeAt(i);
+    function applyTheme(theme) {
+      if (!theme) return;
+      document.body.style.background = theme.background;
+      if (!rendition) return;
+      rendition.themes.override('color', theme.text);
+      rendition.themes.override('background', theme.background);
+      rendition.themes.default({
+        'body': {
+          'background': theme.background + ' !important',
+          'color': theme.text + ' !important'
+        },
+        'p, div, span, li, h1, h2, h3, h4, h5, h6': {
+          'color': theme.text + ' !important'
         }
+      });
+    }
 
-        book = ePub(buffer);
+    function loadEpub(fileUri, startCfi, startProgressPercent, theme, cachedLocations) {
+      try {
+        book = ePub(fileUri);
 
         book.ready.then(function() {
           rendition = book.renderTo('viewer', {
@@ -157,10 +158,7 @@ const EPUB_HTML = `
           });
 
           if (theme) {
-            rendition.themes.default({
-              'body': { 'background': theme.background + ' !important', 'color': theme.text + ' !important' },
-              '*': { 'color': theme.text + ' !important' }
-            });
+            applyTheme(theme);
           }
 
           rendition.themes.fontSize('16px');
@@ -228,10 +226,17 @@ const EPUB_HTML = `
         }
       }
     }
+
+    if (typeof ePub !== 'undefined') {
+      if (typeof window.ReactNativeWebView !== 'undefined') {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SCRIPTS_READY' }));
+      }
+    }
   </script>
 </body>
 </html>
 `;
+}
 
 export function EpubReader({
   language,
@@ -248,9 +253,14 @@ export function EpubReader({
   const { readerTheme, setReaderTheme } = useReaderTheme();
   const themeColors = READER_THEME_COLORS[readerTheme];
   const webViewRef = useRef<WebView>(null);
+  const epubLoadedRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [readerHtml, setReaderHtml] = useState<string | null>(null);
+  const [webViewReady, setWebViewReady] = useState(false);
+  const [bookReady, setBookReady] = useState(false);
   const [currentProgress, setCurrentProgress] = useState(0);
-  const [epubBase64, setEpubBase64] = useState<string | null>(null);
+  const [epubFileUri, setEpubFileUri] = useState<string | null>(null);
   const [cachedLocations, setCachedLocations] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [fontSize, setFontSize] = useState(16);
@@ -295,6 +305,33 @@ export function EpubReader({
   }) ?? volume.sections[0];
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function prepareReader() {
+      try {
+        const [jszipAsset, epubJsAsset] = await Promise.all([
+          Asset.fromModule(require("../../assets/epub-reader/jszip.bundle")).downloadAsync(),
+          Asset.fromModule(require("../../assets/epub-reader/epub.bundle")).downloadAsync(),
+        ]);
+
+        if (cancelled) return;
+
+        const jszipUri = jszipAsset.localUri ?? jszipAsset.uri;
+        const epubJsUri = epubJsAsset.localUri ?? epubJsAsset.uri;
+        setReaderHtml(buildEpubHtml(jszipUri, epubJsUri));
+      } catch (err: any) {
+        if (!cancelled) {
+          setError("Failed to prepare reader: " + err.message);
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void prepareReader();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
     async function loadBundledEpub() {
       try {
         const filename = epubUrl.split('/').pop() || 'book.epub';
@@ -310,52 +347,53 @@ export function EpubReader({
           await FileSystem.downloadAsync(epubUrl, epubUri);
         }
 
-        const [base64] = await Promise.all([
-          FileSystem.readAsStringAsync(epubUri, { encoding: FileSystem.EncodingType.Base64 }),
-        ]);
-
         setCachedLocations(storedLocations);
-        setEpubBase64(base64);
+        setEpubFileUri(epubUri);
       } catch (err: any) {
         setError("Failed to load EPUB: " + err.message);
+        setIsLoading(false);
       }
     }
 
-    loadBundledEpub();
+    void loadBundledEpub();
   }, [epubUrl]);
 
-  useEffect(() => {
-    if (!epubBase64) return;
+  const sendLoadEpub = useCallback(() => {
+    if (!epubFileUri || !webViewReady || epubLoadedRef.current) return;
 
+    epubLoadedRef.current = true;
     webViewRef.current?.postMessage(
       JSON.stringify({
         type: "LOAD_EPUB",
-        base64: epubBase64,
+        fileUri: epubFileUri,
         cfi: initialCfi,
         progressPercent: initialProgressPercent,
         cachedLocations,
-        theme: themeColors,
+        theme: READER_THEME_COLORS[readerTheme],
       }),
     );
-  }, [epubBase64, initialCfi, initialProgressPercent, cachedLocations, themeColors]);
+  }, [epubFileUri, webViewReady, initialCfi, initialProgressPercent, cachedLocations, readerTheme]);
 
   useEffect(() => {
-    if (!epubBase64) return;
+    sendLoadEpub();
+  }, [sendLoadEpub]);
+
+  useEffect(() => {
+    if (!bookReady) return;
     webViewRef.current?.postMessage(
       JSON.stringify({ type: "SET_THEME", theme: READER_THEME_COLORS[readerTheme] }),
     );
-  }, [readerTheme, epubBase64]);
+  }, [readerTheme, bookReady]);
 
   useEffect(() => {
-    if (epubBase64) {
-      webViewRef.current?.postMessage(
-        JSON.stringify({
-          type: "SET_FONT_SIZE",
-          size: fontSize,
-        }),
-      );
-    }
-  }, [fontSize, epubBase64]);
+    if (!bookReady) return;
+    webViewRef.current?.postMessage(
+      JSON.stringify({
+        type: "SET_FONT_SIZE",
+        size: fontSize,
+      }),
+    );
+  }, [fontSize, bookReady]);
 
   useEffect(() => {
     sessionMinProgress.current = Math.min(sessionMinProgress.current, currentProgress);
@@ -531,7 +569,11 @@ export function EpubReader({
       if (!data || typeof data !== 'string' || (!data.startsWith('{') && !data.startsWith('['))) return;
 
       const message = JSON.parse(data);
-      if (message.type === "READY") {
+      if (message.type === "SCRIPTS_READY") {
+        setWebViewReady(true);
+      } else if (message.type === "READY") {
+        setBookReady(true);
+        setIsLoading(false);
         // Request TOC after book is ready
         webViewRef.current?.postMessage(JSON.stringify({ type: "GET_TOC" }));
         // Set initial font size
@@ -594,19 +636,40 @@ export function EpubReader({
           <Text style={{ color: colors.text.primary, fontSize: typography.size.lg, fontWeight: typography.weight.bold, marginBottom: 8 }}>Failed to load EPUB</Text>
           <Text style={{ color: colors.text.tertiary, fontSize: typography.size.base, textAlign: "center" }}>{error}</Text>
         </View>
+      ) : readerHtml ? (
+        <>
+          <WebView
+            ref={webViewRef}
+            source={{ html: readerHtml }}
+            onMessage={handleMessage}
+            onLoadEnd={() => {
+              webViewRef.current?.injectJavaScript(`
+                if (typeof ePub !== 'undefined' && window.ReactNativeWebView) {
+                  window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SCRIPTS_READY' }));
+                }
+                true;
+              `);
+            }}
+            style={{ flex: 1, backgroundColor: themeColors.background }}
+            javaScriptEnabled
+            domStorageEnabled
+            allowFileAccess
+            allowUniversalAccessFromFileURLs
+            mixedContentMode="always"
+            originWhitelist={['*']}
+            {...(epubFileUri ? { allowingReadAccessToURL: epubFileUri } : {})}
+          />
+          {isLoading && (
+            <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center", backgroundColor: themeColors.background }}>
+              <ActivityIndicator size="large" color={colors.primary.sageGreen} />
+              <Text style={{ color: colors.text.tertiary, fontSize: typography.size.base, marginTop: 12 }}>Loading book...</Text>
+            </View>
+          )}
+        </>
       ) : (
-        <WebView
-          ref={webViewRef}
-          source={{ html: EPUB_HTML }}
-          onMessage={handleMessage}
-          style={{ flex: 1, backgroundColor: themeColors.background }}
-          javaScriptEnabled
-          domStorageEnabled
-          allowFileAccess
-          allowUniversalAccessFromFileURLs
-          mixedContentMode="always"
-          originWhitelist={['*']}
-        />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: themeColors.background }}>
+          <ActivityIndicator size="large" color={colors.primary.sageGreen} />
+        </View>
       )}
 
       {controlsVisible && (

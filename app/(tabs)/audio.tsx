@@ -17,12 +17,14 @@ type SubTab = "library" | "live";
 // Custom Slider Component
 function CustomSlider({
   value,
+  onValueChange,
   onSlidingComplete,
   minimumTrackTintColor,
   maximumTrackTintColor,
   thumbTintColor,
 }: {
   value: number;
+  onValueChange?: (value: number) => void;
   onSlidingComplete: (value: number) => void;
   minimumTrackTintColor: string;
   maximumTrackTintColor: string;
@@ -32,6 +34,7 @@ function CustomSlider({
   const [localValue, setLocalValue] = useState(value);
   const sliderWidthRef = useRef(0);
   const localValueRef = useRef(value);
+  const grantXRef = useRef(0);
 
   useEffect(() => {
     if (!isDragging) {
@@ -40,19 +43,30 @@ function CustomSlider({
     }
   }, [value, isDragging]);
 
+  const valueFromX = useCallback((x: number) => {
+    const width = sliderWidthRef.current;
+    if (width <= 0) return localValueRef.current;
+    return Math.max(0, Math.min(1, x / width));
+  }, []);
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: (evt: GestureResponderEvent) => {
         setIsDragging(true);
-        const newValue = Math.max(0, Math.min(1, evt.nativeEvent.locationX / sliderWidthRef.current));
+        grantXRef.current = evt.nativeEvent.locationX;
+        const newValue = valueFromX(grantXRef.current);
         localValueRef.current = newValue;
         setLocalValue(newValue);
+        onValueChange?.(newValue);
       },
-      onPanResponderMove: (evt: GestureResponderEvent) => {
-        const newValue = Math.max(0, Math.min(1, evt.nativeEvent.locationX / sliderWidthRef.current));
+      onPanResponderMove: (_evt: GestureResponderEvent, gestureState) => {
+        const newValue = valueFromX(grantXRef.current + gestureState.dx);
         localValueRef.current = newValue;
         setLocalValue(newValue);
+        onValueChange?.(newValue);
       },
       onPanResponderRelease: () => {
         setIsDragging(false);
@@ -61,10 +75,12 @@ function CustomSlider({
     })
   ).current;
 
+  const trackPadding = 8;
+
   return (
     <View
-      style={{ height: 40, justifyContent: "center", paddingHorizontal: 4 }}
-      onLayout={(e) => { sliderWidthRef.current = e.nativeEvent.layout.width - 8; }}
+      style={{ height: 40, justifyContent: "center" }}
+      onLayout={(e) => { sliderWidthRef.current = e.nativeEvent.layout.width - trackPadding * 2; }}
       {...panResponder.panHandlers}
     >
       <View
@@ -73,6 +89,7 @@ function CustomSlider({
           backgroundColor: maximumTrackTintColor,
           borderRadius: 2,
           overflow: "hidden",
+          marginHorizontal: trackPadding,
         }}
       >
         <View
@@ -150,6 +167,8 @@ export default function AudioScreen() {
   const [playbackError, setPlaybackError] = useState<string | null>(null);
   const [isLiveStreaming, setIsLiveStreaming] = useState(false);
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [seekPositionMillis, setSeekPositionMillis] = useState(0);
 
   const isDark = resolvedTheme === "dark";
   const screenBackground = isDark ? "#0B100D" : colors.surface.lightCream;
@@ -185,7 +204,9 @@ export default function AudioScreen() {
       return;
     }
 
-    setPositionMillis(status.positionMillis ?? 0);
+    if (!isSeeking) {
+      setPositionMillis(status.positionMillis ?? 0);
+    }
     setDurationMillis(status.durationMillis ?? 0);
     setIsPlaying(status.isPlaying);
 
@@ -194,7 +215,7 @@ export default function AudioScreen() {
       setPositionMillis(0);
       setActiveTrackId(null);
     }
-  }, []);
+  }, [isSeeking]);
 
   useEffect(() => {
     void Audio.setAudioModeAsync({
@@ -286,12 +307,25 @@ export default function AudioScreen() {
     if (soundRef.current && durationMillis > 0) {
       try {
         const seekPosition = Math.floor(value * durationMillis);
+        setSeekPositionMillis(seekPosition);
         await soundRef.current.setPositionAsync(seekPosition);
+        setPositionMillis(seekPosition);
+        setIsSeeking(false);
       } catch (error) {
         console.error("Seek error:", error);
+        setIsSeeking(false);
       }
     }
   }, [durationMillis]);
+
+  const handleSeekDrag = useCallback((value: number) => {
+    setIsSeeking(true);
+    setSeekPositionMillis(Math.floor(value * durationMillis));
+  }, [durationMillis]);
+
+  const displayedPositionMillis = isSeeking ? seekPositionMillis : positionMillis;
+  const expandedProgressFraction =
+    durationMillis > 0 ? Math.min(displayedPositionMillis / durationMillis, 1) : 0;
 
   const handleSkipBackward = useCallback(async () => {
     if (soundRef.current && durationMillis > 0) {
@@ -915,7 +949,8 @@ export default function AudioScreen() {
                 {durationMillis > 0 && (
                   <View style={{ marginTop: 24, gap: 8 }}>
                     <CustomSlider
-                      value={progressFraction}
+                      value={expandedProgressFraction}
+                      onValueChange={handleSeekDrag}
                       onSlidingComplete={handleSeek}
                       minimumTrackTintColor={colors.secondary.mutedGold}
                       maximumTrackTintColor={
@@ -937,7 +972,7 @@ export default function AudioScreen() {
                           fontSize: typography.size.xs,
                         }}
                       >
-                        {formatPlaybackMillis(positionMillis)}
+                        {formatPlaybackMillis(displayedPositionMillis)}
                       </Text>
                       <Text
                         style={{
