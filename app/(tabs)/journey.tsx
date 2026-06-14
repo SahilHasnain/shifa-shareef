@@ -16,8 +16,11 @@ import { useAppTheme } from "../../hooks/useAppTheme";
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useGlobalStats } from "../../hooks/useGlobalStats";
 import { useLanguageVolumeProgresses } from "../../hooks/useLanguageVolumeProgresses";
-import { useReadingFormatPreference } from "../../hooks/useReadingFormatPreference";
 import { useReadingSessions, type ReadingSession } from "../../hooks/useReadingSessions";
+import {
+  getLanguageCompletionPercent,
+  getVolumeCompletionPercent,
+} from "../../lib/progress";
 import {
   buildReaderHref,
   getSectionStatus,
@@ -27,7 +30,6 @@ import {
   getBookmarkNavigationTarget,
   getBookmarkSection,
 } from "../../lib/bookmark-resolver";
-import { getResolvedVolume } from "../../lib/reading-format-resolver";
 
 const SELECTED_CHIP_FILL = "#F1E0A4";
 const SELECTED_CHIP_TEXT = "#101815";
@@ -42,7 +44,6 @@ export default function JourneyScreen() {
   const [allBookmarks, setAllBookmarks] = useState<Bookmark[]>([]);
   const { volumeStats, languageStats } = useGlobalStats();
   const { progressByVolume } = useLanguageVolumeProgresses(currentLanguageId);
-  const { preference: readingFormatPreference } = useReadingFormatPreference();
   const {
     sessions,
     getCurrentStreak,
@@ -116,10 +117,7 @@ export default function JourneyScreen() {
 
   const filteredSectionsCompleted = filterVolumeId
     ? (() => {
-        const volume = getResolvedVolume(
-          getVolumeByLanguageAndId(currentLanguageId, filterVolumeId),
-          readingFormatPreference,
-        );
+        const volume = getVolumeByLanguageAndId(currentLanguageId, filterVolumeId);
         const progress = progressByVolume[filterVolumeId];
         if (!progress) return 0;
 
@@ -129,62 +127,25 @@ export default function JourneyScreen() {
         ).length;
       })()
     : currentLanguage.volumes.reduce((total, volume) => {
-        const resolvedVolume = getResolvedVolume(volume, readingFormatPreference);
         const progress = progressByVolume[volume.id];
         if (!progress) return total;
 
         return (
           total +
-          resolvedVolume.sections.filter(
+          volume.sections.filter(
             (section) =>
-              getSectionStatus(resolvedVolume, section, progress) === "completed",
+              getSectionStatus(volume, section, progress) === "completed",
           ).length
         );
       }, 0);
 
   const filteredProgressPercent = filterVolumeId
     ? (() => {
-        const volume = getResolvedVolume(
-          getVolumeByLanguageAndId(currentLanguageId, filterVolumeId),
-          readingFormatPreference,
-        );
+        const volume = getVolumeByLanguageAndId(currentLanguageId, filterVolumeId);
         const progress = progressByVolume[filterVolumeId];
-
-        if (volume.format === "epub" && progress?.progressPercent != null) {
-          return Math.round(progress.progressPercent * 100);
-        }
-
-        return Math.min(
-          100,
-          Math.round(
-            ((volumeStats[filterVolumeId] ?? 0) / volume.totalPages) * 100,
-          ),
-        );
+        return getVolumeCompletionPercent(volume, progress);
       })()
-    : (() => {
-        const totalPages = currentLanguage.volumes.reduce(
-          (sum, volume) => sum + volume.totalPages,
-          0,
-        );
-        const imagePagesRead = languageStats[currentLanguageId] ?? 0;
-        const epubEquivalentPages = currentLanguage.volumes.reduce((sum, volume) => {
-          const resolvedVolume = getResolvedVolume(volume, readingFormatPreference);
-          if (resolvedVolume.format !== "epub") {
-            return sum;
-          }
-
-          const progress = progressByVolume[volume.id];
-          return (
-            sum +
-            Math.round((progress?.progressPercent ?? 0) * volume.totalPages)
-          );
-        }, 0);
-
-        return Math.min(
-          100,
-          Math.round(((imagePagesRead + epubEquivalentPages) / totalPages) * 100),
-        );
-      })();
+    : getLanguageCompletionPercent(currentLanguage.volumes, progressByVolume);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -540,12 +501,9 @@ export default function JourneyScreen() {
                 const sessionDate = new Date(session.date);
                 const isToday =
                   sessionDate.toDateString() === new Date().toDateString();
-                const sessionVolume = getResolvedVolume(
-                  getVolumeByLanguageAndId(
-                    session.languageId,
-                    session.volumeId,
-                  ),
-                  readingFormatPreference,
+                const sessionVolume = getVolumeByLanguageAndId(
+                  session.languageId,
+                  session.volumeId,
                 );
 
                 return (
@@ -637,9 +595,7 @@ export default function JourneyScreen() {
                             marginTop: 2,
                           }}
                         >
-                          {sessionVolume.format === "epub"
-                            ? `~Pages ${session.startPage}-${session.endPage}`
-                            : `Pages ${session.startPage}-${session.endPage}`}
+                          {`~Pages ${session.startPage}-${session.endPage}`}
                         </Text>
                       </View>
                     </View>
@@ -710,12 +666,9 @@ export default function JourneyScreen() {
           ) : (
             <View style={{ gap: 10 }}>
               {filteredBookmarks.map((bookmark) => {
-                const bookmarkVolume = getResolvedVolume(
-                  getVolumeByLanguageAndId(
-                    bookmark.languageId,
-                    bookmark.volumeId,
-                  ),
-                  readingFormatPreference,
+                const bookmarkVolume = getVolumeByLanguageAndId(
+                  bookmark.languageId,
+                  bookmark.volumeId,
                 );
                 const section = getBookmarkSection(bookmarkVolume, bookmark);
                 const bookmarkLabel = getBookmarkDisplayLabel(bookmarkVolume, bookmark);

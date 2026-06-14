@@ -19,7 +19,7 @@ function sortBookmarks(bookmarks: Bookmark[]): Bookmark[] {
       return a.progressPercent - b.progressPercent;
     }
 
-    return a.page - b.page;
+    return (a.page ?? 0) - (b.page ?? 0);
   });
 }
 
@@ -51,7 +51,7 @@ export function useBookmarks(
   }, [storageKey]);
 
   const addBookmark = async (
-    page: number,
+    page?: number,
     options?: AddBookmarkOptions,
   ) => {
     // Check if bookmark already exists at this location
@@ -69,7 +69,7 @@ export function useBookmarks(
       id: `bookmark-${Date.now()}`,
       languageId,
       volumeId,
-      page,
+      page: page ?? undefined,
       label: options?.label,
       cfi: options?.cfi,
       progressPercent: options?.progressPercent,
@@ -104,7 +104,7 @@ export function useBookmarks(
       );
     }
 
-    return bookmarks.some((bookmark) => bookmark.page === page);
+    return page != null && bookmarks.some((bookmark) => bookmark.page === page);
   };
 
   const getBookmarkForPage = (page: number) => {

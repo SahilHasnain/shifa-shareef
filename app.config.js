@@ -64,8 +64,6 @@ export default {
         },
       ],
       "expo-asset",
-      "@config-plugins/react-native-blob-util",
-      "@config-plugins/react-native-pdf",
       "expo-web-browser",
       "expo-screen-orientation",
       "expo-brightness",

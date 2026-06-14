@@ -20,6 +20,7 @@ import { shadows, typography } from "../../constants/theme";
 import { BOOK_TITLE } from "../../data/book";
 import {
   LANGUAGES,
+  getVolumeByLanguageAndId,
   getVolumeDisplayTitle,
   shouldShowVolumeLabel,
 } from "../../data/languages";
@@ -27,7 +28,6 @@ import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
-import { useResolvedVolume } from "../../hooks/useResolvedVolume";
 import { useVolumeProgress } from "../../hooks/useVolumeProgress";
 import {
   buildReaderHref,
@@ -57,7 +57,7 @@ function ContinueReadingContent({
   showVolumeLabel: boolean;
 }) {
   const { colors } = useAppTheme();
-  const volume = useResolvedVolume(languageId, volumeId);
+  const volume = getVolumeByLanguageAndId(languageId, volumeId);
   const { progress } = useVolumeProgress(volumeId, languageId);
 
   const currentSection =
@@ -110,7 +110,7 @@ function ContinueReadingContent({
               fontWeight: typography.weight.bold,
             }}
           >
-            {getProgressDisplayLabel(volume, progress, languageId)}
+            {getProgressDisplayLabel(volume, progress)}
           </Text>
         </View>
       </View>
@@ -129,17 +129,17 @@ export default function HomeScreen() {
 
   const { currentLanguage, currentLanguageId, switchLanguage } = useCurrentLanguage();
   const { currentVolumeId, switchVolume } = useCurrentVolume(currentLanguageId);
-  const resolvedCurrentVolume = useResolvedVolume(currentLanguageId, currentVolumeId);
+  const currentVolume = getVolumeByLanguageAndId(currentLanguageId, currentVolumeId);
   const { progress } = useVolumeProgress(currentVolumeId, currentLanguageId);
   const { activePlan } = useReadingPlan(currentVolumeId, currentLanguageId);
 
   const [displayVolumeId, setDisplayVolumeId] = useState(currentVolumeId);
 
   const currentPlanDay = activePlan
-    ? getCurrentPlanDay(resolvedCurrentVolume, activePlan, progress)
+    ? getCurrentPlanDay(currentVolume, activePlan, progress)
     : 1;
   const currentPlanProgress = activePlan
-    ? getPlanDayProgress(resolvedCurrentVolume, activePlan, progress)
+    ? getPlanDayProgress(currentVolume, activePlan, progress)
     : 0;
   const todayPlanItem = activePlan
     ? getPlanItemForDay(activePlan, currentPlanDay)
@@ -153,12 +153,8 @@ export default function HomeScreen() {
       ),
     [currentLanguage.volumes, displayVolumeId],
   );
-  const currentDisplayVolumeBase =
+  const currentDisplayVolume =
     currentLanguage.volumes[currentVolumeIndex] ?? currentLanguage.volumes[0];
-  const currentDisplayVolume = useResolvedVolume(
-    currentLanguageId,
-    currentDisplayVolumeBase.id,
-  );
   const { progress: currentDisplayProgress } = useVolumeProgress(
     currentDisplayVolume.id,
     currentLanguageId,
@@ -640,7 +636,7 @@ export default function HomeScreen() {
                     buildReaderHref(
                       currentLanguageId,
                       currentVolumeId,
-                      getPlanItemNavigationTarget(resolvedCurrentVolume, todayPlanItem),
+                      getPlanItemNavigationTarget(currentVolume, todayPlanItem),
                     ) as any,
                   )
                 }

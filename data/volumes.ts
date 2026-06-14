@@ -2,7 +2,6 @@ import {
   DEFAULT_LANGUAGE_ID,
   DEFAULT_VOLUME_ID,
   getCurrentSectionByLanguage,
-  getPageImageForLanguageVolume,
   getVolumesForLanguage,
 } from "./languages";
 
@@ -16,8 +15,4 @@ export function getVolumeById(id?: string | null) {
 
 export function getCurrentSection(volumeId: string, page: number) {
   return getCurrentSectionByLanguage(DEFAULT_LANGUAGE_ID, volumeId, page);
-}
-
-export function getPageImageForVolume(volumeId: string, page: number) {
-  return getPageImageForLanguageVolume(DEFAULT_LANGUAGE_ID, volumeId, page);
 }

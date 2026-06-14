@@ -9,7 +9,6 @@ import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
-import { useResolvedVolume } from "../../hooks/useResolvedVolume";
 import { useVolumeProgress } from "../../hooks/useVolumeProgress";
 import { buildReaderHref } from "../../lib/section-resolver";
 import {
@@ -25,7 +24,6 @@ export default function PlansScreen() {
     const { colors, resolvedTheme } = useAppTheme();
     const { currentLanguage, currentLanguageId } = useCurrentLanguage();
     const { currentVolume, currentVolumeId } = useCurrentVolume(currentLanguageId);
-    const resolvedVolume = useResolvedVolume(currentLanguageId, currentVolumeId);
     const { progress } = useVolumeProgress(currentVolumeId, currentLanguageId);
     const { activePlan, activePlanData, startPlan, clearPlan, isDayCompleted } = useReadingPlan(
         currentVolumeId,
@@ -38,10 +36,10 @@ export default function PlansScreen() {
         currentVolume.title,
     );
     const currentPlanDay = activePlan
-        ? getCurrentPlanDay(resolvedVolume, activePlan, progress)
+        ? getCurrentPlanDay(currentVolume, activePlan, progress)
         : 1;
     const currentPlanProgress = activePlan
-        ? getPlanDayProgress(resolvedVolume, activePlan, progress)
+        ? getPlanDayProgress(currentVolume, activePlan, progress)
         : 0;
     const todayPlanItem = activePlan
         ? getPlanItemForDay(activePlan, currentPlanDay)
@@ -273,7 +271,7 @@ export default function PlansScreen() {
                                         fontSize: typography.size.sm,
                                     }}
                                 >
-                                    {getPlanItemPageLabel(resolvedVolume, todayPlanItem)}
+                                    {getPlanItemPageLabel(currentVolume, todayPlanItem)}
                                     {" • "}
                                     {todayPlanItem.estimatedMinutes} min
                                     {isDayCompleted(currentPlanDay) ? " • Completed" : ""}
@@ -285,7 +283,7 @@ export default function PlansScreen() {
                                                 currentLanguageId,
                                                 currentVolumeId,
                                                 getPlanItemNavigationTarget(
-                                                    resolvedVolume,
+                                                    currentVolume,
                                                     todayPlanItem,
                                                 ),
                                             ) as any,
@@ -379,7 +377,7 @@ export default function PlansScreen() {
                                 >
                                     {plan.totalDays} days
                                     {firstItem
-                                        ? ` | Day 1 ${getPlanItemPageLabel(resolvedVolume, firstItem)}`
+                                        ? ` | Day 1 ${getPlanItemPageLabel(currentVolume, firstItem)}`
                                         : ""}
                                 </Text>
 

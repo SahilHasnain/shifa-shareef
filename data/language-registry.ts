@@ -1,59 +1,89 @@
 import { VOLUME1_PLANS } from "./languages/urdu/volume1/plans";
-import { getPageImage as getUrduVolume1PageImage } from "./languages/urdu/volume1/pages";
 import {
   VOLUME1_SECTIONS,
   VOLUME1_TOTAL_PAGES,
 } from "./languages/urdu/volume1/sections";
 import { VOLUME2_PLANS } from "./languages/urdu/volume2/plans";
-import { getPageImage as getUrduVolume2PageImage } from "./languages/urdu/volume2/pages";
 import {
   VOLUME2_SECTIONS,
   VOLUME2_TOTAL_PAGES,
 } from "./languages/urdu/volume2/sections";
 import { ROMAN_URDU_VOLUME1_PLANS } from "./languages/roman-urdu/volume1/plans";
-import { getPageImage as getRomanUrduVolume1PageImage } from "./languages/roman-urdu/volume1/pages";
 import {
   ROMAN_URDU_VOLUME1_SECTIONS,
   ROMAN_URDU_VOLUME1_TOTAL_PAGES,
 } from "./languages/roman-urdu/volume1/sections";
-import type { Language, Section, Volume } from "./types";
+import type { Language, ReadingPlan, Section, Volume } from "./types";
 
 export const DEFAULT_LANGUAGE_ID = "urdu";
 export const DEFAULT_LANGUAGE_TITLE = "Urdu";
 export const ROMAN_URDU_LANGUAGE_ID = "roman-urdu";
 export const DEFAULT_VOLUME_ID = "volume1";
 
+function withSectionProgress(sections: Section[], totalPages: number): Section[] {
+  return sections.map((section) => ({
+    ...section,
+    startProgressPercent:
+      section.startProgressPercent ?? (section.startPage - 1) / totalPages,
+    endProgressPercent:
+      section.endProgressPercent ?? section.endPage / totalPages,
+  }));
+}
+
+function withPlanProgress(plans: ReadingPlan[], totalPages: number): ReadingPlan[] {
+  return plans.map((plan) => ({
+    ...plan,
+    items: plan.items.map((item) => ({
+      ...item,
+      startProgressPercent:
+        item.startProgressPercent ?? (item.startPage - 1) / totalPages,
+      endProgressPercent:
+        item.endProgressPercent ?? item.endPage / totalPages,
+    })),
+  }));
+}
+
+function buildVolume(
+  id: string,
+  title: string,
+  totalPages: number,
+  sections: Section[],
+  plans: ReadingPlan[],
+): Volume {
+  return {
+    id,
+    title,
+    totalPages,
+    sections: withSectionProgress(sections, totalPages),
+    plans: withPlanProgress(plans, totalPages),
+  };
+}
+
 const URDU_VOLUMES: Volume[] = [
-  {
-    id: "volume1",
-    title: "Volume 1",
-    totalPages: VOLUME1_TOTAL_PAGES,
-    sections: VOLUME1_SECTIONS,
-    plans: VOLUME1_PLANS,
-    format: "image",
-    availableFormats: ["image", "epub"],
-  },
-  {
-    id: "volume2",
-    title: "Volume 2",
-    totalPages: VOLUME2_TOTAL_PAGES,
-    sections: VOLUME2_SECTIONS,
-    plans: VOLUME2_PLANS,
-    format: "image",
-    availableFormats: ["image", "epub"],
-  },
+  buildVolume(
+    "volume1",
+    "Volume 1",
+    VOLUME1_TOTAL_PAGES,
+    VOLUME1_SECTIONS,
+    VOLUME1_PLANS,
+  ),
+  buildVolume(
+    "volume2",
+    "Volume 2",
+    VOLUME2_TOTAL_PAGES,
+    VOLUME2_SECTIONS,
+    VOLUME2_PLANS,
+  ),
 ];
 
 const ROMAN_URDU_VOLUMES: Volume[] = [
-  {
-    id: "volume1",
-    title: "Roman Urdu",
-    totalPages: ROMAN_URDU_VOLUME1_TOTAL_PAGES,
-    sections: ROMAN_URDU_VOLUME1_SECTIONS,
-    plans: ROMAN_URDU_VOLUME1_PLANS,
-    format: "epub",
-    availableFormats: ["epub", "image"],
-  },
+  buildVolume(
+    "volume1",
+    "Roman Urdu",
+    ROMAN_URDU_VOLUME1_TOTAL_PAGES,
+    ROMAN_URDU_VOLUME1_SECTIONS,
+    ROMAN_URDU_VOLUME1_PLANS,
+  ),
 ];
 
 export const LANGUAGES: Language[] = [
@@ -96,22 +126,6 @@ export function getCurrentSectionByLanguage(
   return volume.sections.find(
     (section) => page >= section.startPage && page <= section.endPage,
   );
-}
-
-export function getPageImageForLanguageVolume(
-  languageId: string,
-  volumeId: string,
-  page: number,
-) {
-  if (languageId === ROMAN_URDU_LANGUAGE_ID) {
-    return getRomanUrduVolume1PageImage(page);
-  }
-
-  if (volumeId === "volume2") {
-    return getUrduVolume2PageImage(page);
-  }
-
-  return getUrduVolume1PageImage(page);
 }
 
 export function getVolumeDisplayTitle(

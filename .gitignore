@@ -41,5 +41,7 @@ app-example
 # generated native folders
 /ios
 
+.venv-pdf/
+
 secrets/
 config.bat

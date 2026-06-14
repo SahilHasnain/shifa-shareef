@@ -1,59 +1,49 @@
-import type { Bookmark, UnifiedProgress, Volume } from "../data/types";
+import type { Bookmark, ReadingProgress, Volume } from "../data/types";
 import { getCurrentSection } from "./section-resolver";
 import type { ReaderNavigationTarget } from "./section-resolver";
+
+function getBookmarkPercent(volume: Volume, bookmark: Bookmark): number {
+  if (bookmark.progressPercent != null) {
+    return bookmark.progressPercent;
+  }
+
+  if (bookmark.page != null && bookmark.page > 0) {
+    return bookmark.page / volume.totalPages;
+  }
+
+  return 0;
+}
 
 export function getBookmarkNavigationTarget(
   volume: Volume,
   bookmark: Bookmark,
 ): ReaderNavigationTarget {
-  if (volume.format === "epub") {
-    if (bookmark.cfi || bookmark.progressPercent != null) {
-      return {
-        format: "epub",
-        cfi: bookmark.cfi,
-        progressPercent: bookmark.progressPercent,
-      };
-    }
+  const bookmarkPercent = getBookmarkPercent(volume, bookmark);
 
+  if (bookmark.cfi) {
     return {
-      format: "epub",
-      progressPercent: (bookmark.page - 1) / volume.totalPages,
+      cfi: bookmark.cfi,
+      progressPercent: bookmarkPercent,
     };
   }
 
   return {
-    format: "image",
-    page: bookmark.page,
+    progressPercent: bookmarkPercent,
   };
 }
 
-export function getBookmarkDisplayLabel(volume: Volume, bookmark: Bookmark): string {
-  if (volume.format === "epub" && bookmark.progressPercent != null) {
-    return `${Math.round(bookmark.progressPercent * 100)}%`;
-  }
-
-  if (volume.format === "epub") {
-    return `~Page ${bookmark.page}`;
-  }
-
-  return `Page ${bookmark.page}`;
-}
-
-export function getBookmarkSection(
+export function getBookmarkDisplayLabel(
   volume: Volume,
   bookmark: Bookmark,
-) {
-  const progress: UnifiedProgress =
-    volume.format === "epub"
-      ? {
-          format: "epub",
-          progressPercent: bookmark.progressPercent,
-          lastCfi: bookmark.cfi,
-        }
-      : {
-          format: "image",
-          lastPage: bookmark.page,
-        };
+): string {
+  return `${Math.round(getBookmarkPercent(volume, bookmark) * 100)}%`;
+}
+
+export function getBookmarkSection(volume: Volume, bookmark: Bookmark) {
+  const progress: ReadingProgress = {
+    progressPercent: getBookmarkPercent(volume, bookmark),
+    lastCfi: bookmark.cfi,
+  };
 
   return getCurrentSection(volume, progress);
 }

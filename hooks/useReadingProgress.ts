@@ -1,13 +1,15 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
 
 import { DEFAULT_LANGUAGE_ID } from "../data/languages";
 import { DEFAULT_VOLUME_ID } from "../data/volumes";
 import type { ReadingProgress } from "../data/types";
+import {
+  loadReadingProgress,
+  saveReadingProgress,
+} from "../lib/progress-storage";
 
 const defaultProgress: ReadingProgress = {
-  lastPage: 1,
   progressPercent: 0,
 };
 
@@ -17,27 +19,15 @@ export function useReadingProgress(
 ) {
   const [progress, setProgress] = useState<ReadingProgress>(defaultProgress);
   const [isLoaded, setIsLoaded] = useState(false);
-  const storageKey = `shifa-shareef:reading-progress-${languageId}-${volumeId}`;
 
   const loadProgress = useCallback(async () => {
     try {
-      const stored = await AsyncStorage.getItem(storageKey);
-      if (!stored) {
-        setProgress(defaultProgress);
-        return;
-      }
-
-      const parsed = JSON.parse(stored) as ReadingProgress;
-      setProgress({
-        lastPage: typeof parsed.lastPage === "number" ? parsed.lastPage : 1,
-        progressPercent: typeof parsed.progressPercent === "number" ? parsed.progressPercent : 0,
-        lastFormat: parsed.lastFormat,
-        lastReadAt: parsed.lastReadAt,
-      });
+      const stored = await loadReadingProgress(languageId, volumeId);
+      setProgress(stored);
     } finally {
       setIsLoaded(true);
     }
-  }, [storageKey]);
+  }, [languageId, volumeId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -47,7 +37,7 @@ export function useReadingProgress(
     }
 
     if (isMounted) {
-      initialize();
+      void initialize();
     }
 
     return () => {
@@ -61,17 +51,19 @@ export function useReadingProgress(
     }, [loadProgress]),
   );
 
-  const saveProgress = useCallback(async (page: number, progressPercent: number, format: "image" | "epub") => {
-    const nextProgress: ReadingProgress = {
-      lastPage: page,
-      progressPercent,
-      lastFormat: format,
-      lastReadAt: new Date().toISOString(),
-    };
+  const saveProgress = useCallback(
+    async (cfi: string, progressPercent: number) => {
+      const nextProgress: ReadingProgress = {
+        lastCfi: cfi,
+        progressPercent,
+        lastReadAt: new Date().toISOString(),
+      };
 
-    setProgress(nextProgress);
-    await AsyncStorage.setItem(storageKey, JSON.stringify(nextProgress));
-  }, [storageKey]);
+      setProgress(nextProgress);
+      await saveReadingProgress(languageId, volumeId, nextProgress);
+    },
+    [languageId, volumeId],
+  );
 
   return {
     progress,

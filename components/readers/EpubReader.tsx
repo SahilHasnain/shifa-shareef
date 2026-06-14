@@ -424,7 +424,6 @@ export function EpubReader({
     currentProgress,
   );
   const currentSection = getCurrentSection(volume, {
-    format: "epub",
     progressPercent: currentProgress,
     lastCfi: currentCfi,
   }) ?? volume.sections[0];
@@ -633,14 +632,12 @@ export function EpubReader({
 
       if (activePlan) {
         const currentDay = getCurrentPlanDay(volume, activePlan, {
-          format: "epub",
           progressPercent: sessionMaxProgress.current,
         });
         const planItem = getPlanItemForDay(activePlan, currentDay);
         if (
           planItem &&
           isPlanDayComplete(volume, planItem, {
-            format: "epub",
             progressPercent: sessionMaxProgress.current,
           })
         ) {
