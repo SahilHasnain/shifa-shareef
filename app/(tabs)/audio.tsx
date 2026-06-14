@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Audio, type AVPlaybackStatus } from "expo-av";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Modal, PanResponder, Pressable, Text, View, type GestureResponderEvent } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { shadows, typography } from "../../constants/theme";
@@ -13,6 +13,93 @@ import {
 } from "../../lib/shifa-audio-service";
 
 type SubTab = "library" | "live";
+
+// Custom Slider Component
+function CustomSlider({
+  value,
+  onSlidingComplete,
+  minimumTrackTintColor,
+  maximumTrackTintColor,
+  thumbTintColor,
+}: {
+  value: number;
+  onSlidingComplete: (value: number) => void;
+  minimumTrackTintColor: string;
+  maximumTrackTintColor: string;
+  thumbTintColor: string;
+}) {
+  const [sliderWidth, setSliderWidth] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [localValue, setLocalValue] = useState(value);
+
+  useEffect(() => {
+    if (!isDragging) {
+      setLocalValue(value);
+    }
+  }, [value, isDragging]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt: GestureResponderEvent) => {
+        setIsDragging(true);
+        const position = evt.nativeEvent.locationX;
+        const newValue = Math.max(0, Math.min(1, position / sliderWidth));
+        setLocalValue(newValue);
+      },
+      onPanResponderMove: (evt: GestureResponderEvent) => {
+        const position = evt.nativeEvent.locationX;
+        const newValue = Math.max(0, Math.min(1, position / sliderWidth));
+        setLocalValue(newValue);
+      },
+      onPanResponderRelease: () => {
+        setIsDragging(false);
+        onSlidingComplete(localValue);
+      },
+    })
+  ).current;
+
+  return (
+    <View
+      style={{ height: 40, justifyContent: "center", paddingHorizontal: 4 }}
+      onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width - 8)}
+      {...panResponder.panHandlers}
+    >
+      <View
+        style={{
+          height: 4,
+          backgroundColor: maximumTrackTintColor,
+          borderRadius: 2,
+          overflow: "hidden",
+        }}
+      >
+        <View
+          style={{
+            height: "100%",
+            width: `${localValue * 100}%`,
+            backgroundColor: minimumTrackTintColor,
+          }}
+        />
+      </View>
+      <View
+        style={{
+          position: "absolute",
+          left: `${localValue * 100}%`,
+          width: 16,
+          height: 16,
+          borderRadius: 8,
+          backgroundColor: thumbTintColor,
+          marginLeft: -8,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.2,
+          shadowRadius: 2,
+          elevation: 2,
+        }}
+      />
+    </View>
+  );
+}
 
 function formatDuration(seconds: number | null): string {
   if (!seconds || seconds <= 0) {
@@ -60,6 +147,7 @@ export default function AudioScreen() {
   const [durationMillis, setDurationMillis] = useState(0);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
   const [isLiveStreaming, setIsLiveStreaming] = useState(false);
+  const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
 
   const isDark = resolvedTheme === "dark";
   const screenBackground = isDark ? "#0B100D" : colors.surface.lightCream;
@@ -192,15 +280,47 @@ export default function AudioScreen() {
     }
   }, [isLiveStreaming, isPlaying, onPlaybackStatusUpdate, unloadSound]);
 
+  const handleSeek = useCallback(async (value: number) => {
+    if (soundRef.current && durationMillis > 0) {
+      try {
+        const seekPosition = Math.floor(value * durationMillis);
+        await soundRef.current.setPositionAsync(seekPosition);
+      } catch (error) {
+        console.error("Seek error:", error);
+      }
+    }
+  }, [durationMillis]);
+
+  const handleSkipBackward = useCallback(async () => {
+    if (soundRef.current && durationMillis > 0) {
+      try {
+        const newPosition = Math.max(0, positionMillis - 15000);
+        await soundRef.current.setPositionAsync(newPosition);
+      } catch (error) {
+        console.error("Skip backward error:", error);
+      }
+    }
+  }, [positionMillis, durationMillis]);
+
+  const handleSkipForward = useCallback(async () => {
+    if (soundRef.current && durationMillis > 0) {
+      try {
+        const newPosition = Math.min(durationMillis, positionMillis + 15000);
+        await soundRef.current.setPositionAsync(newPosition);
+      } catch (error) {
+        console.error("Skip forward error:", error);
+      }
+    }
+  }, [positionMillis, durationMillis]);
+
   return (
     <View style={{ flex: 1, backgroundColor: screenBackground }}>
-      <View style={{ paddingTop: insets.top + 20, paddingHorizontal: 20 }}>
+      <View style={{ paddingTop: insets.top + 20, paddingHorizontal: 20, paddingBottom: 12 }}>
         {/* Spotify-style Subtabs */}
         <View
           style={{
             flexDirection: "row",
             gap: 12,
-            marginBottom: 20,
           }}
         >
           <Pressable
@@ -623,91 +743,279 @@ export default function AudioScreen() {
 
       {/* Floating Mini Player */}
       {activeTrack && (
-        <View
-          style={{
-            position: "absolute",
-            bottom: insets.bottom + 16,
-            left: 20,
-            right: 20,
-            backgroundColor: colors.primary.deepGreen,
-            borderRadius: 16,
-            padding: 14,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-            ...shadows.lg,
-          }}
-        >
+        <>
+          {/* Mini Player */}
           <Pressable
-            onPress={async () => {
-              if (activeTrack) {
-                await handleTrackPress(activeTrack);
-              }
-            }}
-            style={({ pressed }) => ({
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: colors.secondary.lightGold,
+            onPress={() => setIsPlayerExpanded(true)}
+            style={{
+              position: "absolute",
+              bottom: insets.bottom + 16,
+              left: 20,
+              right: 20,
+              backgroundColor: colors.primary.deepGreen,
+              borderRadius: 16,
+              padding: 14,
+              flexDirection: "row",
               alignItems: "center",
-              justifyContent: "center",
-              opacity: pressed ? 0.8 : 1,
-            })}
+              gap: 12,
+              ...shadows.lg,
+            }}
           >
-            <Ionicons
-              name={isPlaying ? "pause" : "play"}
-              size={22}
-              color={colors.primary.deepGreen}
-            />
-          </Pressable>
-
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text
-              style={{
-                color: colors.text.onPrimary,
-                fontSize: typography.size.sm,
-                fontWeight: typography.weight.bold,
+            <Pressable
+              onPress={async (e) => {
+                e.stopPropagation();
+                if (activeTrack) {
+                  await handleTrackPress(activeTrack);
+                }
               }}
-              numberOfLines={1}
+              style={({ pressed }) => ({
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: colors.secondary.lightGold,
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: pressed ? 0.8 : 1,
+              })}
             >
-              {activeTrack?.title}
-            </Text>
-            {durationMillis > 0 && (
+              <Ionicons
+                name={isPlaying ? "pause" : "play"}
+                size={22}
+                color={colors.primary.deepGreen}
+              />
+            </Pressable>
+
+            <View style={{ flex: 1, gap: 2 }}>
               <Text
                 style={{
-                  color: colors.text.light,
-                  fontSize: typography.size.xs,
+                  color: colors.text.onPrimary,
+                  fontSize: typography.size.sm,
+                  fontWeight: typography.weight.bold,
                 }}
+                numberOfLines={1}
               >
-                {formatPlaybackMillis(positionMillis)} / {formatPlaybackMillis(durationMillis)}
+                {activeTrack?.title}
               </Text>
-            )}
-          </View>
+              {durationMillis > 0 && (
+                <Text
+                  style={{
+                    color: colors.text.light,
+                    fontSize: typography.size.xs,
+                  }}
+                >
+                  {formatPlaybackMillis(positionMillis)} / {formatPlaybackMillis(durationMillis)}
+                </Text>
+              )}
+            </View>
 
-          {durationMillis > 0 && (
-            <View
-              style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 3,
-                backgroundColor: "rgba(255, 249, 234, 0.2)",
-                borderBottomLeftRadius: 16,
-                borderBottomRightRadius: 16,
-              }}
-            >
+            {durationMillis > 0 && (
               <View
                 style={{
-                  height: "100%",
-                  width: `${Math.round(progressFraction * 100)}%`,
-                  backgroundColor: colors.secondary.lightGold,
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 3,
+                  backgroundColor: "rgba(255, 249, 234, 0.2)",
                   borderBottomLeftRadius: 16,
+                  borderBottomRightRadius: 16,
                 }}
-              />
-            </View>
-          )}
-        </View>
+              >
+                <View
+                  style={{
+                    height: "100%",
+                    width: `${Math.round(progressFraction * 100)}%`,
+                    backgroundColor: colors.secondary.lightGold,
+                    borderBottomLeftRadius: 16,
+                  }}
+                />
+              </View>
+            )}
+          </Pressable>
+
+          {/* Expanded Player Modal */}
+          <Modal
+            visible={isPlayerExpanded}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setIsPlayerExpanded(false)}
+          >
+            <Pressable
+              style={{
+                flex: 1,
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                justifyContent: "flex-end",
+              }}
+              onPress={() => setIsPlayerExpanded(false)}
+            >
+              <Pressable
+                onPress={(e) => e.stopPropagation()}
+                style={{
+                  backgroundColor: isDark ? "#1A2520" : colors.surface.warmIvory,
+                  borderTopLeftRadius: 28,
+                  borderTopRightRadius: 28,
+                  paddingTop: 24,
+                  paddingBottom: insets.bottom + 24,
+                  paddingHorizontal: 24,
+                  ...shadows.lg,
+                }}
+              >
+                {/* Handle bar */}
+                <View
+                  style={{
+                    width: 40,
+                    height: 4,
+                    backgroundColor: isDark
+                      ? "rgba(241, 224, 164, 0.2)"
+                      : "rgba(201, 169, 97, 0.3)",
+                    borderRadius: 2,
+                    alignSelf: "center",
+                    marginBottom: 32,
+                  }}
+                />
+
+                {/* Album Art / Icon */}
+                <View
+                  style={{
+                    width: 120,
+                    height: 120,
+                    borderRadius: 20,
+                    backgroundColor: colors.primary.deepGreen,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    alignSelf: "center",
+                    marginBottom: 24,
+                    ...shadows.md,
+                  }}
+                >
+                  <Ionicons
+                    name="musical-notes"
+                    size={60}
+                    color={colors.secondary.lightGold}
+                  />
+                </View>
+
+                {/* Track Info */}
+                <Text
+                  style={{
+                    color: colors.text.primary,
+                    fontSize: typography.size.xl,
+                    fontWeight: typography.weight.extrabold,
+                    textAlign: "center",
+                    marginBottom: 8,
+                  }}
+                  numberOfLines={2}
+                >
+                  {activeTrack?.title}
+                </Text>
+
+                {/* Slider */}
+                {durationMillis > 0 && (
+                  <View style={{ marginTop: 24, gap: 8 }}>
+                    <CustomSlider
+                      value={progressFraction}
+                      onSlidingComplete={handleSeek}
+                      minimumTrackTintColor={colors.secondary.mutedGold}
+                      maximumTrackTintColor={
+                        isDark
+                          ? "rgba(241, 224, 164, 0.2)"
+                          : "rgba(201, 169, 97, 0.2)"
+                      }
+                      thumbTintColor={colors.secondary.lightGold}
+                    />
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: colors.text.tertiary,
+                          fontSize: typography.size.xs,
+                        }}
+                      >
+                        {formatPlaybackMillis(positionMillis)}
+                      </Text>
+                      <Text
+                        style={{
+                          color: colors.text.tertiary,
+                          fontSize: typography.size.xs,
+                        }}
+                      >
+                        {formatPlaybackMillis(durationMillis)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Controls */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 32,
+                    marginTop: 32,
+                  }}
+                >
+                  {/* Skip backward */}
+                  <Pressable
+                    onPress={handleSkipBackward}
+                    style={({ pressed }) => ({
+                      opacity: pressed ? 0.6 : 1,
+                    })}
+                  >
+                    <Ionicons
+                      name="play-back"
+                      size={36}
+                      color={colors.text.secondary}
+                    />
+                  </Pressable>
+
+                  {/* Play/Pause */}
+                  <Pressable
+                    onPress={async () => {
+                      if (activeTrack) {
+                        await handleTrackPress(activeTrack);
+                      }
+                    }}
+                    style={({ pressed }) => ({
+                      width: 72,
+                      height: 72,
+                      borderRadius: 36,
+                      backgroundColor: colors.primary.deepGreen,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      opacity: pressed ? 0.86 : 1,
+                      ...shadows.md,
+                    })}
+                  >
+                    <Ionicons
+                      name={isPlaying ? "pause" : "play"}
+                      size={36}
+                      color={colors.text.onPrimary}
+                    />
+                  </Pressable>
+
+                  {/* Skip forward */}
+                  <Pressable
+                    onPress={handleSkipForward}
+                    style={({ pressed }) => ({
+                      opacity: pressed ? 0.6 : 1,
+                    })}
+                  >
+                    <Ionicons
+                      name="play-forward"
+                      size={36}
+                      color={colors.text.secondary}
+                    />
+                  </Pressable>
+                </View>
+              </Pressable>
+            </Pressable>
+          </Modal>
+        </>
       )}
     </View>
   );
