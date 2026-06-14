@@ -14,8 +14,6 @@ export function useVolumeProgress(
 ): {
   progress: UnifiedProgress;
   isLoaded: boolean;
-  savePage: (page: number) => Promise<void>;
-  saveEpub: (cfi: string, progressPercent: number) => Promise<void>;
 } {
   const baseVolume = getVolumeByLanguageAndId(languageId, volumeId);
   const { preference } = useReadingFormatPreference();
@@ -29,11 +27,13 @@ export function useVolumeProgress(
   const progress = useMemo((): UnifiedProgress => {
     if (volume.format === "epub") {
       const epub = epubProgress.progress;
+      const image = imageProgress.progress;
       const baseProgress: UnifiedProgress = {
         format: "epub",
         lastCfi: epub.lastCfi || undefined,
-        progressPercent: epub.progressPercent,
-        lastReadAt: epub.lastReadAt,
+        progressPercent: epub.progressPercent || image.progressPercent || 0,
+        lastPage: image.lastPage,
+        lastReadAt: epub.lastReadAt || image.lastReadAt,
       };
       const currentSection = getCurrentSection(volume, baseProgress);
 
@@ -45,10 +45,13 @@ export function useVolumeProgress(
     }
 
     const image = imageProgress.progress;
+    const epub = epubProgress.progress;
     const baseProgress: UnifiedProgress = {
       format: "image",
       lastPage: image.lastPage,
-      lastReadAt: image.lastReadAt,
+      progressPercent: image.progressPercent || epub.progressPercent || 0,
+      lastCfi: epub.lastCfi,
+      lastReadAt: image.lastReadAt || epub.lastReadAt,
     };
     const currentSection = getCurrentSection(volume, baseProgress);
 
@@ -63,7 +66,5 @@ export function useVolumeProgress(
     progress,
     isLoaded:
       volume.format === "epub" ? epubProgress.isLoaded : imageProgress.isLoaded,
-    savePage: imageProgress.saveProgress,
-    saveEpub: epubProgress.saveProgress,
   };
 }

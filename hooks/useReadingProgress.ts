@@ -8,6 +8,7 @@ import type { ReadingProgress } from "../data/types";
 
 const defaultProgress: ReadingProgress = {
   lastPage: 1,
+  progressPercent: 0,
 };
 
 export function useReadingProgress(
@@ -29,6 +30,8 @@ export function useReadingProgress(
       const parsed = JSON.parse(stored) as ReadingProgress;
       setProgress({
         lastPage: typeof parsed.lastPage === "number" ? parsed.lastPage : 1,
+        progressPercent: typeof parsed.progressPercent === "number" ? parsed.progressPercent : 0,
+        lastFormat: parsed.lastFormat,
         lastReadAt: parsed.lastReadAt,
       });
     } finally {
@@ -58,9 +61,11 @@ export function useReadingProgress(
     }, [loadProgress]),
   );
 
-  const saveProgress = useCallback(async (page: number) => {
-    const nextProgress = {
+  const saveProgress = useCallback(async (page: number, progressPercent: number, format: "image" | "epub") => {
+    const nextProgress: ReadingProgress = {
       lastPage: page,
+      progressPercent,
+      lastFormat: format,
       lastReadAt: new Date().toISOString(),
     };
 

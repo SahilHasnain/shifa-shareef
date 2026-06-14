@@ -47,6 +47,8 @@ export type ReadingPlan = {
 export type ReadingProgress = {
   lastPage: number;
   lastReadAt?: string;
+  progressPercent?: number;
+  lastFormat?: "image" | "epub";
 };
 
 export type Bookmark = {

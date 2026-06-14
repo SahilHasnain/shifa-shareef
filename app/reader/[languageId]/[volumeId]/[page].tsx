@@ -295,7 +295,8 @@ export default function ReaderScreen() {
     }
 
     saveTimeoutRef.current = setTimeout(() => {
-      void saveProgress(currentPage);
+      const progressPercent = currentPage / totalPages;
+      void saveProgress(currentPage, progressPercent, "image");
     }, 500);
 
     return () => {
@@ -303,7 +304,7 @@ export default function ReaderScreen() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [currentPage, saveProgress]);
+  }, [currentPage, saveProgress, totalPages]);
 
   useEffect(() => {
     const routePage = clampPage(Number(params.page ?? 1) || 1);

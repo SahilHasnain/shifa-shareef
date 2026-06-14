@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { DEFAULT_LANGUAGE_ID } from "../data/languages";
 import { DEFAULT_VOLUME_ID } from "../data/volumes";
+import type { ReadingProgress } from "../data/types";
 
 type EpubProgress = {
   lastCfi: string;
@@ -23,6 +24,7 @@ export function useEpubProgress(
   const [progress, setProgress] = useState<EpubProgress>(defaultProgress);
   const [isLoaded, setIsLoaded] = useState(false);
   const storageKey = `shifa-shareef:epub-progress-${languageId}-${volumeId}`;
+  const unifiedStorageKey = `shifa-shareef:reading-progress-${languageId}-${volumeId}`;
 
   const loadProgress = useCallback(async () => {
     try {
@@ -75,8 +77,17 @@ export function useEpubProgress(
 
       setProgress(nextProgress);
       await AsyncStorage.setItem(storageKey, JSON.stringify(nextProgress));
+
+      // Also save to unified progress for format switching
+      const unifiedProgress: ReadingProgress = {
+        lastPage: Math.max(1, Math.round(progressPercent * 100)), // Approximate page for display
+        progressPercent,
+        lastFormat: "epub",
+        lastReadAt: nextProgress.lastReadAt,
+      };
+      await AsyncStorage.setItem(unifiedStorageKey, JSON.stringify(unifiedProgress));
     },
-    [storageKey],
+    [storageKey, unifiedStorageKey],
   );
 
   return {

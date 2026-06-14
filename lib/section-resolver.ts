@@ -68,13 +68,30 @@ export function getResumeNavigationTarget(
   progress: UnifiedProgress,
 ): ReaderNavigationTarget {
   if (volume.format === "epub") {
+    // If user was reading EPUB, resume at CFI
     if (progress.lastCfi) {
       return { format: "epub", cfi: progress.lastCfi };
+    }
+
+    // If switching from PDF to EPUB, use progressPercent
+    if (progress.progressPercent != null && progress.progressPercent > 0) {
+      return { format: "epub", progressPercent: progress.progressPercent };
     }
 
     return { format: "epub" };
   }
 
+  // For PDF/Image format
+  // If switching from EPUB to PDF, calculate page from progressPercent
+  if (progress.progressPercent != null && progress.progressPercent > 0) {
+    const calculatedPage = Math.max(1, Math.round(progress.progressPercent * volume.totalPages));
+    return {
+      format: "image",
+      page: calculatedPage,
+    };
+  }
+
+  // Otherwise use lastPage
   return {
     format: "image",
     page: progress.lastPage ?? 1,
