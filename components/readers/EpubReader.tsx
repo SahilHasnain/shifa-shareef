@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BackHandler, Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { BackHandler, Modal, Pressable, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
@@ -254,19 +254,23 @@ const EPUB_HTML = `
             }
           });
 
-          // Add tap to toggle controls
-          document.addEventListener('click', function(e) {
+          // Add click listener to both document and iframe content
+          var clickHandler = function(e) {
             if (typeof window.ReactNativeWebView !== 'undefined') {
               window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'TOGGLE_CONTROLS' }));
             }
-          });
-
-          // Add tap to toggle controls
-          document.addEventListener('click', function(e) {
-            if (typeof window.ReactNativeWebView !== 'undefined') {
-              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'TOGGLE_CONTROLS' }));
+          };
+          
+          document.addEventListener('click', clickHandler);
+          
+          // Also add to iframe when it loads
+          var checkIframe = setInterval(function() {
+            var iframe = document.querySelector('iframe');
+            if (iframe && iframe.contentDocument) {
+              iframe.contentDocument.addEventListener('click', clickHandler);
+              clearInterval(checkIframe);
             }
-          });
+          }, 100);
         }).catch(function(err) {
           if (typeof window.ReactNativeWebView !== 'undefined') {
             window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'ERROR', message: err.message }));
@@ -412,6 +416,16 @@ export function EpubReader({
     sessionMinProgress.current = Math.min(sessionMinProgress.current, currentProgress);
     sessionMaxProgress.current = Math.max(sessionMaxProgress.current, currentProgress);
   }, [currentProgress]);
+
+  useEffect(() => {
+    // Set immersive mode based on controls visibility
+    StatusBar.setHidden(!controlsVisible, 'fade');
+
+    // Cleanup: restore status bar when component unmounts
+    return () => {
+      StatusBar.setHidden(false, 'fade');
+    };
+  }, [controlsVisible]);
 
   const completeSession = useCallback(async () => {
     if (sessionCompletedRef.current) {

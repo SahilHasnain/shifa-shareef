@@ -111,7 +111,7 @@ export default function PlansScreen() {
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: screenBackground }}>
-            <ScrollView contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 40 }}>
+            <ScrollView contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
                 {/* Header */}
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                     <Pressable
@@ -147,16 +147,6 @@ export default function PlansScreen() {
                         </Text>
                     </View>
                 </View>
-
-                <Text
-                    style={{
-                        color: colors.text.tertiary,
-                        fontSize: typography.size.md,
-                        lineHeight: 22,
-                    }}
-                >
-                    Choose a plan that matches your pace. Consistency matters more than speed.
-                </Text>
 
                 {/* Active Plan Card */}
                 {activePlan && (
@@ -340,8 +330,9 @@ export default function PlansScreen() {
 
                 {/* Available Plans */}
                 <View style={{ gap: 14 }}>
-                    {readingPlans.map((plan) => {
-                        const isActive = activePlan?.id === plan.id;
+                    {readingPlans
+                        .filter(plan => plan.id !== activePlan?.id)
+                        .map((plan) => {
                         const firstItem = plan.items[0];
 
                         return (
@@ -392,40 +383,24 @@ export default function PlansScreen() {
                                         : ""}
                                 </Text>
 
-                                {isActive ? (
-                                    <Text
-                                        style={{
-                                            color: colors.accent.success,
-                                            fontSize: typography.size.sm,
-                                            fontWeight: typography.weight.bold,
-                                        }}
-                                    >
-                                        Current active plan
-                                    </Text>
-                                ) : null}
-
                                 <Pressable
-                                    onPress={() => {
-                                        if (!isActive) {
-                                            handleSelectPlan(plan.id);
-                                        }
-                                    }}
+                                    onPress={() => handleSelectPlan(plan.id)}
                                     style={{
                                         alignSelf: "flex-start",
                                         borderRadius: 999,
-                                        backgroundColor: isActive ? colors.primary.deepGreen : buttonBackground,
+                                        backgroundColor: buttonBackground,
                                         paddingHorizontal: 16,
                                         paddingVertical: 11,
                                     }}
                                 >
                                     <Text
                                         style={{
-                                            color: isActive ? colors.text.onPrimary : buttonTextColor,
+                                            color: buttonTextColor,
                                             fontSize: typography.size.xs,
                                             fontWeight: typography.weight.extrabold,
                                         }}
                                     >
-                                        {isActive ? "Active plan" : "Choose plan"}
+                                        Choose plan
                                     </Text>
                                 </Pressable>
                             </View>

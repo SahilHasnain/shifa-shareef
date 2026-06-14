@@ -54,6 +54,17 @@ export function useBookmarks(
     page: number,
     options?: AddBookmarkOptions,
   ) => {
+    // Check if bookmark already exists at this location
+    const existingBookmark = getBookmarkForLocation(
+      options?.cfi,
+      options?.progressPercent,
+    );
+    
+    if (existingBookmark) {
+      // Don't add duplicate bookmark
+      return;
+    }
+
     const newBookmark: Bookmark = {
       id: `bookmark-${Date.now()}`,
       languageId,

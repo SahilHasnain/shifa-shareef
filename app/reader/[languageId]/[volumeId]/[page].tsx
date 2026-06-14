@@ -158,40 +158,6 @@ export default function ReaderScreen() {
     language.id,
   );
 
-  if (volume.format === "epub") {
-    const epubUrl = getEpubUrl(language.id, volume.id);
-    const navigationCfi =
-      typeof params.cfi === "string" && params.cfi.length > 0
-        ? params.cfi
-        : undefined;
-    const navigationProgressPercent =
-      typeof params.progressPercent === "string" &&
-      params.progressPercent.length > 0
-        ? Number(params.progressPercent)
-        : undefined;
-    const hasExplicitNavigation =
-      navigationCfi != null ||
-      (navigationProgressPercent != null && !Number.isNaN(navigationProgressPercent));
-
-    return (
-      <EpubReader
-        language={language}
-        volume={volume}
-        volumeDisplayTitle={volumeDisplayTitle}
-        showVolumeLabel={showVolumeLabel}
-        epubUrl={epubUrl}
-        initialCfi={
-          navigationCfi ?? (hasExplicitNavigation ? undefined : epubProgress.lastCfi)
-        }
-        initialProgressPercent={
-          navigationCfi == null ? navigationProgressPercent : undefined
-        }
-        onProgressChange={(cfi, progress) => {
-          void saveEpubProgress(cfi, progress);
-        }}
-      />
-    );
-  }
   const totalPages = volume.totalPages;
   const clampPage = useCallback(
     (value: number) => Math.min(Math.max(value, 1), totalPages),
@@ -451,6 +417,41 @@ export default function ReaderScreen() {
     moveToPage(Number.isFinite(parsedPage) ? parsedPage : currentPage);
     setIsPageModalVisible(false);
   }, [currentPage, moveToPage, pageInput]);
+
+  if (volume.format === "epub") {
+    const epubUrl = getEpubUrl(language.id, volume.id);
+    const navigationCfi =
+      typeof params.cfi === "string" && params.cfi.length > 0
+        ? params.cfi
+        : undefined;
+    const navigationProgressPercent =
+      typeof params.progressPercent === "string" &&
+      params.progressPercent.length > 0
+        ? Number(params.progressPercent)
+        : undefined;
+    const hasExplicitNavigation =
+      navigationCfi != null ||
+      (navigationProgressPercent != null && !Number.isNaN(navigationProgressPercent));
+
+    return (
+      <EpubReader
+        language={language}
+        volume={volume}
+        volumeDisplayTitle={volumeDisplayTitle}
+        showVolumeLabel={showVolumeLabel}
+        epubUrl={epubUrl}
+        initialCfi={
+          navigationCfi ?? (hasExplicitNavigation ? undefined : epubProgress.lastCfi)
+        }
+        initialProgressPercent={
+          navigationCfi == null ? navigationProgressPercent : undefined
+        }
+        onProgressChange={(cfi, progress) => {
+          void saveEpubProgress(cfi, progress);
+        }}
+      />
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>

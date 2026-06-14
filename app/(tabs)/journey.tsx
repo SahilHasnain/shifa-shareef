@@ -347,7 +347,7 @@ export default function JourneyScreen() {
               {showVolumeLabel ? `All ${currentLanguage.title}` : currentLanguage.title}
             </Text>
           </Pressable>
-          {currentLanguage.volumes.map((volume) => {
+          {showVolumeLabel && currentLanguage.volumes.map((volume) => {
             const isActive = filterVolumeId === volume.id;
             return (
               <Pressable
@@ -736,9 +736,9 @@ export default function JourneyScreen() {
                       backgroundColor: colors.surface.warmIvory,
                       borderRadius: 18,
                       padding: 16,
-                      gap: 8,
                       flexDirection: "row",
                       alignItems: "center",
+                      gap: 12,
                     }}
                   >
                     <View
@@ -751,52 +751,44 @@ export default function JourneyScreen() {
                         justifyContent: "center",
                       }}
                     >
-                        <Ionicons name="bookmark" size={22} color={colors.primary.deepGreen} />
+                      <Ionicons name="bookmark" size={22} color={colors.primary.deepGreen} />
                     </View>
 
-                    <View style={{ flex: 1, gap: 4 }}>
-                      <View
+                    <View style={{ flex: 1, gap: 6 }}>
+                      <Text
                         style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 8,
+                          color: colors.text.primary,
+                          fontSize: 16,
+                          fontWeight: "800",
                         }}
                       >
+                        {bookmark.languageId === currentLanguageId
+                          ? showVolumeLabel
+                            ? `${getVolumeDisplayTitle(
+                                bookmark.languageId,
+                                bookmark.volumeId,
+                                bookmarkVolume.title,
+                              )}: ${bookmarkLabel}`
+                            : bookmarkLabel
+                          : shouldShowVolumeLabel(bookmark.languageId)
+                            ? `${getVolumeDisplayTitle(
+                                bookmark.languageId,
+                                bookmark.volumeId,
+                                bookmarkVolume.title,
+                              )}: ${bookmarkLabel}`
+                            : bookmarkLabel}
+                      </Text>
+                      {section && (
                         <Text
                           style={{
-                            color: colors.text.primary,
-                            fontSize: 16,
-                            fontWeight: "800",
+                            color: colors.secondary.mutedGold,
+                            fontSize: 13,
+                            fontWeight: "600",
                           }}
                         >
-                          {bookmark.languageId === currentLanguageId
-                            ? showVolumeLabel
-                              ? `${getVolumeDisplayTitle(
-                                  bookmark.languageId,
-                                  bookmark.volumeId,
-                                  bookmarkVolume.title,
-                                )}: ${bookmarkLabel}`
-                              : bookmarkLabel
-                            : shouldShowVolumeLabel(bookmark.languageId)
-                              ? `${bookmark.languageId} • ${getVolumeDisplayTitle(
-                                  bookmark.languageId,
-                                  bookmark.volumeId,
-                                  bookmarkVolume.title,
-                                )}: ${bookmarkLabel}`
-                              : `${bookmark.languageId} • ${bookmarkLabel}`}
+                          {section.title}
                         </Text>
-                        {section && (
-                          <Text
-                            style={{
-                              color: colors.secondary.mutedGold,
-                              fontSize: 13,
-                              fontWeight: "600",
-                            }}
-                          >
-                            • {section.title}
-                          </Text>
-                        )}
-                      </View>
+                      )}
                       <Text style={{ color: colors.text.subtle, fontSize: 13 }}>
                         {formatDate(bookmark.createdAt)}
                       </Text>

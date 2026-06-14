@@ -47,8 +47,7 @@ const URDU_VOLUMES: Volume[] = [
 const ROMAN_URDU_VOLUMES: Volume[] = [
   {
     id: "volume1",
-    title: "Volume 1",
-    subtitle: "Roman Urdu Edition",
+    title: "Roman Urdu",
     totalPages: ROMAN_URDU_VOLUME1_TOTAL_PAGES,
     sections: ROMAN_URDU_VOLUME1_SECTIONS,
     plans: ROMAN_URDU_VOLUME1_PLANS,
@@ -124,7 +123,7 @@ export function getVolumeDisplayTitle(
   const volume = getVolumeByLanguageAndId(languageId, volumeId);
 
   if (language.volumes.length === 1) {
-    return volume.subtitle ?? fallbackTitle ?? language.title;
+    return volume.title;
   }
 
   return volume.title;

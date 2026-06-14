@@ -206,6 +206,7 @@ export default function SettingsScreen() {
           gap: 16,
           paddingBottom: 40,
         }}
+        showsVerticalScrollIndicator={false}
       >
         <View style={{ marginBottom: 4 }}>
           <Text
