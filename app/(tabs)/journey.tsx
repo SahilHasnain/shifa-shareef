@@ -244,11 +244,11 @@ export default function JourneyScreen() {
           >
             {filterVolumeId
               ? showVolumeLabel
-                ? "Pages read in this volume"
-                : "Pages read in this edition"
+                ? "Approx. pages covered in this volume"
+                : "Approx. pages covered in this edition"
               : showVolumeLabel
-                ? "Pages read across all volumes"
-                : "Pages read in this language"}
+                ? "Approx. pages covered across all volumes"
+                : "Approx. pages covered in this language"}
           </Text>
           <View
             style={{
@@ -505,6 +505,10 @@ export default function JourneyScreen() {
                   session.languageId,
                   session.volumeId,
                 );
+                const sessionPercent = Math.max(
+                  1,
+                  Math.round((session.pagesRead / sessionVolume.totalPages) * 100),
+                );
 
                 return (
                   <View
@@ -545,7 +549,7 @@ export default function JourneyScreen() {
                               fontWeight: typography.weight.bold,
                             }}
                           >
-                            {session.pagesRead} pages
+                            ~{sessionPercent}% covered
                           </Text>
                           <Text
                             style={{
@@ -595,7 +599,7 @@ export default function JourneyScreen() {
                             marginTop: 2,
                           }}
                         >
-                          {`~Pages ${session.startPage}-${session.endPage}`}
+                          {`${session.durationMinutes} min`}
                         </Text>
                       </View>
                     </View>
@@ -660,7 +664,7 @@ export default function JourneyScreen() {
                   marginTop: 4,
                 }}
               >
-                Tap the bookmark icon while reading to save a page
+                Tap the bookmark icon while reading to save your place
               </Text>
             </View>
           ) : (

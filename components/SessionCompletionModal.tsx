@@ -161,7 +161,7 @@ export function SessionCompletionModal({
                                         fontSize: typography.size.md,
                                     }}
                                 >
-                                    Pages read
+                                    Volume covered
                                 </Text>
                             </View>
                             <Text

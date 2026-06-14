@@ -41,9 +41,9 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="sections"
         options={{
-          title: "Sections",
+          title: "Topics",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="grid-outline" size={size} color={color} />
+            <Ionicons name="map-outline" size={size} color={color} />
           ),
         }}
       />

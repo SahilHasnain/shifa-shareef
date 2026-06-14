@@ -1,5 +1,9 @@
 import type { ReadingProgress, Volume } from "../data/types";
 
+export function formatProgressRange(start: number, end: number): string {
+  return `${Math.round(start * 100)}–${Math.round(end * 100)}%`;
+}
+
 export function getProgressPercent(
   progress: ReadingProgress | undefined | null,
 ): number {

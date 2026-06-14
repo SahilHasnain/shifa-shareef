@@ -1,5 +1,5 @@
 import type { ReadingPlan, ReadingPlanItem, ReadingProgress, Volume } from "../data/types";
-import { getProgressPercent } from "./progress";
+import { formatProgressRange, getProgressPercent } from "./progress";
 import type { ReaderNavigationTarget } from "./section-resolver";
 
 function getPlanItemProgressRange(volume: Volume, item: ReadingPlanItem) {
@@ -53,8 +53,15 @@ export function getPlanItemNavigationTarget(
   };
 }
 
-export function getPlanItemPageLabel(_volume: Volume, item: ReadingPlanItem): string {
-  return `~Pages ${item.startPage}–${item.endPage}`;
+export function getPlanItemMetaLabel(volume: Volume, item: ReadingPlanItem): string {
+  const { start, end } = getPlanItemProgressRange(volume, item);
+
+  return `${formatProgressRange(start, end)} of volume`;
+}
+
+/** @deprecated Use getPlanItemMetaLabel */
+export function getPlanItemPageLabel(volume: Volume, item: ReadingPlanItem): string {
+  return getPlanItemMetaLabel(volume, item);
 }
 
 export function isPlanDayComplete(

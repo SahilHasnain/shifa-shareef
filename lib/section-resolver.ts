@@ -1,5 +1,5 @@
 import type { ReadingProgress, Section, Volume } from "../data/types";
-import { getProgressPercent } from "./progress";
+import { formatProgressRange, getProgressPercent } from "./progress";
 
 export type SectionStatus = "unread" | "current" | "completed";
 
@@ -84,8 +84,23 @@ export function buildReaderHref(
   return `/reader/${languageId}/${volumeId}/1${query ? `?${query}` : ""}`;
 }
 
-export function getSectionPageLabel(_volume: Volume, section: Section): string {
-  return `~Pages ${section.startPage}–${section.endPage}`;
+export function getSectionMetaLabel(
+  volume: Volume,
+  section: Section,
+  sectionIndex: number,
+): string {
+  const { start, end } = getSectionProgressRange(volume, section);
+
+  return `Topic ${sectionIndex + 1} of ${volume.sections.length} · ${formatProgressRange(start, end)}`;
+}
+
+/** @deprecated Use getSectionMetaLabel */
+export function getSectionPageLabel(
+  volume: Volume,
+  section: Section,
+  sectionIndex = 0,
+): string {
+  return getSectionMetaLabel(volume, section, sectionIndex);
 }
 
 export function getProgressDisplayLabel(

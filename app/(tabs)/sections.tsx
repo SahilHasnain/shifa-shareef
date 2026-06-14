@@ -11,12 +11,12 @@ import { useAppTheme } from "../../hooks/useAppTheme";
 import { useVolumeProgress } from "../../hooks/useVolumeProgress";
 import {
   buildReaderHref,
+  getSectionMetaLabel,
   getSectionNavigationTarget,
-  getSectionPageLabel,
   getSectionStatus,
 } from "../../lib/section-resolver";
 
-export default function SectionsScreen() {
+export default function TopicsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
@@ -49,7 +49,7 @@ export default function SectionsScreen() {
               fontWeight: typography.weight.extrabold,
             }}
           >
-            Sections
+            Topics
           </Text>
           <Text
             style={{
@@ -62,6 +62,16 @@ export default function SectionsScreen() {
             {showVolumeLabel
               ? `${currentLanguage.title} • ${currentVolumeDisplayTitle}`
               : currentLanguage.title}
+          </Text>
+          <Text
+            style={{
+              color: colors.text.subtle,
+              fontSize: typography.size.sm,
+              lineHeight: 18,
+              marginTop: 8,
+            }}
+          >
+            Guided reading path for this volume. Open the menu inside the reader for the full chapter list.
           </Text>
         </View>
 
@@ -139,7 +149,7 @@ export default function SectionsScreen() {
                         fontWeight: typography.weight.medium,
                       }}
                     >
-                      {getSectionPageLabel(currentVolume, section)}
+                      {getSectionMetaLabel(currentVolume, section, index)}
                     </Text>
                     <View
                       style={{

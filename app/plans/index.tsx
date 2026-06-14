@@ -16,7 +16,7 @@ import {
   getPlanDayProgress,
   getPlanItemForDay,
   getPlanItemNavigationTarget,
-  getPlanItemPageLabel,
+  getPlanItemMetaLabel,
 } from "../../lib/plan-resolver";
 
 export default function PlansScreen() {
@@ -271,7 +271,7 @@ export default function PlansScreen() {
                                         fontSize: typography.size.sm,
                                     }}
                                 >
-                                    {getPlanItemPageLabel(currentVolume, todayPlanItem)}
+                                    {getPlanItemMetaLabel(currentVolume, todayPlanItem)}
                                     {" • "}
                                     {todayPlanItem.estimatedMinutes} min
                                     {isDayCompleted(currentPlanDay) ? " • Completed" : ""}
@@ -377,7 +377,7 @@ export default function PlansScreen() {
                                 >
                                     {plan.totalDays} days
                                     {firstItem
-                                        ? ` | Day 1 ${getPlanItemPageLabel(currentVolume, firstItem)}`
+                                        ? ` | Day 1 ${getPlanItemMetaLabel(currentVolume, firstItem)}`
                                         : ""}
                                 </Text>
 
