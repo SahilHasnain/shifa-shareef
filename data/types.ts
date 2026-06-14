@@ -141,5 +141,7 @@ export type ResolvedPageAsset = {
 
 export type AppThemePreference = "system" | "light" | "dark";
 
+export type ReaderTheme = "light" | "sepia" | "dark";
+
 /** User-facing PDF maps to the internal image-based reader. */
 export type ReadingFormatPreference = "epub" | "image";

@@ -28,13 +28,15 @@ function CustomSlider({
   maximumTrackTintColor: string;
   thumbTintColor: string;
 }) {
-  const [sliderWidth, setSliderWidth] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [localValue, setLocalValue] = useState(value);
+  const sliderWidthRef = useRef(0);
+  const localValueRef = useRef(value);
 
   useEffect(() => {
     if (!isDragging) {
       setLocalValue(value);
+      localValueRef.current = value;
     }
   }, [value, isDragging]);
 
@@ -43,18 +45,18 @@ function CustomSlider({
       onStartShouldSetPanResponder: () => true,
       onPanResponderGrant: (evt: GestureResponderEvent) => {
         setIsDragging(true);
-        const position = evt.nativeEvent.locationX;
-        const newValue = Math.max(0, Math.min(1, position / sliderWidth));
+        const newValue = Math.max(0, Math.min(1, evt.nativeEvent.locationX / sliderWidthRef.current));
+        localValueRef.current = newValue;
         setLocalValue(newValue);
       },
       onPanResponderMove: (evt: GestureResponderEvent) => {
-        const position = evt.nativeEvent.locationX;
-        const newValue = Math.max(0, Math.min(1, position / sliderWidth));
+        const newValue = Math.max(0, Math.min(1, evt.nativeEvent.locationX / sliderWidthRef.current));
+        localValueRef.current = newValue;
         setLocalValue(newValue);
       },
       onPanResponderRelease: () => {
         setIsDragging(false);
-        onSlidingComplete(localValue);
+        onSlidingComplete(localValueRef.current);
       },
     })
   ).current;
@@ -62,7 +64,7 @@ function CustomSlider({
   return (
     <View
       style={{ height: 40, justifyContent: "center", paddingHorizontal: 4 }}
-      onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width - 8)}
+      onLayout={(e) => { sliderWidthRef.current = e.nativeEvent.layout.width - 8; }}
       {...panResponder.panHandlers}
     >
       <View
