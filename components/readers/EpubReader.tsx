@@ -712,17 +712,17 @@ export function EpubReader({
   return (
     <View style={{ flex: 1, backgroundColor: themeColors.background }}>
       {controlsVisible && (
-        <View style={{ position: "absolute", top: 0, left: 0, right: 0, backgroundColor: colors.overlay.dark, paddingTop: 50, paddingBottom: 12, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 12, zIndex: 10 }}>
-          <Pressable onPress={handleBack} style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, backgroundColor: colors.overlay.dark, paddingTop: 50, paddingBottom: 16, paddingHorizontal: 20, flexDirection: "row", alignItems: "center", gap: 16, zIndex: 10 }}>
+          <Pressable onPress={handleBack} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
             <Ionicons name="chevron-back" size={24} color={colors.text.onPrimary} />
           </Pressable>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, paddingHorizontal: 4 }}>
             <Text style={{ color: colors.text.onPrimary, fontSize: typography.size.lg, fontWeight: typography.weight.bold }}>{BOOK_TITLE}</Text>
             <Text style={{ color: colors.text.light, fontSize: typography.size.base, fontWeight: typography.weight.semibold }}>
               {showVolumeLabel ? `${language.title} • ${volumeDisplayTitle}` : language.title}
             </Text>
           </View>
-          <Pressable onPress={() => setControlsVisible(false)} style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+          <Pressable onPress={() => setControlsVisible(false)} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
             <Ionicons name="eye-off-outline" size={22} color={colors.text.onPrimary} />
           </Pressable>
           <Pressable
@@ -730,7 +730,7 @@ export function EpubReader({
               const next = readerTheme === "light" ? "sepia" : readerTheme === "sepia" ? "dark" : "light";
               void setReaderTheme(next);
             }}
-            style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}
+            style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}
           >
             <Ionicons
               name={readerTheme === "dark" ? "moon" : readerTheme === "sepia" ? "cafe" : "sunny"}
@@ -738,7 +738,7 @@ export function EpubReader({
               color={colors.text.onPrimary}
             />
           </Pressable>
-          <Pressable onPress={() => setTocVisible(true)} style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+          <Pressable onPress={() => setTocVisible(true)} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
             <Ionicons name="list" size={22} color={colors.text.onPrimary} />
           </Pressable>
         </View>
