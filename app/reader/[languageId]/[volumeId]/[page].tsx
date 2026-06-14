@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BackHandler,
   Dimensions,
@@ -11,6 +11,7 @@ import {
   ScrollView,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
   ViewToken,
 } from "react-native";
@@ -43,6 +44,8 @@ import { useResolvedPageAsset } from "../../../../hooks/useResolvedPageAsset";
 import { useResolvedVolume } from "../../../../hooks/useResolvedVolume";
 import { getEpubUrl } from "../../../../lib/reading-format-resolver";
 import { prefetchPageAssets } from "../../../../lib/page-asset-resolver";
+import { getVolumeToc } from "../../../../data/page-meta-registry";
+import { getPageFooterLabel } from "../../../../lib/page-meta-resolver";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const IMAGE_WIDTH = SCREEN_WIDTH;
@@ -177,6 +180,7 @@ export default function ReaderScreen() {
   const [pageInput, setPageInput] = useState(String(initialPage));
   const [isZoomed, setIsZoomed] = useState(false);
   const [isPageModalVisible, setIsPageModalVisible] = useState(false);
+  const [tocVisible, setTocVisible] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionData, setCompletionData] = useState<{
     pagesRead: number;
@@ -195,6 +199,15 @@ export default function ReaderScreen() {
   const currentSection =
     getCurrentSectionByLanguage(language.id, volume.id, currentPage) ??
     volume.sections[0];
+
+  const volumeToc = useMemo(
+    () => getVolumeToc(language.id, volume.id),
+    [language.id, volume.id],
+  );
+  const pageFooterLabel = useMemo(
+    () => getPageFooterLabel(language.id, volume.id, currentPage),
+    [currentPage, language.id, volume.id],
+  );
 
   const pageIsBookmarked = isBookmarked(currentPage);
 
@@ -573,6 +586,20 @@ export default function ReaderScreen() {
           </Text>
         </View>
         <Pressable
+          onPress={() => setTocVisible(true)}
+          style={({ pressed }) => ({
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: colors.overlay.light,
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Ionicons name="list" size={22} color={colors.text.onPrimary} />
+        </Pressable>
+        <Pressable
           onPress={toggleBookmark}
           style={({ pressed }) => ({
             width: 40,
@@ -642,7 +669,7 @@ export default function ReaderScreen() {
                   fontWeight: typography.weight.bold,
                 }}
               >
-                Page {currentPage} of {totalPages}
+                {pageFooterLabel}
               </Text>
               <View
                 style={{
@@ -683,7 +710,10 @@ export default function ReaderScreen() {
             style={{ width: "100%", maxWidth: 360, borderRadius: 24, backgroundColor: colors.surface.warmIvory, padding: 20, gap: 16 }}
           >
             <Text style={{ color: colors.text.primary, fontSize: typography.size.xl, fontWeight: typography.weight.bold }}>
-              Go to page
+              Go to PDF page
+            </Text>
+            <Text style={{ color: colors.text.tertiary, fontSize: typography.size.sm }}>
+              Enter the scanned page number (1-{totalPages}), not the printed book page.
             </Text>
             <TextInput
               autoFocus
@@ -691,7 +721,7 @@ export default function ReaderScreen() {
               onChangeText={(value) => setPageInput(value.replace(/[^0-9]/g, ""))}
               onSubmitEditing={submitPageInput}
               keyboardType="number-pad"
-              placeholder={`Enter page 1-${totalPages}`}
+              placeholder={`PDF page 1-${totalPages}`}
               placeholderTextColor={colors.text.subtle}
               style={{ height: 48, borderRadius: 16, paddingHorizontal: 16, backgroundColor: colors.surface.creamyWhite, color: colors.text.primary, fontSize: typography.size.lg, fontWeight: typography.weight.semibold }}
             />
@@ -711,6 +741,44 @@ export default function ReaderScreen() {
             </View>
           </Pressable>
         </Pressable>
+      </Modal>
+
+      <Modal
+        visible={tocVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setTocVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: colors.surface.warmIvory, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: "80%" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 20, borderBottomWidth: 1, borderBottomColor: colors.surface.creamyWhite }}>
+              <Text style={{ fontSize: typography.size.xl, fontWeight: typography.weight.bold, color: colors.text.primary }}>Table of Contents</Text>
+              <Pressable onPress={() => setTocVisible(false)} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+                <Ionicons name="close" size={28} color={colors.text.primary} />
+              </Pressable>
+            </View>
+            <ScrollView style={{ maxHeight: 500 }}>
+              {volumeToc.length === 0 ? (
+                <View style={{ padding: 40, alignItems: "center" }}>
+                  <Text style={{ color: colors.text.tertiary, fontSize: typography.size.base }}>No chapters available</Text>
+                </View>
+              ) : (
+                volumeToc.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    onPress={() => {
+                      moveToPage(item.pdfPage);
+                      setTocVisible(false);
+                    }}
+                    style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.surface.creamyWhite }}
+                  >
+                    <Text style={{ fontSize: typography.size.base, color: colors.text.primary }}>{item.title}</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
 
       {showCompletionModal && completionData && (

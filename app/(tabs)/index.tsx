@@ -110,7 +110,7 @@ function ContinueReadingContent({
               fontWeight: typography.weight.bold,
             }}
           >
-            {getProgressDisplayLabel(volume, progress)}
+            {getProgressDisplayLabel(volume, progress, languageId)}
           </Text>
         </View>
       </View>

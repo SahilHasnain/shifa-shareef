@@ -1,4 +1,5 @@
 import type { Section, UnifiedProgress, Volume } from "../data/types";
+import { getPageFooterLabel } from "./page-meta-resolver";
 
 export type SectionStatus = "unread" | "current" | "completed";
 
@@ -130,6 +131,7 @@ export function getSectionPageLabel(volume: Volume, section: Section): string {
 export function getProgressDisplayLabel(
   volume: Volume,
   progress: UnifiedProgress,
+  languageId?: string,
 ): string {
   if (volume.format === "epub") {
     const percent = Math.round((progress.progressPercent ?? 0) * 100);
@@ -137,5 +139,9 @@ export function getProgressDisplayLabel(
   }
 
   const page = progress.lastPage ?? 1;
+  if (languageId) {
+    return getPageFooterLabel(languageId, volume.id, page);
+  }
+
   return `Page ${page}/${volume.totalPages}`;
 }

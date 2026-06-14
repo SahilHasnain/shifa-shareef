@@ -145,3 +145,26 @@ export type ReaderTheme = "light" | "sepia" | "dark";
 
 /** User-facing PDF maps to the internal image-based reader. */
 export type ReadingFormatPreference = "epub" | "image";
+
+export type PageRegion = "front-matter" | "body";
+
+export type PageLabel = {
+  pdfPage: number;
+  region: PageRegion;
+  displayIndex: number;
+  printedLabel?: string;
+};
+
+export type VolumePageMeta = {
+  frontMatterPageCount: number;
+  bodyPageCount: number;
+  totalPages: number;
+  pages: PageLabel[];
+};
+
+export type TocEntry = {
+  id: string;
+  title: string;
+  pdfPage: number;
+  depth: number;
+};
