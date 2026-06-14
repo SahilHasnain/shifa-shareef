@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system/legacy";
+import * as SystemUI from "expo-system-ui";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, BackHandler, Modal, Pressable, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
@@ -132,6 +133,92 @@ function buildEpubHtml(jszipSource: string, epubJsSource: string): string {
       } catch (err) {}
     }
 
+    function notifyToggleControls() {
+      if (typeof window.ReactNativeWebView === 'undefined') return;
+      var now = Date.now();
+      if (now - window.__lastToggleAt < 350) return;
+      window.__lastToggleAt = now;
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'TOGGLE_CONTROLS' }));
+    }
+
+    function bindTapToggle(target) {
+      if (!target || target.__tapToggleBound) return;
+      target.__tapToggleBound = true;
+
+      var touchStartX = 0;
+      var touchStartY = 0;
+      var touchStartTime = 0;
+
+      target.addEventListener('touchstart', function(e) {
+        if (!e.touches || e.touches.length !== 1) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+      }, { passive: true });
+
+      target.addEventListener('touchend', function(e) {
+        if (!e.changedTouches || e.changedTouches.length !== 1) return;
+        var dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
+        var dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+        var dt = Date.now() - touchStartTime;
+        if (dx < 14 && dy < 14 && dt < 400) {
+          notifyToggleControls();
+        }
+      }, { passive: true });
+
+      target.addEventListener('click', function() {
+        notifyToggleControls();
+      });
+    }
+
+    function bindIframeDocument(iframe) {
+      if (!iframe || iframe.__tapToggleBound) return;
+      iframe.__tapToggleBound = true;
+      iframe.addEventListener('load', function() {
+        try {
+          if (iframe.contentDocument) {
+            bindTapToggle(iframe.contentDocument);
+            bindTapToggle(iframe.contentDocument.body);
+          }
+        } catch (err) {}
+      });
+      try {
+        if (iframe.contentDocument) {
+          bindTapToggle(iframe.contentDocument);
+          bindTapToggle(iframe.contentDocument.body);
+        }
+      } catch (err) {}
+    }
+
+    function installTapToggleHandlers() {
+      window.__lastToggleAt = 0;
+      bindTapToggle(document);
+      bindTapToggle(document.body);
+      bindTapToggle(document.getElementById('viewer'));
+
+      if (!rendition) return;
+
+      rendition.hooks.content.register(function(contents) {
+        bindTapToggle(contents.document);
+        bindTapToggle(contents.document.body);
+      });
+
+      rendition.on('click', function() {
+        notifyToggleControls();
+      });
+
+      document.querySelectorAll('iframe').forEach(bindIframeDocument);
+
+      var viewer = document.getElementById('viewer');
+      if (viewer && !viewer.__tapObserverBound) {
+        viewer.__tapObserverBound = true;
+        var observer = new MutationObserver(function() {
+          document.querySelectorAll('iframe').forEach(bindIframeDocument);
+        });
+        observer.observe(viewer, { childList: true, subtree: true });
+      }
+    }
+
     function applyTheme(theme) {
       if (!theme) return;
       document.body.style.background = theme.background;
@@ -194,19 +281,7 @@ function buildEpubHtml(jszipSource: string, epubJsSource: string): string {
             }
           });
 
-          var clickHandler = function(e) {
-            if (typeof window.ReactNativeWebView !== 'undefined') {
-              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'TOGGLE_CONTROLS' }));
-            }
-          };
-          document.addEventListener('click', clickHandler);
-          var checkIframe = setInterval(function() {
-            var iframe = document.querySelector('iframe');
-            if (iframe && iframe.contentDocument) {
-              iframe.contentDocument.addEventListener('click', clickHandler);
-              clearInterval(checkIframe);
-            }
-          }, 100);
+          installTapToggleHandlers();
 
           if (!cachedLocations) {
             book.locations.generate(1600).then(function() {
@@ -506,14 +581,18 @@ export function EpubReader({
   }, [currentProgress]);
 
   useEffect(() => {
-    // Set immersive mode based on controls visibility
-    StatusBar.setHidden(!controlsVisible, 'fade');
+    StatusBar.setHidden(!controlsVisible, "fade");
 
-    // Cleanup: restore status bar when component unmounts
+    const systemUiColor = controlsVisible
+      ? colors.surface.lightCream
+      : themeColors.background;
+    void SystemUI.setBackgroundColorAsync(systemUiColor).catch(() => {});
+
     return () => {
-      StatusBar.setHidden(false, 'fade');
+      StatusBar.setHidden(false, "fade");
+      void SystemUI.setBackgroundColorAsync(colors.surface.lightCream).catch(() => {});
     };
-  }, [controlsVisible]);
+  }, [controlsVisible, themeColors.background, colors.surface.lightCream]);
 
   const completeSession = useCallback(async () => {
     if (sessionCompletedRef.current) {
@@ -688,7 +767,7 @@ export function EpubReader({
         setCurrentCfi(message.cfi);
         onProgressChange(message.cfi, message.progress);
       } else if (message.type === "TOGGLE_CONTROLS") {
-        setControlsVisible(prev => !prev);
+        setControlsVisible(true);
       } else if (message.type === "LOCATIONS_GENERATED") {
         const filename = epubUrl.split('/').pop() || 'book.epub';
         void AsyncStorage.setItem(`shifa-shareef:epub-locations-${filename}`, message.locations);
