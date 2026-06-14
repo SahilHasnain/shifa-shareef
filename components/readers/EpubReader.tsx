@@ -189,8 +189,8 @@ const EPUB_HTML = `
             manager: 'continuous'
           });
 
-          // Apply theme styles
-          if (theme) {
+          // Apply theme styles - only override in dark mode
+          if (theme && theme.isDark) {
             rendition.themes.default({
               'body': {
                 'background': theme.background + ' !important',
@@ -210,6 +210,13 @@ const EPUB_HTML = `
               },
               '*': {
                 'color': theme.color + ' !important'
+              }
+            });
+          } else if (theme && !theme.isDark) {
+            // Light mode - only set background, let EPUB handle text colors
+            rendition.themes.default({
+              'body': {
+                'background': theme.background + ' !important'
               }
             });
           }
@@ -287,7 +294,7 @@ export function EpubReader({
   onProgressChange,
 }: EpubReaderProps) {
   const router = useRouter();
-  const { colors } = useAppTheme();
+  const { colors, resolvedTheme } = useAppTheme();
   const webViewRef = useRef<WebView>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentProgress, setCurrentProgress] = useState(0);
@@ -376,13 +383,17 @@ export function EpubReader({
           base64: epubBase64,
           cfi: initialCfi,
           progressPercent: initialProgressPercent,
-          theme: { background: colors.surface.lightCream, color: colors.text.primary },
+          theme: { 
+            background: colors.surface.lightCream, 
+            color: colors.text.primary,
+            isDark: resolvedTheme === "dark"
+          },
         }),
       );
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [epubBase64, initialCfi, initialProgressPercent, colors]);
+  }, [epubBase64, initialCfi, initialProgressPercent, colors, resolvedTheme]);
 
   useEffect(() => {
     // Update font size when it changes
