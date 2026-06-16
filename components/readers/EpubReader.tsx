@@ -1,21 +1,20 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system/legacy";
-import * as SystemUI from "expo-system-ui";
 import { useRouter } from "expo-router";
+import * as SystemUI from "expo-system-ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, BackHandler, Modal, Pressable, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
-import { SessionCompletionModal } from "../SessionCompletionModal";
 import { typography } from "../../constants/theme";
 import { BOOK_TITLE } from "../../data/book";
 import type { Language, Volume } from "../../data/types";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useBookmarks } from "../../hooks/useBookmarks";
-import { useReaderTheme, READER_THEME_COLORS } from "../../hooks/useReaderTheme";
+import { READER_THEME_COLORS, useReaderTheme } from "../../hooks/useReaderTheme";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useReadingSessions } from "../../hooks/useReadingSessions";
 import { getBookmarkDisplayLabel } from "../../lib/bookmark-resolver";
@@ -25,6 +24,7 @@ import {
   isPlanDayComplete,
 } from "../../lib/plan-resolver";
 import { getCurrentSection } from "../../lib/section-resolver";
+import { SessionCompletionModal } from "../SessionCompletionModal";
 
 type EpubReaderProps = {
   language: Language;
@@ -467,9 +467,11 @@ export function EpubReader({
   useEffect(() => {
     async function loadBundledEpub() {
       try {
+        // Include languageId in filename to prevent cache collision between languages
         const filename = epubUrl.split('/').pop() || 'book.epub';
-        const epubUri = FileSystem.documentDirectory + filename;
-        const locationsKey = `shifa-shareef:epub-locations-${filename}`;
+        const languageSafeFilename = `${language.id}-${filename}`;
+        const epubUri = FileSystem.documentDirectory + languageSafeFilename;
+        const locationsKey = `shifa-shareef:epub-locations-${languageSafeFilename}`;
 
         const [fileInfo, storedLocations] = await Promise.all([
           FileSystem.getInfoAsync(epubUri),
@@ -489,7 +491,7 @@ export function EpubReader({
     }
 
     void loadBundledEpub();
-  }, [epubUrl]);
+  }, [epubUrl, language.id]);
 
   const sendLoadEpub = useCallback(() => {
     if (!epubFileUri || !webViewReady || epubLoadedRef.current) return;
@@ -587,11 +589,11 @@ export function EpubReader({
     const systemUiColor = controlsVisible
       ? colors.surface.lightCream
       : themeColors.background;
-    void SystemUI.setBackgroundColorAsync(systemUiColor).catch(() => {});
+    void SystemUI.setBackgroundColorAsync(systemUiColor).catch(() => { });
 
     return () => {
       StatusBar.setHidden(false, "fade");
-      void SystemUI.setBackgroundColorAsync(colors.surface.lightCream).catch(() => {});
+      void SystemUI.setBackgroundColorAsync(colors.surface.lightCream).catch(() => { });
     };
   }, [controlsVisible, themeColors.background, colors.surface.lightCream]);
 
@@ -654,7 +656,7 @@ export function EpubReader({
             section.endProgressPercent ?? section.endPage / volume.totalPages;
           return sessionStartProgress.current != null
             ? sessionStartProgress.current <= end &&
-                sessionMaxProgress.current > end
+            sessionMaxProgress.current > end
             : false;
         }).length;
 
@@ -769,7 +771,8 @@ export function EpubReader({
         setControlsVisible(true);
       } else if (message.type === "LOCATIONS_GENERATED") {
         const filename = epubUrl.split('/').pop() || 'book.epub';
-        void AsyncStorage.setItem(`shifa-shareef:epub-locations-${filename}`, message.locations);
+        const languageSafeFilename = `${language.id}-${filename}`;
+        void AsyncStorage.setItem(`shifa-shareef:epub-locations-${languageSafeFilename}`, message.locations);
         setCachedLocations(message.locations);
       } else if (message.type === "TOC_DATA") {
         setToc(message.toc);
@@ -969,7 +972,11 @@ export function EpubReader({
                 <Ionicons name="close" size={28} color={colors.text.primary} />
               </Pressable>
             </View>
-            <ScrollView style={{ maxHeight: 500 }}>
+            <ScrollView
+              style={{ maxHeight: 500 }}
+              showsVerticalScrollIndicator={false}
+              showsHorizontalScrollIndicator={false}
+            >
               {toc.length === 0 ? (
                 <View style={{ padding: 40, alignItems: 'center' }}>
                   <Text style={{ color: colors.text.tertiary, fontSize: typography.size.base }}>No chapters available</Text>
@@ -1008,7 +1015,11 @@ export function EpubReader({
                 <Ionicons name="close" size={28} color={colors.text.primary} />
               </Pressable>
             </View>
-            <ScrollView style={{ maxHeight: 500 }}>
+            <ScrollView
+              style={{ maxHeight: 500 }}
+              showsVerticalScrollIndicator={false}
+              showsHorizontalScrollIndicator={false}
+            >
               {bookmarks.length === 0 ? (
                 <View style={{ padding: 40, alignItems: 'center' }}>
                   <Ionicons name="bookmark-outline" size={48} color={colors.text.tertiary} />
