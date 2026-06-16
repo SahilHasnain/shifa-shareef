@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { shadows, typography } from "../../constants/theme";
@@ -64,6 +65,42 @@ export default function SettingsScreen() {
   const screenBackground = isDark ? "#0B100D" : colors.surface.lightCream;
   const cardBackground = isDark ? "#1A2520" : colors.surface.warmIvory;
   const cardBorderColor = isDark ? "rgba(241, 224, 164, 0.08)" : "transparent";
+
+  const handleClearAllProgress = async () => {
+    Alert.alert(
+      "Clear All Reading Progress",
+      "This will clear all resume reading progress for all languages and volumes. This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Clear All",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const keys = await AsyncStorage.getAllKeys();
+              const progressKeys = keys.filter(
+                (key) =>
+                  key.startsWith("shifa-shareef:epub-progress-") ||
+                  key.startsWith("shifa-shareef:reading-progress-")
+              );
+
+              if (progressKeys.length > 0) {
+                await AsyncStorage.multiRemove(progressKeys);
+                Alert.alert("Success", `Cleared ${progressKeys.length} reading progress entries.`);
+              } else {
+                Alert.alert("Info", "No reading progress found to clear.");
+              }
+            } catch (error) {
+              Alert.alert("Error", "Failed to clear reading progress.");
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: screenBackground }}>
@@ -141,6 +178,69 @@ export default function SettingsScreen() {
             />
           </View>
         </View>
+
+        {/* Dev Mode Section */}
+        {__DEV__ && (
+          <View
+            style={{
+              backgroundColor: cardBackground,
+              borderRadius: 24,
+              borderWidth: isDark ? 1 : 0,
+              borderColor: cardBorderColor,
+              padding: 20,
+              gap: 14,
+              ...shadows.sm,
+            }}
+          >
+            <View style={{ gap: 4 }}>
+              <Text
+                style={{
+                  color: colors.secondary.mutedGold,
+                  fontSize: typography.size.xs,
+                  fontWeight: typography.weight.bold,
+                  letterSpacing: 0.5,
+                  textTransform: "uppercase",
+                }}
+              >
+                Developer Tools
+              </Text>
+              <Text
+                style={{
+                  color: colors.text.primary,
+                  fontSize: typography.size.xl,
+                  fontWeight: typography.weight.extrabold,
+                }}
+              >
+                Dev Mode
+              </Text>
+            </View>
+
+            <Pressable
+              onPress={handleClearAllProgress}
+              style={({ pressed }) => ({
+                borderRadius: 12,
+                backgroundColor: isDark ? "rgba(220, 38, 38, 0.15)" : "rgba(220, 38, 38, 0.1)",
+                borderWidth: 1.5,
+                borderColor: "#dc2626",
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Text
+                style={{
+                  color: "#dc2626",
+                  fontSize: typography.size.sm,
+                  fontWeight: typography.weight.extrabold,
+                }}
+              >
+                Clear All Reading Progress
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </ScrollView>
     </View>
   );

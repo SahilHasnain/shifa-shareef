@@ -1068,9 +1068,6 @@ export function EpubReader({
           }}
           pagesRead={completionData.pagesRead}
           durationMinutes={completionData.durationMinutes}
-          currentStreak={completionData.currentStreak}
-          isNewStreak={completionData.isNewStreak}
-          sectionsCompleted={completionData.sectionsCompleted}
         />
       )}
     </View>
