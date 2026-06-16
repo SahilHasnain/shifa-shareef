@@ -179,28 +179,6 @@ export default function JourneyScreen() {
         contentContainerStyle={{ paddingTop: insets.top + 5, padding: 20, gap: 20, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
-        <View>
-          <Text
-            style={{
-              color: colors.text.primary,
-              fontSize: typography.size["4xl"],
-              fontWeight: typography.weight.extrabold,
-            }}
-          >
-            Journey
-          </Text>
-          <Text
-            style={{
-              color: colors.text.tertiary,
-              fontSize: typography.size.md,
-              lineHeight: 22,
-              marginTop: 6,
-            }}
-          >
-            {currentLanguage.title} reading history, with optional volume filters.
-          </Text>
-        </View>
-
         <View
           style={{
             backgroundColor: colors.primary.deepGreen,

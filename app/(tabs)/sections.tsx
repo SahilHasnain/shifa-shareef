@@ -4,7 +4,6 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { typography } from "../../constants/theme";
-import { getVolumeDisplayTitle, shouldShowVolumeLabel } from "../../data/languages";
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useAppTheme } from "../../hooks/useAppTheme";
@@ -20,15 +19,9 @@ export default function TopicsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const { currentLanguage, currentLanguageId } = useCurrentLanguage();
+  const { currentLanguageId } = useCurrentLanguage();
   const { currentVolume, currentVolumeId } = useCurrentVolume(currentLanguageId);
   const { progress } = useVolumeProgress(currentVolumeId, currentLanguageId);
-  const showVolumeLabel = shouldShowVolumeLabel(currentLanguageId);
-  const currentVolumeDisplayTitle = getVolumeDisplayTitle(
-    currentLanguageId,
-    currentVolumeId,
-    currentVolume.title,
-  );
 
   const handleSectionPress = (section: (typeof currentVolume.sections)[number]) => {
     const target = getSectionNavigationTarget(currentVolume, section);
@@ -41,41 +34,7 @@ export default function TopicsScreen() {
         contentContainerStyle={{ paddingTop: insets.top + 5, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ paddingHorizontal: 20, paddingBottom: 24 }}>
-          <Text
-            style={{
-              color: colors.text.primary,
-              fontSize: typography.size["4xl"],
-              fontWeight: typography.weight.extrabold,
-            }}
-          >
-            Topics
-          </Text>
-          <Text
-            style={{
-              color: colors.text.tertiary,
-              fontSize: typography.size.md,
-              lineHeight: 22,
-              marginTop: 6,
-            }}
-          >
-            {showVolumeLabel
-              ? `${currentLanguage.title} • ${currentVolumeDisplayTitle}`
-              : currentLanguage.title}
-          </Text>
-          <Text
-            style={{
-              color: colors.text.subtle,
-              fontSize: typography.size.sm,
-              lineHeight: 18,
-              marginTop: 8,
-            }}
-          >
-            Guided reading path for this volume. Open the menu inside the reader for the full chapter list.
-          </Text>
-        </View>
-
-        <View style={{ paddingHorizontal: 20, gap: 2 }}>
+        <View style={{ paddingHorizontal: 20, gap: 2, paddingTop: 8 }}>
           {currentVolume.sections.map((section, index) => {
             const status = getSectionStatus(currentVolume, section, progress);
             const isCurrent = status === "current";

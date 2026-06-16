@@ -32,7 +32,6 @@ import { useVolumeProgress } from "../../hooks/useVolumeProgress";
 import {
   buildReaderHref,
   getCurrentSection,
-  getProgressDisplayLabel,
   getResumeNavigationTarget,
 } from "../../lib/section-resolver";
 import {
@@ -94,26 +93,7 @@ function ContinueReadingContent({
       >
         {currentSection.title}
       </Text>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <View
-          style={{
-            borderRadius: 999,
-            backgroundColor: "rgba(255, 249, 234, 0.14)",
-            paddingHorizontal: 12,
-            paddingVertical: 7,
-          }}
-        >
-          <Text
-            style={{
-              color: "#FFF9EA",
-              fontSize: typography.size.sm,
-              fontWeight: typography.weight.bold,
-            }}
-          >
-            {getProgressDisplayLabel(volume, progress)}
-          </Text>
-        </View>
-      </View>
+
     </View>
   );
 }
@@ -337,17 +317,6 @@ export default function HomeScreen() {
               gap: 12,
             }}
           >
-            <Text
-              style={{
-                color: colors.text.light,
-                fontSize: typography.size.sm,
-                fontWeight: typography.weight.bold,
-                letterSpacing: 0.5,
-                textTransform: "uppercase",
-              }}
-            >
-              Continue Reading
-            </Text>
             {showVolumeControls && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <Pressable

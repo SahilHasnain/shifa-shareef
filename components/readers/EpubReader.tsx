@@ -53,6 +53,8 @@ function buildEpubHtml(jszipSource: string, epubJsSource: string): string {
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { margin: 0; padding: 0; overflow: hidden; background: #FFF9F0; }
     #viewer { width: 100vw; height: 100vh; }
+    ::-webkit-scrollbar { display: none; }
+    * { scrollbar-width: none; -ms-overflow-style: none; }
   </style>
 </head>
 <body>

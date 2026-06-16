@@ -584,14 +584,6 @@ export default function AudioScreen() {
                     >
                       {item.title}
                     </Text>
-                    <Text
-                      style={{
-                        color: colors.text.tertiary,
-                        fontSize: typography.size.sm,
-                      }}
-                    >
-                      {formatDuration(item.durationSeconds)}
-                    </Text>
                   </View>
                 </View>
               </Pressable>

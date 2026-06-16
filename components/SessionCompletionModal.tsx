@@ -11,21 +11,8 @@ type SessionCompletionModalProps = {
     onGoHome?: () => void;
     pagesRead: number;
     durationMinutes: number;
-    currentStreak: number;
-    isNewStreak: boolean;
     sectionsCompleted?: number;
 };
-
-const ENCOURAGEMENTS = [
-    "Every page brings you closer to completion.",
-    "Consistency is the key to meaningful progress.",
-    "Your dedication is building something beautiful.",
-    "Small steps, steady progress.",
-    "You're making this a habit.",
-    "Another session, another step forward.",
-    "Your commitment is inspiring.",
-    "Progress over perfection.",
-];
 
 export function SessionCompletionModal({
     visible,
@@ -34,14 +21,9 @@ export function SessionCompletionModal({
     onGoHome,
     pagesRead,
     durationMinutes,
-    currentStreak,
-    isNewStreak,
     sectionsCompleted,
 }: SessionCompletionModalProps) {
     const router = useRouter();
-
-    const encouragement =
-        ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)];
 
     const handleContinue = () => {
         onClose();
@@ -114,16 +96,6 @@ export function SessionCompletionModal({
                         >
                             Session Complete
                         </Text>
-                        <Text
-                            style={{
-                                color: colors.text.muted,
-                                fontSize: typography.size.lg,
-                                textAlign: "center",
-                                lineHeight: 24,
-                            }}
-                        >
-                            {encouragement}
-                        </Text>
                     </View>
 
                     {/* Stats */}
@@ -161,7 +133,7 @@ export function SessionCompletionModal({
                                         fontSize: typography.size.md,
                                     }}
                                 >
-                                    Volume covered
+                                    Pages read
                                 </Text>
                             </View>
                             <Text
@@ -214,54 +186,6 @@ export function SessionCompletionModal({
                                 {durationMinutes} min
                             </Text>
                         </View>
-
-                        {currentStreak > 0 && (
-                            <View
-                                style={{
-                                    flexDirection: "row",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                }}
-                            >
-                                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                                    <View
-                                        style={{
-                                            width: 36,
-                                            height: 36,
-                                            borderRadius: 18,
-                                            backgroundColor: isNewStreak
-                                                ? "rgba(241, 224, 164, 0.35)"
-                                                : "rgba(23, 61, 49, 0.1)",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                        }}
-                                    >
-                                        <Ionicons
-                                            name="flame"
-                                            size={18}
-                                            color={isNewStreak ? colors.secondary.lightGold : colors.primary.deepGreen}
-                                        />
-                                    </View>
-                                    <Text
-                                        style={{
-                                            color: colors.text.tertiary,
-                                            fontSize: typography.size.md,
-                                        }}
-                                    >
-                                        {isNewStreak ? "New streak!" : "Current streak"}
-                                    </Text>
-                                </View>
-                                <Text
-                                    style={{
-                                        color: colors.text.primary,
-                                        fontSize: typography.size["2xl"],
-                                        fontWeight: typography.weight.extrabold,
-                                    }}
-                                >
-                                    {currentStreak} {currentStreak === 1 ? "day" : "days"}
-                                </Text>
-                            </View>
-                        )}
 
                         {sectionsCompleted !== undefined && sectionsCompleted > 0 && (
                             <View
