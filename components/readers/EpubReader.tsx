@@ -264,6 +264,10 @@ function buildEpubHtml(jszipSource: string, epubJsSource: string): string {
             displayTarget = startCfi;
           } else if (typeof startProgressPercent === 'number' && startProgressPercent > 0 && cachedLocations) {
             displayTarget = book.locations.cfiFromPercentage(startProgressPercent) || undefined;
+          } else if (book.spine && typeof book.spine.first === 'function') {
+            var firstSection = book.spine.first();
+            var nextSection = firstSection && typeof firstSection.next === 'function' ? firstSection.next() : null;
+            displayTarget = nextSection && nextSection.href ? nextSection.href : undefined;
           }
 
           return rendition.display(displayTarget);
