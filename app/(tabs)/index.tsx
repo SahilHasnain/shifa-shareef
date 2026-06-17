@@ -24,22 +24,22 @@ import {
   getVolumeDisplayTitle,
   shouldShowVolumeLabel,
 } from "../../data/languages";
+import { useAppTheme } from "../../hooks/useAppTheme";
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
-import { useAppTheme } from "../../hooks/useAppTheme";
 import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useVolumeProgress } from "../../hooks/useVolumeProgress";
-import {
-  buildReaderHref,
-  getCurrentSection,
-  getResumeNavigationTarget,
-} from "../../lib/section-resolver";
 import {
   getCurrentPlanDay,
   getPlanDayProgress,
   getPlanItemForDay,
   getPlanItemNavigationTarget,
 } from "../../lib/plan-resolver";
+import {
+  buildReaderHref,
+  getCurrentSection,
+  getResumeNavigationTarget,
+} from "../../lib/section-resolver";
 
 const SELECTED_CHIP_FILL = "#F1E0A4";
 const SELECTED_CHIP_TEXT = "#101815";
@@ -696,6 +696,93 @@ export default function HomeScreen() {
             />
           </Pressable>
         )}
+
+        <View
+          style={{
+            backgroundColor: primaryCardBackground,
+            borderRadius: 24,
+            borderWidth: isDark ? 1 : 0,
+            borderColor: darkCardBorder,
+            padding: 20,
+            gap: 16,
+            ...shadows.md,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            <View
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 26,
+                backgroundColor: isDark
+                  ? "rgba(241, 224, 164, 0.14)"
+                  : colors.surface.softBeige,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons
+                name="book"
+                size={26}
+                color={colors.secondary.mutedGold}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  color: colors.secondary.mutedGold,
+                  fontSize: typography.size.xs,
+                  fontWeight: typography.weight.bold,
+                  letterSpacing: 0.5,
+                  textTransform: "uppercase",
+                }}
+              >
+                About
+              </Text>
+              <Text
+                style={{
+                  color: colors.text.primary,
+                  fontSize: typography.size.xl,
+                  fontWeight: typography.weight.extrabold,
+                  marginTop: 2,
+                }}
+              >
+                {currentLanguageId === "roman-urdu" ? "Shifa Shareef" : "شفاء شریف"}
+              </Text>
+            </View>
+          </View>
+
+          <View style={{ gap: 12 }}>
+            <Text
+              style={{
+                color: colors.text.primary,
+                fontSize: typography.size.base,
+                lineHeight: 24,
+              }}
+            >
+              {currentLanguageId === "roman-urdu"
+                ? "Shifa Shareef Qazi Iyaz رحمہ اللہ ki mashoor kitab 'الشفا بتعريف حقوق المصطفى' ka Urdu tarjama hai. Yeh kitab Huzoor ﷺ ki shaan-o-azmat, fazail, mojizaat, aur aap ke huqooq par mushtamil hai."
+                : "شفاء شریف قاضی عیاض رحمہ اللہ کی مشہور کتاب 'الشفا بتعريف حقوق المصطفى' کا اردو ترجمہ ہے۔ یہ کتاب حضور ﷺ کی شان و عظمت، فضائل، معجزات، اور آپ کے حقوق پر مشتمل ہے۔"}
+            </Text>
+            <Text
+              style={{
+                color: colors.text.secondary,
+                fontSize: typography.size.sm,
+                lineHeight: 22,
+              }}
+            >
+              {currentLanguageId === "roman-urdu"
+                ? "Is kitab mein Quran aur Hadees se sabut ke saath Rasool-e-Paak ﷺ ki azmat, akhlaaq-e-hasana, mojizaat aur Ummat par aap ke huqooq ka tafseel se zikr hai."
+                : "اس کتاب میں قرآن اور حدیث سے ثبوت کے ساتھ رسول پاک ﷺ کی عظمت، اخلاق حسنہ، معجزات اور امت پر آپ کے حقوق کا تفصیل سے ذکر ہے۔"}
+            </Text>
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
