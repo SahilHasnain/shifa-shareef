@@ -22,6 +22,7 @@
     "build:all": "eas build --platform all --profile production",
     "submit:android": "eas submit --platform android --latest",
     "submit:ios": "eas submit --platform ios --latest",
+    "split-epub": "npm --prefix scripts run split-epub --",
     "typecheck": "npx tsc --noEmit"
   },
   "dependencies": {

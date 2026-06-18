@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
+import { ChapterReader } from "../../../../components/readers/ChapterReader";
 import { EpubReader } from "../../../../components/readers/EpubReader";
 import {
   getLanguageById,
@@ -11,7 +12,7 @@ import {
 import { useCurrentLanguage } from "../../../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../../../hooks/useCurrentVolume";
 import { useReadingProgress } from "../../../../hooks/useReadingProgress";
-import { getEpubUrl } from "../../../../lib/epub-url";
+import { getChapterAssetBaseUrl, getChapterManifestUrl, getEpubUrl } from "../../../../lib/epub-url";
 import { clearLegacyReadingStorage } from "../../../../lib/progress-storage";
 
 export default function ReaderScreen() {
@@ -28,6 +29,7 @@ export default function ReaderScreen() {
   const { switchLanguage } = useCurrentLanguage();
   const { switchVolume } = useCurrentVolume(language.id);
   const { progress, saveProgress } = useReadingProgress(volume.id, language.id);
+  const [useEpubFallback, setUseEpubFallback] = useState(false);
 
   const navigationCfi =
     typeof params.cfi === "string" && params.cfi.length > 0
@@ -50,6 +52,31 @@ export default function ReaderScreen() {
   useEffect(() => {
     void clearLegacyReadingStorage();
   }, []);
+
+  if (!useEpubFallback) {
+    return (
+      <ChapterReader
+        language={language}
+        volume={volume}
+        volumeDisplayTitle={volumeDisplayTitle}
+        showVolumeLabel={showVolumeLabel}
+        manifestUrl={getChapterManifestUrl(language.id, volume.id)}
+        assetBaseUrl={getChapterAssetBaseUrl(language.id, volume.id)}
+        initialLocator={
+          navigationCfi ?? (hasExplicitNavigation ? undefined : progress.lastCfi)
+        }
+        initialProgressPercent={
+          navigationCfi == null
+            ? navigationProgressPercent ?? (hasExplicitNavigation ? undefined : progress.progressPercent)
+            : undefined
+        }
+        onProgressChange={(locator, nextProgressPercent) => {
+          void saveProgress(locator, nextProgressPercent);
+        }}
+        onFallbackRequested={() => setUseEpubFallback(true)}
+      />
+    );
+  }
 
   return (
     <EpubReader
