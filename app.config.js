@@ -68,7 +68,7 @@ export default {
       "expo-screen-orientation",
       "expo-brightness",
       [
-        "expo-av",
+        "expo-audio",
         {
           microphonePermission:
             "Allow $(PRODUCT_NAME) to access your microphone for audio features.",

@@ -34,7 +34,7 @@
     "deprecated-react-native-prop-types": "^2.3.0",
     "expo": "~54.0.34",
     "expo-asset": "~12.0.13",
-    "expo-av": "~16.0.8",
+    "expo-audio": "~1.1.1",
     "expo-brightness": "~14.0.8",
     "expo-constants": "~18.0.12",
     "expo-dev-client": "~6.0.21",
