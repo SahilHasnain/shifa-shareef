@@ -128,7 +128,7 @@ function getInitialChapterIndex(
   return 0;
 }
 
-function buildChapterHtml(chapters: LoadedChapter[], baseUrl: string, theme: (typeof READER_THEME_COLORS)[keyof typeof READER_THEME_COLORS], fontSize: number): string {
+function buildChapterHtml(chapters: LoadedChapter[], baseUrl: string, initialTheme: (typeof READER_THEME_COLORS)[keyof typeof READER_THEME_COLORS], fontSize: number): string {
   const chapterSections = chapters
     .map((chapter) => `<section class="reader-chapter" data-chapter-index="${chapter.index}">${chapter.html}</section>`)
     .join("\n");
@@ -140,9 +140,10 @@ function buildChapterHtml(chapters: LoadedChapter[], baseUrl: string, theme: (ty
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <base href="${baseUrl}">
   <style>
-    html, body { min-height: 100%; margin: 0; padding: 0; background: ${theme.background}; color: ${theme.text}; }
-    body { font-size: ${fontSize}px; line-height: 1.75; padding: 28px 22px 42px; overflow-x: hidden; }
-    body, p, div, span, li { color: ${theme.text} !important; }
+    :root { --reader-bg: ${initialTheme.background}; --reader-text: ${initialTheme.text}; --reader-font-size: ${fontSize}px; }
+    html, body { min-height: 100%; margin: 0; padding: 0; background: var(--reader-bg); color: var(--reader-text); }
+    body { font-size: var(--reader-font-size); line-height: 1.75; padding: 28px 22px 42px; overflow-x: hidden; }
+    body, p, div, span, li { color: var(--reader-text) !important; }
     p { margin: 0 0 1em; }
     img, svg { max-width: 100%; height: auto; }
     a { color: inherit; text-decoration: none; pointer-events: none; }
@@ -231,6 +232,15 @@ function buildChapterHtml(chapters: LoadedChapter[], baseUrl: string, theme: (ty
         }, 80);
       });
     }
+
+    window.__setTheme = function(bg, textColor) {
+      var root = document.documentElement;
+      root.style.setProperty('--reader-bg', bg);
+      root.style.setProperty('--reader-text', textColor);
+    };
+    window.__setFontSize = function(px) {
+      document.documentElement.style.setProperty('--reader-font-size', px + 'px');
+    };
 
     document.addEventListener('message', function(event) {
       try {
@@ -346,7 +356,7 @@ export function ChapterReader({
   const readerHtml = useMemo(() => {
     if (loadedChapters.length === 0) return null;
     return buildChapterHtml(loadedChapters, `${assetBaseUrl}/`, themeColors, fontSize);
-  }, [assetBaseUrl, fontSize, loadedChapters, themeColors]);
+  }, [assetBaseUrl, loadedChapters]); // theme, fontSize excluded — applied via injectJavaScript to avoid WebView reload
   const webViewSource = useMemo(() => {
     return readerHtml ? { html: readerHtml } : undefined;
   }, [readerHtml]);
@@ -489,6 +499,18 @@ export function ChapterReader({
   }, [colors.surface.lightCream, controlsVisible, themeColors.background]);
 
   useEffect(() => {
+    webViewRef.current?.injectJavaScript(
+      `window.__setTheme && window.__setTheme(${JSON.stringify(themeColors.background)}, ${JSON.stringify(themeColors.text)}); true;`,
+    );
+  }, [themeColors]);
+
+  useEffect(() => {
+    webViewRef.current?.injectJavaScript(
+      `window.__setFontSize && window.__setFontSize(${fontSize}); true;`,
+    );
+  }, [fontSize]);
+
+  useEffect(() => {
     sessionMinProgress.current = Math.min(sessionMinProgress.current, currentProgress);
     sessionMaxProgress.current = Math.max(sessionMaxProgress.current, currentProgress);
     if (sessionStartProgress.current == null && currentProgress > 0) {
@@ -552,6 +574,8 @@ export function ChapterReader({
     const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
       if (showCompletionModal) {
         setShowCompletionModal(false);
+        void completeSession();
+        router.back();
         return true;
       }
 
@@ -732,6 +756,7 @@ export function ChapterReader({
           domStorageEnabled
           originWhitelist={["*"]}
           mixedContentMode="always"
+          showsVerticalScrollIndicator={false}
         />
       ) : null}
 
@@ -753,20 +778,20 @@ export function ChapterReader({
             </View>
 
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 20 }}>
                 <Pressable onPress={() => setFontSize(prev => Math.max(12, prev - 2))} style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
                   <Text style={{ color: colors.text.onPrimary, fontSize: 18, fontWeight: typography.weight.bold }}>A-</Text>
                 </Pressable>
+                <Text style={{ color: colors.text.onPrimary, fontSize: typography.size.sm, fontWeight: typography.weight.semibold, minWidth: 20, textAlign: "center", opacity: 0.7 }}>{fontSize}</Text>
                 <Pressable onPress={() => setFontSize(prev => Math.min(28, prev + 2))} style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
                   <Text style={{ color: colors.text.onPrimary, fontSize: 18, fontWeight: typography.weight.bold }}>A+</Text>
                 </Pressable>
               </View>
-              <Pressable onPress={toggleBookmark} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: locationIsBookmarked ? colors.secondary.lightGold : colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
-                <Ionicons name={locationIsBookmarked ? "bookmark" : "bookmark-outline"} size={22} color={locationIsBookmarked ? colors.primary.deepGreen : colors.text.onPrimary} />
-              </Pressable>
-              <Pressable onPress={() => setBookmarksVisible(true)} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
-                <Ionicons name="bookmarks-outline" size={22} color={colors.text.onPrimary} />
-              </Pressable>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 18 }}>
+                <Pressable onPress={toggleBookmark} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: locationIsBookmarked ? colors.secondary.lightGold : colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+                  <Ionicons name={locationIsBookmarked ? "bookmark" : "bookmark-outline"} size={22} color={locationIsBookmarked ? colors.primary.deepGreen : colors.text.onPrimary} />
+                </Pressable>
+              </View>
             </View>
           </View>
         </SafeAreaView>
@@ -846,7 +871,6 @@ export function ChapterReader({
         <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 24 }} onPress={() => setShowCompletionModal(false)}>
           <View style={{ width: "100%", maxWidth: 340, borderRadius: 24, backgroundColor: colors.surface.warmIvory, padding: 28, alignItems: "center", gap: 20 }}>
             <Ionicons name="checkmark-circle" size={52} color={colors.accent.success} />
-            <Text style={{ color: colors.text.primary, fontSize: typography.size.xl, fontWeight: typography.weight.extrabold, textAlign: "center" }}>Reading session saved</Text>
             {completionData ? (
               <View style={{ width: "100%", gap: 16 }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>

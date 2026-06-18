@@ -34,7 +34,8 @@ export default function TopicsScreen() {
         contentContainerStyle={{ paddingTop: insets.top + 5, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ paddingHorizontal: 20, gap: 2, paddingTop: 8 }}>
+        <View style={{ paddingHorizontal: 20, gap: 2, paddingTop: 20 }}>
+          <Text style={{ color: colors.text.primary, fontSize: typography.size["3xl"], fontWeight: typography.weight.extrabold, marginBottom: 8 }}>Topics</Text>
           {currentVolume.sections.map((section, index) => {
             const status = getSectionStatus(currentVolume, section, progress);
             const isCurrent = status === "current";
