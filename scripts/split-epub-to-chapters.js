@@ -88,23 +88,62 @@ function decodeXmlEntities(value) {
     .replace(/&amp;/g, "&");
 }
 
-function buildTocTitleMap(zip, opfPath, pkg, manifestById) {
+function extractFirst(pattern, source) {
+  const match = source.match(pattern);
+  return match?.[1] ?? "";
+}
+
+function getNcxPath(pkg, manifestById, opfPath) {
   const tocId = pkg?.spine?.toc;
   const ncxItem = tocId ? manifestById.get(tocId) : null;
-  if (!ncxItem?.href) return new Map();
+  if (!ncxItem?.href) return null;
 
-  const ncxPath = resolveRelative(opfPath, ncxItem.href);
+  return resolveRelative(opfPath, ncxItem.href);
+}
+
+function extractNcxTocEntries(zip, opfPath, pkg, manifestById) {
+  const ncxPath = getNcxPath(pkg, manifestById, opfPath);
+  if (!ncxPath) return [];
+
   const ncxXml = readZipText(zip, ncxPath);
+  const tokenPattern = /<navPoint\b[^>]*>|<\/navPoint>/gi;
+  const stack = [];
+  const entries = [];
+  let token;
+
+  while ((token = tokenPattern.exec(ncxXml)) != null) {
+    if (token[0].startsWith("</")) {
+      const opened = stack.pop();
+      if (!opened) continue;
+
+      const block = ncxXml.slice(opened.start, tokenPattern.lastIndex);
+      const rawLabel = extractFirst(/<navLabel>[\s\S]*?<text>([\s\S]*?)<\/text>[\s\S]*?<\/navLabel>/i, block);
+      const src = extractFirst(/<content\s+[^>]*src=["']([^"']+)["'][^>]*>/i, block);
+      const label = decodeXmlEntities(rawLabel.replace(/<[^>]*>/g, "").trim());
+
+      if (label && src) {
+        const href = normalizeContentHref(ncxPath, src);
+        entries.push({
+          label,
+          href,
+          src,
+          level: opened.level,
+          order: opened.start,
+        });
+      }
+    } else {
+      stack.push({ start: token.index, level: stack.length });
+    }
+  }
+
+  return entries.sort((a, b) => a.order - b.order);
+}
+
+function buildTocTitleMap(tocEntries) {
   const titleByHref = new Map();
-  const navPointPattern = /<navPoint\b[\s\S]*?<navLabel>[\s\S]*?<text>([\s\S]*?)<\/text>[\s\S]*?<content\s+[^>]*src=["']([^"']+)["'][^>]*>[\s\S]*?<\/navPoint>/gi;
-  let match;
 
-  while ((match = navPointPattern.exec(ncxXml)) != null) {
-    const label = decodeXmlEntities(match[1].replace(/<[^>]*>/g, "").trim());
-    const src = match[2];
-    if (!label || !src) continue;
-
-    const href = normalizeContentHref(ncxPath, src);
+  for (const entry of tocEntries) {
+    const { href, label } = entry;
     if (!titleByHref.has(href)) {
       titleByHref.set(href, label);
     }
@@ -122,7 +161,8 @@ function extractEpub(inputPath, outputDir) {
   const manifestItems = asArray(pkg?.manifest?.item);
   const spineItems = asArray(pkg?.spine?.itemref);
   const manifestById = new Map(manifestItems.map((item) => [item.id, item]));
-  const tocTitleByHref = buildTocTitleMap(zip, opfPath, pkg, manifestById);
+  const rawTocEntries = extractNcxTocEntries(zip, opfPath, pkg, manifestById);
+  const tocTitleByHref = buildTocTitleMap(rawTocEntries);
 
   cleanOutputDir(outputDir);
   zip.extractAllTo(outputDir, true);
@@ -152,6 +192,22 @@ function extractEpub(inputPath, outputDir) {
     throw new Error("No XHTML/HTML spine chapters found in EPUB");
   }
 
+  const chapterIndexByHref = new Map(chapters.map((chapter, index) => [chapter.href, index]));
+  const toc = rawTocEntries
+    .map((entry) => {
+      const chapterIndex = chapterIndexByHref.get(entry.href);
+      if (chapterIndex == null) return null;
+
+      return {
+        label: entry.label,
+        href: entry.href,
+        src: entry.src,
+        level: entry.level,
+        chapterIndex,
+      };
+    })
+    .filter(Boolean);
+
   const manifest = {
     version: 1,
     source: path.basename(inputPath),
@@ -159,6 +215,7 @@ function extractEpub(inputPath, outputDir) {
     opfPath,
     generatedAt: new Date().toISOString(),
     chapters,
+    toc,
   };
 
   fs.writeFileSync(

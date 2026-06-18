@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { ChapterReader } from "../../../../components/readers/ChapterReader";
 import { EpubReader } from "../../../../components/readers/EpubReader";
@@ -30,6 +30,17 @@ export default function ReaderScreen() {
   const { switchVolume } = useCurrentVolume(language.id);
   const { progress, saveProgress } = useReadingProgress(volume.id, language.id);
   const [useEpubFallback, setUseEpubFallback] = useState(false);
+
+  const handleProgressChange = useCallback(
+    (locator: string, nextProgressPercent: number) => {
+      void saveProgress(locator, nextProgressPercent);
+    },
+    [saveProgress],
+  );
+
+  const handleFallbackRequested = useCallback(() => {
+    setUseEpubFallback(true);
+  }, []);
 
   const navigationCfi =
     typeof params.cfi === "string" && params.cfi.length > 0
@@ -70,10 +81,8 @@ export default function ReaderScreen() {
             ? navigationProgressPercent ?? (hasExplicitNavigation ? undefined : progress.progressPercent)
             : undefined
         }
-        onProgressChange={(locator, nextProgressPercent) => {
-          void saveProgress(locator, nextProgressPercent);
-        }}
-        onFallbackRequested={() => setUseEpubFallback(true)}
+        onProgressChange={handleProgressChange}
+        onFallbackRequested={handleFallbackRequested}
       />
     );
   }
@@ -91,9 +100,7 @@ export default function ReaderScreen() {
       initialProgressPercent={
         navigationCfi == null ? navigationProgressPercent : undefined
       }
-      onProgressChange={(cfi, nextProgressPercent) => {
-        void saveProgress(cfi, nextProgressPercent);
-      }}
+      onProgressChange={handleProgressChange}
     />
   );
 }

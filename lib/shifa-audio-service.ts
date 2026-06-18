@@ -56,6 +56,7 @@ type AppwriteAudioDocument = {
   uploadDate?: string;
   youtubeId?: string;
   channelName?: string;
+  sortOrder?: number | null;
 };
 
 export type ShifaAudioTrack = {
@@ -66,6 +67,7 @@ export type ShifaAudioTrack = {
   uploadedAt: string | null;
   youtubeId: string | null;
   channelName: string | null;
+  sortOrder: number | null;
 };
 
 function normalizeText(value?: string | null): string {
@@ -109,6 +111,7 @@ function toAudioTrack(document: AppwriteAudioDocument): ShifaAudioTrack | null {
     uploadedAt: normalizeText(document.uploadDate) || null,
     youtubeId: normalizeText(document.youtubeId) || null,
     channelName: normalizeText(document.channelName) || null,
+    sortOrder: document.sortOrder ?? null,
   };
 }
 
@@ -173,8 +176,11 @@ export async function fetchShifaAudioTracks(
     .map(toAudioTrack)
     .filter((track): track is ShifaAudioTrack => Boolean(track));
 
+  const sorted = (tracks: ShifaAudioTrack[]) =>
+    tracks.sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity));
+
   if (mappedTracks.length > 0) {
-    return dedupeTracks(mappedTracks);
+    return sorted(dedupeTracks(mappedTracks));
   }
 
   if (shifaChannelId) {
@@ -197,7 +203,7 @@ export async function fetchShifaAudioTracks(
     .map(toAudioTrack)
     .filter((track): track is ShifaAudioTrack => Boolean(track));
 
-  return dedupeTracks(fallbackTracks);
+  return sorted(dedupeTracks(fallbackTracks));
 }
 
 export function getShifaAudioFileUrl(audioFileId: string): string {

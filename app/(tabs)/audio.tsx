@@ -226,8 +226,10 @@ export default function AudioScreen() {
 
         if (activeTrackId === track.id && playerRef.current) {
           if (isPlaying) {
+            setIsPlaying(false);
             playerRef.current.pause();
           } else {
+            setIsPlaying(true);
             playerRef.current.play();
           }
           return;
@@ -241,10 +243,11 @@ export default function AudioScreen() {
 
         const player = createAudioPlayer(
           { uri: getShifaAudioFileUrl(track.audioFileId) },
-          { updateInterval: 500 },
+          { updateInterval: 250 },
         );
         statusSubscriptionRef.current = player.addListener("playbackStatusUpdate", onPlaybackStatusUpdate);
         playerRef.current = player;
+        setIsPlaying(true);
         player.play();
       } catch {
         setPlaybackError("Couldn't start audio. Please try another track.");
@@ -261,8 +264,10 @@ export default function AudioScreen() {
 
       if (isLiveStreaming && playerRef.current) {
         if (isPlaying) {
+          setIsPlaying(false);
           playerRef.current.pause();
         } else {
+          setIsPlaying(true);
           playerRef.current.play();
         }
         return;
@@ -276,10 +281,11 @@ export default function AudioScreen() {
 
       const player = createAudioPlayer(
         { uri: "https://seerat.duckdns.org/live" },
-        { updateInterval: 500 },
+        { updateInterval: 250 },
       );
       statusSubscriptionRef.current = player.addListener("playbackStatusUpdate", onPlaybackStatusUpdate);
       playerRef.current = player;
+      setIsPlaying(true);
       player.play();
     } catch {
       setPlaybackError("Couldn't connect to live stream. Please try again.");
@@ -293,9 +299,9 @@ export default function AudioScreen() {
       try {
         const seekPosition = Math.floor(value * durationMillis);
         setSeekPositionMillis(seekPosition);
-        await playerRef.current.seekTo(seekPosition / 1000);
         setPositionMillis(seekPosition);
         setIsSeeking(false);
+        await playerRef.current.seekTo(seekPosition / 1000);
       } catch (error) {
         console.error("Seek error:", error);
         setIsSeeking(false);
@@ -316,6 +322,7 @@ export default function AudioScreen() {
     if (playerRef.current && durationMillis > 0) {
       try {
         const newPosition = Math.max(0, positionMillis - 15000);
+        setPositionMillis(newPosition);
         await playerRef.current.seekTo(newPosition / 1000);
       } catch (error) {
         console.error("Skip backward error:", error);
@@ -327,6 +334,7 @@ export default function AudioScreen() {
     if (playerRef.current && durationMillis > 0) {
       try {
         const newPosition = Math.min(durationMillis, positionMillis + 15000);
+        setPositionMillis(newPosition);
         await playerRef.current.seekTo(newPosition / 1000);
       } catch (error) {
         console.error("Skip forward error:", error);
@@ -355,7 +363,7 @@ export default function AudioScreen() {
               fontWeight: typography.weight.medium,
             }}
           >
-            Dars e Shifa recordings and live broadcast
+            Dars e Shifa episodes and live stream
           </Text>
         </View>
 
@@ -376,8 +384,8 @@ export default function AudioScreen() {
               flex: 1,
               backgroundColor:
                 activeTab === "library"
-                  ? colors.primary.deepGreen
-                  : tabInactiveBackground,
+                  ? tabInactiveBackground
+                  : colors.primary.deepGreen,
               paddingVertical: 10,
               borderRadius: 17,
               opacity: pressed ? 0.85 : 1,
@@ -387,8 +395,8 @@ export default function AudioScreen() {
               style={{
                 color:
                   activeTab === "library"
-                    ? colors.text.onPrimary
-                    : colors.text.secondary,
+                    ? colors.text.secondary
+                    : colors.text.onPrimary,
                 fontSize: typography.size.sm,
                 fontWeight: typography.weight.semibold,
                 textAlign: "center",
@@ -404,8 +412,8 @@ export default function AudioScreen() {
               flex: 1,
               backgroundColor:
                 activeTab === "live"
-                  ? colors.primary.deepGreen
-                  : tabInactiveBackground,
+                  ? tabInactiveBackground
+                  : colors.primary.deepGreen,
               paddingVertical: 10,
               borderRadius: 17,
               opacity: pressed ? 0.85 : 1,
@@ -415,8 +423,8 @@ export default function AudioScreen() {
               style={{
                 color:
                   activeTab === "live"
-                    ? colors.text.onPrimary
-                    : colors.text.secondary,
+                    ? colors.text.secondary
+                    : colors.text.onPrimary,
                 fontSize: typography.size.sm,
                 fontWeight: typography.weight.semibold,
                 textAlign: "center",
@@ -461,35 +469,7 @@ export default function AudioScreen() {
                   </Text>
                 </View>
               ) : null}
-              {!isLoading && !error && tracks.length > 0 ? (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: colors.text.secondary,
-                      fontSize: typography.size.sm,
-                      fontWeight: typography.weight.bold,
-                      letterSpacing: 0.2,
-                    }}
-                  >
-                    Latest Audio
-                  </Text>
-                  <Text
-                    style={{
-                      color: colors.text.tertiary,
-                      fontSize: typography.size.xs,
-                      fontWeight: typography.weight.semibold,
-                    }}
-                  >
-                    Pull to refresh
-                  </Text>
-                </View>
-              ) : null}
+
             </View>
           }
           ListEmptyComponent={
@@ -875,16 +855,7 @@ export default function AudioScreen() {
               >
                 Shifa Shareef Live
               </Text>
-              <Text
-                style={{
-                  color: colors.text.tertiary,
-                  fontSize: typography.size.sm,
-                  lineHeight: 20,
-                  textAlign: "center",
-                }}
-              >
-                Tap the button to connect to the live broadcast.
-              </Text>
+
             </View>
 
             {playbackError ? (

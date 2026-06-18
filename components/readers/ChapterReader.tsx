@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, BackHandler, Modal, Pressable, StatusBar, Text, View } from "react-native";
+import { ActivityIndicator, BackHandler, Modal, Pressable, ScrollView, StatusBar, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SystemUI from "expo-system-ui";
 import { WebView } from "react-native-webview";
@@ -21,6 +21,7 @@ import { getCurrentSection } from "../../lib/section-resolver";
 type ChapterManifest = {
   title?: string;
   chapters: ChapterManifestItem[];
+  toc?: ChapterTocItem[];
 };
 
 type ChapterManifestItem = {
@@ -34,6 +35,14 @@ type ChapterManifestItem = {
 type LoadedChapter = {
   index: number;
   html: string;
+};
+
+type ChapterTocItem = {
+  label: string;
+  href: string;
+  src: string;
+  level: number;
+  chapterIndex: number;
 };
 
 type ChapterReaderProps = {
@@ -136,7 +145,7 @@ function buildChapterHtml(chapters: LoadedChapter[], baseUrl: string, theme: (ty
     body, p, div, span, li { color: ${theme.text} !important; }
     p { margin: 0 0 1em; }
     img, svg { max-width: 100%; height: auto; }
-    a { color: #C9A961; }
+    a { color: inherit; text-decoration: none; pointer-events: none; }
     .reader-chapter { min-height: 70vh; padding-bottom: 28px; margin-bottom: 28px; border-bottom: 1px solid rgba(201, 169, 97, 0.18); }
     .reader-chapter:last-child { border-bottom: 0; }
     ::-webkit-scrollbar { display: none; }
@@ -149,6 +158,7 @@ function buildChapterHtml(chapters: LoadedChapter[], baseUrl: string, theme: (ty
     var lastSentAt = 0;
     var restored = false;
     var requestedNextAfter = null;
+    var requestedPreviousBefore = null;
 
     function getSections() {
       return Array.prototype.slice.call(document.querySelectorAll('.reader-chapter'));
@@ -185,6 +195,17 @@ function buildChapterHtml(chapters: LoadedChapter[], baseUrl: string, theme: (ty
       }
     }
 
+    function maybeRequestPrevious() {
+      var sections = getSections();
+      var first = sections[0];
+      if (!first) return;
+      var beforeIndex = Number(first.getAttribute('data-chapter-index'));
+      if (window.scrollY - first.offsetTop < 700 && requestedPreviousBefore !== beforeIndex) {
+        requestedPreviousBefore = beforeIndex;
+        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'NEED_PREVIOUS', beforeIndex: beforeIndex }));
+      }
+    }
+
     function sendProgress(force) {
       var now = Date.now();
       if (!force && now - lastSentAt < 500) return;
@@ -193,6 +214,7 @@ function buildChapterHtml(chapters: LoadedChapter[], baseUrl: string, theme: (ty
       var chapterIndex = active ? Number(active.getAttribute('data-chapter-index')) : 0;
       window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'PROGRESS', chapterIndex: chapterIndex, chapterProgress: getChapterProgress(active) }));
       maybeRequestNext();
+      maybeRequestPrevious();
     }
 
     function restoreProgress(chapterIndex, progress) {
@@ -232,6 +254,23 @@ function buildChapterHtml(chapters: LoadedChapter[], baseUrl: string, theme: (ty
       requestedNextAfter = null;
       setTimeout(function() { sendProgress(true); }, 80);
     };
+    window.__prependChapter = function(chapterIndex, html) {
+      if (document.querySelector('.reader-chapter[data-chapter-index="' + chapterIndex + '"]')) return;
+      var root = document.getElementById('reader-root');
+      var previousHeight = document.documentElement.scrollHeight;
+      var previousScroll = window.scrollY;
+      var section = document.createElement('section');
+      section.className = 'reader-chapter';
+      section.setAttribute('data-chapter-index', String(chapterIndex));
+      section.innerHTML = html;
+      root.insertBefore(section, root.firstChild);
+      requestedPreviousBefore = null;
+      requestAnimationFrame(function() {
+        var heightDelta = document.documentElement.scrollHeight - previousHeight;
+        window.scrollTo(0, previousScroll + heightDelta);
+        setTimeout(function() { sendProgress(true); }, 80);
+      });
+    };
     window.addEventListener('scroll', function() { sendProgress(false); }, { passive: true });
     window.addEventListener('load', function() { restoreProgress(${chapters[0]?.index ?? 0}, 0); });
     setTimeout(function() { restoreProgress(${chapters[0]?.index ?? 0}, 0); }, 250);
@@ -269,9 +308,12 @@ export function ChapterReader({
   const sessionStartProgress = useRef<number | null>(null);
   const sessionCompletedRef = useRef(false);
   const lastSavedLocatorRef = useRef<string | null>(null);
+  const initialLocatorRef = useRef(initialLocator);
+  const initialProgressPercentRef = useRef(initialProgressPercent);
 
   const [manifest, setManifest] = useState<ChapterManifest | null>(null);
   const [chapterIndex, setChapterIndex] = useState(0);
+  const [loadAnchorIndex, setLoadAnchorIndex] = useState(0);
   const [loadedChapters, setLoadedChapters] = useState<LoadedChapter[]>([]);
   const [chapterProgress, setChapterProgress] = useState(0);
   const [currentProgress, setCurrentProgress] = useState(0);
@@ -305,6 +347,9 @@ export function ChapterReader({
     if (loadedChapters.length === 0) return null;
     return buildChapterHtml(loadedChapters, `${assetBaseUrl}/`, themeColors, fontSize);
   }, [assetBaseUrl, fontSize, loadedChapters, themeColors]);
+  const webViewSource = useMemo(() => {
+    return readerHtml ? { html: readerHtml } : undefined;
+  }, [readerHtml]);
 
   const calculateGlobalProgress = useCallback((index: number, progressWithinChapter: number) => {
     if (!manifest) return 0;
@@ -360,8 +405,10 @@ export function ChapterReader({
 
         if (cancelled) return;
         await AsyncStorage.setItem(`shifa-shareef:chapter-manifest:${language.id}:${volume.id}`, JSON.stringify(nextManifest));
+        const initialChapterIndex = getInitialChapterIndex(nextManifest, initialLocatorRef.current, initialProgressPercentRef.current);
         setManifest(nextManifest);
-        setChapterIndex(getInitialChapterIndex(nextManifest, initialLocator, initialProgressPercent));
+        setChapterIndex(initialChapterIndex);
+        setLoadAnchorIndex(initialChapterIndex);
       } catch (err) {
         if (cancelled) return;
         if (err instanceof Error && err.message === "Chapter manifest not found") {
@@ -373,8 +420,10 @@ export function ChapterReader({
         if (cachedManifest) {
           try {
             const parsed = JSON.parse(cachedManifest) as ChapterManifest;
+            const initialChapterIndex = getInitialChapterIndex(parsed, initialLocatorRef.current, initialProgressPercentRef.current);
             setManifest(parsed);
-            setChapterIndex(getInitialChapterIndex(parsed, initialLocator, initialProgressPercent));
+            setChapterIndex(initialChapterIndex);
+            setLoadAnchorIndex(initialChapterIndex);
             return;
           } catch { }
         }
@@ -386,10 +435,11 @@ export function ChapterReader({
 
     void loadManifest();
     return () => { cancelled = true; };
-  }, [initialLocator, initialProgressPercent, language.id, manifestUrl, onFallbackRequested, volume.id]);
+  }, [language.id, manifestUrl, onFallbackRequested, volume.id]);
 
   useEffect(() => {
     if (!manifest) return;
+    const activeManifest = manifest;
     let cancelled = false;
 
     async function load() {
@@ -399,8 +449,8 @@ export function ChapterReader({
         loadedChapterIndexesRef.current = new Set<number>();
         appendInFlightRef.current = new Set<number>();
 
-        const start = Math.max(0, chapterIndex - 1);
-        const end = Math.min(manifest.chapters.length - 1, chapterIndex + 1);
+        const start = Math.max(0, loadAnchorIndex - 1);
+        const end = Math.min(activeManifest.chapters.length - 1, loadAnchorIndex + 1);
         const nextLoaded: LoadedChapter[] = [];
 
         for (let index = start; index <= end; index += 1) {
@@ -414,7 +464,7 @@ export function ChapterReader({
         if (cancelled) return;
         setLoadedChapters(nextLoaded);
         if (!cancelled) {
-          void prefetchChapter(chapterIndex + 2);
+          void prefetchChapter(loadAnchorIndex + 2);
         }
       } catch (err) {
         if (!cancelled) {
@@ -426,7 +476,7 @@ export function ChapterReader({
 
     void load();
     return () => { cancelled = true; };
-  }, [chapterIndex, getChapterHtml, manifest, prefetchChapter]);
+  }, [getChapterHtml, loadAnchorIndex, manifest, prefetchChapter]);
 
   useEffect(() => {
     StatusBar.setHidden(!controlsVisible, "fade");
@@ -524,6 +574,7 @@ export function ChapterReader({
     if (!manifest) return;
     const nextIndex = Math.min(manifest.chapters.length - 1, Math.max(0, index));
     setChapterIndex(nextIndex);
+    setLoadAnchorIndex(nextIndex);
     setChapterProgress(progress);
     setCurrentProgress(calculateGlobalProgress(nextIndex, progress));
     setTocVisible(false);
@@ -553,6 +604,44 @@ export function ChapterReader({
     }
   };
 
+  const appendChapter = useCallback(async (index: number) => {
+    if (!manifest || index < 0 || index >= manifest.chapters.length) return;
+    if (loadedChapterIndexesRef.current.has(index) || appendInFlightRef.current.has(index)) return;
+
+    appendInFlightRef.current.add(index);
+    try {
+      const html = await getChapterHtml(index);
+      if (!html) return;
+
+      loadedChapterIndexesRef.current.add(index);
+      webViewRef.current?.injectJavaScript(
+        `window.__appendChapter && window.__appendChapter(${index}, ${JSON.stringify(html)}); true;`,
+      );
+      void prefetchChapter(index + 1);
+    } finally {
+      appendInFlightRef.current.delete(index);
+    }
+  }, [getChapterHtml, manifest, prefetchChapter]);
+
+  const appendPreviousChapter = useCallback(async (index: number) => {
+    if (!manifest || index < 0 || index >= manifest.chapters.length) return;
+    if (loadedChapterIndexesRef.current.has(index) || appendInFlightRef.current.has(index)) return;
+
+    appendInFlightRef.current.add(index);
+    try {
+      const html = await getChapterHtml(index);
+      if (!html) return;
+
+      loadedChapterIndexesRef.current.add(index);
+      webViewRef.current?.injectJavaScript(
+        `window.__prependChapter && window.__prependChapter(${index}, ${JSON.stringify(html)}); true;`,
+      );
+      void prefetchChapter(index - 1);
+    } finally {
+      appendInFlightRef.current.delete(index);
+    }
+  }, [getChapterHtml, manifest, prefetchChapter]);
+
   const handleMessage = (event: any) => {
     try {
       const data = event.nativeEvent.data;
@@ -562,10 +651,12 @@ export function ChapterReader({
       if (message.type === "READY") {
         setIsLoading(false);
       } else if (message.type === "PROGRESS") {
+        const nextChapterIndex = typeof message.chapterIndex === "number" ? message.chapterIndex : chapterIndex;
         const nextChapterProgress = typeof message.chapterProgress === "number" ? message.chapterProgress : 0;
-        const nextProgress = calculateGlobalProgress(chapterIndex, nextChapterProgress);
-        const locator = makeLocator(chapterIndex, nextChapterProgress);
+        const nextProgress = calculateGlobalProgress(nextChapterIndex, nextChapterProgress);
+        const locator = makeLocator(nextChapterIndex, nextChapterProgress);
 
+        setChapterIndex(nextChapterIndex);
         setChapterProgress(nextChapterProgress);
         setCurrentProgress(nextProgress);
 
@@ -575,14 +666,21 @@ export function ChapterReader({
         }
       } else if (message.type === "TOGGLE_CONTROLS") {
         setControlsVisible(true);
+      } else if (message.type === "NEED_NEXT") {
+        const nextIndex = typeof message.afterIndex === "number" ? message.afterIndex + 1 : chapterIndex + 1;
+        void appendChapter(nextIndex);
+      } else if (message.type === "NEED_PREVIOUS") {
+        const previousIndex = typeof message.beforeIndex === "number" ? message.beforeIndex - 1 : chapterIndex - 1;
+        void appendPreviousChapter(previousIndex);
       }
     } catch { }
   };
 
   const restoreProgress = () => {
-    const parsed = parseLocator(initialLocator);
+    const parsed = parseLocator(initialLocatorRef.current);
     const restoreValue = parsed && parsed.chapterIndex === chapterIndex ? parsed.chapterProgress : chapterProgress;
-    webViewRef.current?.postMessage(JSON.stringify({ type: "RESTORE", chapterProgress: restoreValue }));
+    webViewRef.current?.postMessage(JSON.stringify({ type: "RESTORE", chapterIndex, chapterProgress: restoreValue }));
+    setTimeout(() => setIsLoading(false), 350);
   };
 
   if (error) {
@@ -622,12 +720,13 @@ export function ChapterReader({
         </View>
       )}
 
-      {readerHtml ? (
+      {webViewSource ? (
         <WebView
           ref={webViewRef}
-          source={{ html: readerHtml }}
+          source={webViewSource}
           onMessage={handleMessage}
           onLoadEnd={restoreProgress}
+          onError={() => setIsLoading(false)}
           style={{ flex: 1, backgroundColor: themeColors.background }}
           javaScriptEnabled
           domStorageEnabled
@@ -653,18 +752,6 @@ export function ChapterReader({
               </View>
             </View>
 
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <Pressable disabled={chapterIndex === 0} onPress={() => goToChapter(chapterIndex - 1, 0)} style={({ pressed }) => ({ opacity: chapterIndex === 0 ? 0.35 : pressed ? 0.65 : 1 })}>
-                <Ionicons name="chevron-back-circle" size={34} color={colors.text.onPrimary} />
-              </Pressable>
-              <Text style={{ flex: 1, color: colors.text.light, fontSize: typography.size.sm, fontWeight: typography.weight.semibold, textAlign: "center", paddingHorizontal: 12 }} numberOfLines={1}>
-                {currentChapter?.title ?? `Chapter ${chapterIndex + 1}`}
-              </Text>
-              <Pressable disabled={chapterIndex >= manifest.chapters.length - 1} onPress={() => goToChapter(chapterIndex + 1, 0)} style={({ pressed }) => ({ opacity: chapterIndex >= manifest.chapters.length - 1 ? 0.35 : pressed ? 0.65 : 1 })}>
-                <Ionicons name="chevron-forward-circle" size={34} color={colors.text.onPrimary} />
-              </Pressable>
-            </View>
-
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                 <Pressable onPress={() => setFontSize(prev => Math.max(12, prev - 2))} style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
@@ -687,13 +774,54 @@ export function ChapterReader({
 
       <Modal visible={tocVisible} animationType="slide" transparent onRequestClose={() => setTocVisible(false)}>
         <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }} onPress={() => setTocVisible(false)}>
-          <View style={{ maxHeight: "70%", backgroundColor: colors.surface.warmIvory, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 }}>
-            <Text style={{ color: colors.text.primary, fontSize: typography.size.xl, fontWeight: typography.weight.extrabold, marginBottom: 16 }}>Chapters</Text>
-            {manifest?.chapters.map((chapter, index) => (
-              <Pressable key={`${chapter.href}-${index}`} onPress={() => goToChapter(index, 0)} style={({ pressed }) => ({ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "rgba(23,61,49,0.08)", opacity: pressed ? 0.7 : 1 })}>
-                <Text style={{ color: index === chapterIndex ? colors.secondary.mutedGold : colors.text.primary, fontSize: typography.size.base, fontWeight: index === chapterIndex ? typography.weight.bold : typography.weight.medium }}>{chapter.title}</Text>
+          <View style={{ maxHeight: "78%", backgroundColor: colors.surface.warmIvory, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 12, overflow: "hidden" }}>
+            <View style={{ width: 42, height: 4, borderRadius: 999, backgroundColor: "rgba(23,61,49,0.18)", alignSelf: "center", marginBottom: 18 }} />
+            <View style={{ paddingHorizontal: 22, paddingBottom: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.text.primary, fontSize: typography.size["2xl"], fontWeight: typography.weight.extrabold }}>Chapters</Text>
+                <Text style={{ color: colors.text.tertiary, fontSize: typography.size.sm, marginTop: 4 }}>{manifest?.toc?.length ?? manifest?.chapters.length ?? 0} sections</Text>
+              </View>
+              <Pressable onPress={() => setTocVisible(false)} style={({ pressed }) => ({ width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(23,61,49,0.08)", alignItems: "center", justifyContent: "center", opacity: pressed ? 0.75 : 1 })}>
+                <Ionicons name="close" size={20} color={colors.text.primary} />
               </Pressable>
-            ))}
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 28 }}>
+              {(manifest?.toc?.length ? manifest.toc : manifest?.chapters.map((chapter, index) => ({
+                label: chapter.title,
+                href: chapter.href,
+                src: chapter.href,
+                level: 0,
+                chapterIndex: index,
+              })) ?? []).map((item, index) => {
+                const isActive = item.chapterIndex === chapterIndex;
+
+                return (
+                  <Pressable
+                    key={`${item.src}-${index}`}
+                    onPress={() => goToChapter(item.chapterIndex, 0)}
+                    style={({ pressed }) => ({
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 12,
+                      borderRadius: 18,
+                      backgroundColor: isActive ? colors.primary.deepGreen : "transparent",
+                      paddingLeft: 12 + Math.min(item.level, 3) * 16,
+                      paddingRight: 12,
+                      paddingVertical: 12,
+                      opacity: pressed ? 0.78 : 1,
+                    })}
+                  >
+                    <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: isActive ? colors.secondary.lightGold : "rgba(23,61,49,0.08)" }}>
+                      <Text style={{ color: isActive ? colors.primary.deepGreen : colors.text.tertiary, fontSize: typography.size.xs, fontWeight: typography.weight.bold }}>{index + 1}</Text>
+                    </View>
+                    <Text style={{ flex: 1, color: isActive ? colors.text.onPrimary : colors.text.primary, fontSize: typography.size.base, lineHeight: 21, fontWeight: isActive ? typography.weight.bold : typography.weight.semibold, textAlign: "left" }} numberOfLines={2}>
+                      {item.label}
+                    </Text>
+                    {isActive ? <Ionicons name="checkmark" size={18} color={colors.secondary.lightGold} /> : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </View>
         </Pressable>
       </Modal>
@@ -716,13 +844,30 @@ export function ChapterReader({
 
       <Modal visible={showCompletionModal} transparent animationType="fade" onRequestClose={() => setShowCompletionModal(false)}>
         <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 24 }} onPress={() => setShowCompletionModal(false)}>
-          <View style={{ width: "100%", borderRadius: 24, backgroundColor: colors.surface.warmIvory, padding: 24, alignItems: "center", gap: 12 }}>
+          <View style={{ width: "100%", maxWidth: 340, borderRadius: 24, backgroundColor: colors.surface.warmIvory, padding: 28, alignItems: "center", gap: 20 }}>
             <Ionicons name="checkmark-circle" size={52} color={colors.accent.success} />
             <Text style={{ color: colors.text.primary, fontSize: typography.size.xl, fontWeight: typography.weight.extrabold, textAlign: "center" }}>Reading session saved</Text>
             {completionData ? (
-              <Text style={{ color: colors.text.tertiary, fontSize: typography.size.base, textAlign: "center", lineHeight: 22 }}>
-                You read about {completionData.pagesRead} pages in {completionData.durationMinutes} minutes.
-              </Text>
+              <View style={{ width: "100%", gap: 16 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(23, 61, 49, 0.1)", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name="book" size={18} color={colors.primary.deepGreen} />
+                    </View>
+                    <Text style={{ color: colors.text.tertiary, fontSize: typography.size.md }}>Pages read</Text>
+                  </View>
+                  <Text style={{ color: colors.text.primary, fontSize: typography.size["2xl"], fontWeight: typography.weight.extrabold }}>{completionData.pagesRead}</Text>
+                </View>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(23, 61, 49, 0.1)", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name="time" size={18} color={colors.primary.deepGreen} />
+                    </View>
+                    <Text style={{ color: colors.text.tertiary, fontSize: typography.size.md }}>Time spent</Text>
+                  </View>
+                  <Text style={{ color: colors.text.primary, fontSize: typography.size["2xl"], fontWeight: typography.weight.extrabold }}>{completionData.durationMinutes} min</Text>
+                </View>
+              </View>
             ) : null}
           </View>
         </Pressable>
