@@ -767,8 +767,8 @@ export default function HomeScreen() {
               }}
             >
               {currentLanguageId === "roman-urdu"
-                ? "Shifa Shareef Qazi Iyaz رحمہ اللہ ki mashoor kitab 'الشفا بتعريف حقوق المصطفى' ka Urdu tarjama hai. Yeh kitab Huzoor ﷺ ki shaan-o-azmat, fazail, mojizaat, aur aap ke huqooq par mushtamil hai."
-                : "شفاء شریف قاضی عیاض رحمہ اللہ کی مشہور کتاب 'الشفا بتعريف حقوق المصطفى' کا اردو ترجمہ ہے۔ یہ کتاب حضور ﷺ کی شان و عظمت، فضائل، معجزات، اور آپ کے حقوق پر مشتمل ہے۔"}
+                ? 'Aath sadiyon se bhi zyada arsay se "Ash-Shifa" Huzoor Nabi-e-Kareem Sayyiduna Muhammad Mustafa ﷺ ki shaan, martabay aur huqooq par likhi gayi sab se mashhoor aur mu\'tabar kitab mani jati hai. Is azeem kitab ko buzurg Maliki alim aur faqeeh Qazi Iyaz رحمۃ اللہ تعالیٰ علیہ (544 Hijri / 1149 Iswi) ne tasneef farmaya. Yeh sirf ek kitab nahin, balkeh Huzoor ﷺ ki muhabbat se bharpur ek azeem virsa hai jo har Musalman ko yeh sikhata hai ke Aap ﷺ ke bare mein kya aqeedah rakhna chahiye, kis tarah muhabbat karni chahiye aur kis adab ke sath Aap ﷺ ka zikr karna chahiye.'
+                : 'آٹھ صدیوں سے بھی زیادہ عرصے سے "الشفا" حضور نبیِ کریم سیدنا محمد مصطفیٰ ﷺ کی شان، مرتبے اور حقوق پر لکھی گئی سب سے مشہور اور معتبر کتاب مانی جاتی ہے۔ اس عظیم کتاب کو بزرگ مالکی عالم اور فقیہ قاضی عیاض رحمۃ اللہ تعالیٰ علیہ (544 ہجری / 1149 عیسوی) نے تصنیف فرمایا۔ یہ صرف ایک کتاب نہیں، بلکہ حضور ﷺ کی محبت سے بھرپور ایک عظیم ورثہ ہے جو ہر مسلمان کو یہ سکھاتا ہے کہ آپ ﷺ کے بارے میں کیا عقیدہ رکھنا چاہیے، کس طرح محبت کرنی چاہیے اور کس ادب کے ساتھ آپ ﷺ کا ذکر کرنا چاہیے۔'}
             </Text>
             <Text
               style={{
@@ -778,8 +778,8 @@ export default function HomeScreen() {
               }}
             >
               {currentLanguageId === "roman-urdu"
-                ? "Is kitab mein Quran aur Hadees se sabut ke saath Rasool-e-Paak ﷺ ki azmat, akhlaaq-e-hasana, mojizaat aur Ummat par aap ke huqooq ka tafseel se zikr hai."
-                : "اس کتاب میں قرآن اور حدیث سے ثبوت کے ساتھ رسول پاک ﷺ کی عظمت، اخلاق حسنہ، معجزات اور امت پر آپ کے حقوق کا تفصیل سے ذکر ہے۔"}
+                ? 'Yeh mubarak kitab chaar hisson mein taqseem ki gayi hai. Pehle hisse mein Qur\'an-e-Kareem aur Ahadees ki roshni mein Huzoor ﷺ ki buland shaan, Allah Ta\'ala ki taraf se ata kiye gaye mojizaat aur Aap ﷺ ki fazilat bayan ki gayi hai. Dusre hisse mein Ummat ke farz bataye gaye hain, yani Huzoor ﷺ par kamil imaan lana, sab se zyada Aap ﷺ se muhabbat karna, Aap ﷺ ki ta\'zeem aur adab karna, aur kasrat se durood-o-salaam pesh karna. Teesre hisse mein Anbiya-e-Kiram ki masoomiyat aur Huzoor ﷺ ki insani zindagi se mutaalliq aham baatein aasaan andaaz mein samjhayi gayi hain. Aakhri hissa Huzoor ﷺ ki bargah mein be-adabi ki sangini, us ke shar\'i ahkaam aur ta\'zeem-o-adab ki hudood ko wazeh karta hai.'
+                : 'یہ مبارک کتاب چار حصوں میں تقسیم کی گئی ہے۔ پہلے حصے میں قرآنِ کریم اور احادیثِ مبارکہ کی روشنی میں حضور ﷺ کی بلند شان، اللہ تعالیٰ کی طرف سے عطا کیے گئے معجزات اور آپ ﷺ کی فضیلت بیان کی گئی ہے۔ دوسرے حصے میں امت کے فرائض بیان کیے گئے ہیں، یعنی حضور ﷺ پر کامل ایمان لانا، سب سے بڑھ کر آپ ﷺ سے محبت کرنا، آپ ﷺ کی تعظیم اور ادب بجا لانا، اور کثرت سے درود و سلام پیش کرنا۔ تیسرے حصے میں انبیائے کرام علیہم السلام کی عصمت اور حضور ﷺ کی بشری زندگی سے متعلق اہم باتوں کو آسان انداز میں بیان کیا گیا ہے۔ آخری حصے میں حضور ﷺ کی بارگاہ میں بے ادبی کی سنگینی، اس کے شرعی احکام اور تعظیم و ادب کی حدود کو واضح کیا گیا ہے۔'}
             </Text>
           </View>
         </View>
