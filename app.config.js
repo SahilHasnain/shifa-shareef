@@ -36,7 +36,7 @@ export default {
       bundleIdentifier: getUniqueIdentifier(),
     },
     android: {
-      versionCode: 9,
+      versionCode: 10,
       adaptiveIcon: {
         foregroundImage: "./assets/images/icon.png",
       },
