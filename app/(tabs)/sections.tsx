@@ -10,7 +10,6 @@ import { useAppTheme } from "../../hooks/useAppTheme";
 import { useVolumeProgress } from "../../hooks/useVolumeProgress";
 import {
   buildReaderHref,
-  getSectionMetaLabel,
   getSectionNavigationTarget,
   getSectionStatus,
 } from "../../lib/section-resolver";
@@ -84,24 +83,17 @@ export default function TopicsScreen() {
                   )}
                 </View>
 
-                <View style={{ flex: 1, gap: 4 }}>
-                  <Text
-                    style={{
-                      color: colors.text.primary,
-                      fontSize: typography.size.lg,
-                      fontWeight: typography.weight.bold,
-                      lineHeight: 22,
-                    }}
-                  >
-                    {section.title}
-                  </Text>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 12,
-                    }}
-                  >
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Text
+                      style={{
+                        color: colors.text.primary,
+                        fontSize: typography.size.lg,
+                        fontWeight: typography.weight.bold,
+                        lineHeight: 22,
+                      }}
+                    >
+                      {section.title}
+                    </Text>
                     <Text
                       style={{
                         color: colors.text.tertiary,
@@ -109,26 +101,10 @@ export default function TopicsScreen() {
                         fontWeight: typography.weight.medium,
                       }}
                     >
-                      {getSectionMetaLabel(currentVolume, section, index)}
+                      {section.estimatedMinutes >= 60
+                        ? `${Math.floor(section.estimatedMinutes / 60)}:${String(section.estimatedMinutes % 60).padStart(2, "0")}`
+                        : `${section.estimatedMinutes} min`}
                     </Text>
-                    <View
-                      style={{
-                        width: 3,
-                        height: 3,
-                        borderRadius: 1.5,
-                        backgroundColor: colors.text.tertiary,
-                      }}
-                    />
-                    <Text
-                      style={{
-                        color: colors.text.tertiary,
-                        fontSize: typography.size.sm,
-                        fontWeight: typography.weight.medium,
-                      }}
-                    >
-                      {section.estimatedMinutes} min
-                    </Text>
-                  </View>
                 </View>
 
                 <Ionicons

@@ -13,11 +13,17 @@ import {
   ROMAN_URDU_VOLUME1_SECTIONS,
   ROMAN_URDU_VOLUME1_TOTAL_PAGES,
 } from "./languages/roman-urdu/volume1/sections";
+import { ENGLISH_VOLUME1_PLANS } from "./languages/english/volume1/plans";
+import {
+  ENGLISH_VOLUME1_SECTIONS,
+  ENGLISH_VOLUME1_TOTAL_PAGES,
+} from "./languages/english/volume1/sections";
 import type { Language, ReadingPlan, Section, Volume } from "./types";
 
-export const DEFAULT_LANGUAGE_ID = "urdu";
-export const DEFAULT_LANGUAGE_TITLE = "Urdu";
+export const DEFAULT_LANGUAGE_ID = "english";
+export const DEFAULT_LANGUAGE_TITLE = "English";
 export const ROMAN_URDU_LANGUAGE_ID = "roman-urdu";
+export const ENGLISH_LANGUAGE_ID = "english";
 export const DEFAULT_VOLUME_ID = "volume1";
 
 function withSectionProgress(sections: Section[], totalPages: number): Section[] {
@@ -86,18 +92,34 @@ const ROMAN_URDU_VOLUMES: Volume[] = [
   ),
 ];
 
+const ENGLISH_VOLUMES: Volume[] = [
+  buildVolume(
+    "volume1",
+    "English",
+    ENGLISH_VOLUME1_TOTAL_PAGES,
+    ENGLISH_VOLUME1_SECTIONS,
+    ENGLISH_VOLUME1_PLANS,
+  ),
+];
+
 export const LANGUAGES: Language[] = [
   {
-    id: DEFAULT_LANGUAGE_ID,
-    title: DEFAULT_LANGUAGE_TITLE,
-    nativeTitle: "Urdu",
-    volumes: URDU_VOLUMES,
+    id: ENGLISH_LANGUAGE_ID,
+    title: "English",
+    nativeTitle: "English",
+    volumes: ENGLISH_VOLUMES,
   },
   {
     id: ROMAN_URDU_LANGUAGE_ID,
     title: "Roman Urdu",
     nativeTitle: "Roman Urdu",
     volumes: ROMAN_URDU_VOLUMES,
+  },
+  {
+    id: "urdu",
+    title: "Urdu",
+    nativeTitle: "Urdu",
+    volumes: URDU_VOLUMES,
   },
 ];
 

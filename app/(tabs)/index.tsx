@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Modal,
   Pressable,
   ScrollView,
   Text,
@@ -40,9 +41,6 @@ import {
   getCurrentSection,
   getResumeNavigationTarget,
 } from "../../lib/section-resolver";
-
-const SELECTED_CHIP_FILL = "#F1E0A4";
-const SELECTED_CHIP_TEXT = "#101815";
 
 function ContinueReadingContent({
   languageId,
@@ -114,6 +112,7 @@ export default function HomeScreen() {
   const { activePlan } = useReadingPlan(currentVolumeId, currentLanguageId);
 
   const [displayVolumeId, setDisplayVolumeId] = useState(currentVolumeId);
+  const [langMenuVisible, setLangMenuVisible] = useState(false);
 
   const currentPlanDay = activePlan
     ? getCurrentPlanDay(currentVolume, activePlan, progress)
@@ -142,6 +141,8 @@ export default function HomeScreen() {
   const isDark = resolvedTheme === "dark";
   const homeBackground = isDark ? "#0B100D" : colors.surface.lightCream;
   const primaryCardBackground = isDark ? "#1A2520" : colors.surface.warmIvory;
+  const cardBackground = isDark ? "#1A2520" : colors.surface.warmIvory;
+  const cardBorderColor = isDark ? "rgba(241, 224, 164, 0.08)" : "transparent";
   const quietCardBackground = isDark ? "rgba(26, 37, 32, 0.58)" : colors.surface.warmIvory;
   const darkCardBorder = isDark ? "rgba(241, 224, 164, 0.08)" : "transparent";
   const quietCardBorder = isDark ? "rgba(255, 255, 255, 0.05)" : "transparent";
@@ -253,50 +254,92 @@ export default function HomeScreen() {
           >
             {BOOK_TITLE}
           </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 10, paddingRight: 8 }}
-          >
-            {LANGUAGES.map((language) => {
-              const isActive = language.id === currentLanguageId;
-
-              return (
-                <Pressable
-                  key={language.id}
-                  onPress={() => switchLanguage(language.id)}
-                  style={({ pressed }) => ({
-                    backgroundColor: isActive
-                      ? isDark
-                        ? colors.surface.softBeige
-                        : SELECTED_CHIP_FILL
-                      : colors.surface.warmIvory,
-                    borderWidth: 1.5,
-                    borderColor: isActive ? SELECTED_CHIP_FILL : colors.surface.softBeige,
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    borderRadius: 18,
-                    opacity: pressed ? 0.92 : 1,
-                    ...shadows.sm,
-                  })}
-                >
-                  <Text
-                    style={{
-                      color: isActive
-                        ? isDark
-                          ? SELECTED_CHIP_FILL
-                          : SELECTED_CHIP_TEXT
-                        : colors.text.tertiary,
-                      fontSize: typography.size.sm,
-                      fontWeight: typography.weight.bold,
-                    }}
-                  >
-                    {language.title}
-                  </Text>
-                </Pressable>
-              );
+          <Pressable
+            onPress={() => setLangMenuVisible(true)}
+            style={({ pressed }) => ({
+              alignSelf: "flex-start",
+              backgroundColor: colors.surface.warmIvory,
+              borderRadius: 18,
+              borderWidth: 1,
+              borderColor: isDark ? "rgba(241, 224, 164, 0.12)" : "rgba(23,61,49,0.08)",
+              transform: [{ scale: pressed ? 0.97 : 1 }],
+              ...shadows.sm,
             })}
-          </ScrollView>
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 8 }}>
+              <Ionicons name="language" size={16} color={colors.primary.sageGreen} style={{ marginRight: 6 }} />
+              <Text
+                style={{
+                  color: colors.text.primary,
+                  fontSize: typography.size.sm,
+                  fontWeight: typography.weight.extrabold,
+                  marginRight: 5,
+                }}
+              >
+                {currentLanguage.title}
+              </Text>
+              <Ionicons
+                name="chevron-down"
+                size={14}
+                color={colors.text.tertiary}
+              />
+            </View>
+          </Pressable>
+
+          <Modal visible={langMenuVisible} transparent animationType="fade" onRequestClose={() => setLangMenuVisible(false)}>
+            <View style={{ flex: 1 }}>
+              <Pressable
+                style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: "rgba(0,0,0,0.4)" }}
+                onPress={() => setLangMenuVisible(false)}
+              />
+              <View style={{ position: "absolute", top: 150, left: 20, width: 220, backgroundColor: cardBackground, borderRadius: 20, borderWidth: isDark ? 1 : 0, borderColor: cardBorderColor, overflow: "hidden", ...shadows.lg }}>
+                <View style={{ paddingHorizontal: 24, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: isDark ? "rgba(241, 224, 164, 0.1)" : "rgba(23,61,49,0.08)" }}>
+                  <Text style={{ fontSize: typography.size.xs, fontWeight: typography.weight.bold, color: colors.secondary.mutedGold, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    Select Language
+                  </Text>
+                </View>
+                {LANGUAGES.map((language) => {
+                  const isActive = language.id === currentLanguageId;
+                  return (
+                    <Pressable
+                      key={language.id}
+                      onPress={() => {
+                        switchLanguage(language.id);
+                        setLangMenuVisible(false);
+                      }}
+                      style={({ pressed }) => ({
+                        backgroundColor: pressed ? (isDark ? "rgba(241, 224, 164, 0.05)" : "rgba(23,61,49,0.03)") : isActive ? (isDark ? "rgba(90, 140, 120, 0.1)" : "rgba(90, 140, 120, 0.06)") : "transparent",
+                      })}
+                    >
+                      <View style={{ minHeight: 52, justifyContent: "center", paddingHorizontal: 20, paddingVertical: 10 }}>
+                        <Text
+                          style={{
+                            color: isActive ? colors.primary.sageGreen : colors.text.primary,
+                            fontSize: typography.size.base,
+                            fontWeight: isActive ? typography.weight.extrabold : typography.weight.semibold,
+                          }}
+                        >
+                          {language.title}
+                        </Text>
+                        {language.nativeTitle !== language.title && (
+                          <Text
+                            style={{
+                              color: colors.text.tertiary,
+                              fontSize: typography.size.sm,
+                              fontWeight: typography.weight.medium,
+                              marginTop: 3,
+                            }}
+                          >
+                            {language.nativeTitle}
+                          </Text>
+                        )}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          </Modal>
         </View>
 
         <View
@@ -753,7 +796,7 @@ export default function HomeScreen() {
                   marginTop: 2,
                 }}
               >
-                {currentLanguageId === "roman-urdu" ? "Shifa Shareef" : "شفاء شریف"}
+                {currentLanguageId === "roman-urdu" || currentLanguageId === "english" ? "Shifa Shareef" : "شفاء شریف"}
               </Text>
             </View>
           </View>
@@ -766,20 +809,24 @@ export default function HomeScreen() {
                 lineHeight: 24,
               }}
             >
-              {currentLanguageId === "roman-urdu"
-                ? 'Aath sadiyon se bhi zyada arsay se "Ash-Shifa" Huzoor Nabi-e-Kareem Sayyiduna Muhammad Mustafa ﷺ ki shaan, martabay aur huqooq par likhi gayi sab se mashhoor aur mu\'tabar kitab mani jati hai. Is azeem kitab ko buzurg Maliki alim aur faqeeh Qazi Iyaz رحمۃ اللہ تعالیٰ علیہ (544 Hijri / 1149 Iswi) ne tasneef farmaya. Yeh sirf ek kitab nahin, balkeh Huzoor ﷺ ki muhabbat se bharpur ek azeem virsa hai jo har Musalman ko yeh sikhata hai ke Aap ﷺ ke bare mein kya aqeedah rakhna chahiye, kis tarah muhabbat karni chahiye aur kis adab ke sath Aap ﷺ ka zikr karna chahiye.'
-                : 'آٹھ صدیوں سے بھی زیادہ عرصے سے "الشفا" حضور نبیِ کریم سیدنا محمد مصطفیٰ ﷺ کی شان، مرتبے اور حقوق پر لکھی گئی سب سے مشہور اور معتبر کتاب مانی جاتی ہے۔ اس عظیم کتاب کو بزرگ مالکی عالم اور فقیہ قاضی عیاض رحمۃ اللہ تعالیٰ علیہ (544 ہجری / 1149 عیسوی) نے تصنیف فرمایا۔ یہ صرف ایک کتاب نہیں، بلکہ حضور ﷺ کی محبت سے بھرپور ایک عظیم ورثہ ہے جو ہر مسلمان کو یہ سکھاتا ہے کہ آپ ﷺ کے بارے میں کیا عقیدہ رکھنا چاہیے، کس طرح محبت کرنی چاہیے اور کس ادب کے ساتھ آپ ﷺ کا ذکر کرنا چاہیے۔'}
+              {currentLanguageId === "english"
+                ? 'For more than eight centuries, Ash-Shifa has been regarded as the most renowned and authoritative book on the status, rank, and rights of the Noble Prophet Sayyiduna Muhammad Mustafa ﷺ. This magnificent work was authored by the eminent Maliki scholar and jurist Qadi Iyad (رحمۃ اللہ تعالیٰ علیہ) (544 AH / 1149 CE). It is not merely a book; rather, it is a great legacy filled with love for the Prophet ﷺ, teaching every Muslim what beliefs they should hold about him, how they should love him, and with what reverence and respect they should mention him.'
+                : currentLanguageId === "roman-urdu"
+                  ? 'Aath sadiyon se bhi zyada arsay se "Ash-Shifa" Huzoor Nabi-e-Kareem Sayyiduna Muhammad Mustafa ﷺ ki shaan, martabay aur huqooq par likhi gayi sab se mashhoor aur mu\'tabar kitab mani jati hai. Is azeem kitab ko buzurg Maliki alim aur faqeeh Qazi Iyaz رحمۃ اللہ تعالیٰ علیہ (544 Hijri / 1149 Iswi) ne tasneef farmaya. Yeh sirf ek kitab nahin, balkeh Huzoor ﷺ ki muhabbat se bharpur ek azeem virsa hai jo har Musalman ko yeh sikhata hai ke Aap ﷺ ke bare mein kya aqeedah rakhna chahiye, kis tarah muhabbat karni chahiye aur kis adab ke sath Aap ﷺ ka zikr karna chahiye.'
+                  : 'آٹھ صدیوں سے بھی زیادہ عرصے سے "الشفا" حضور نبیِ کریم سیدنا محمد مصطفیٰ ﷺ کی شان، مرتبے اور حقوق پر لکھی گئی سب سے مشہور اور معتبر کتاب مانی جاتی ہے۔ اس عظیم کتاب کو بزرگ مالکی عالم اور فقیہ قاضی عیاض رحمۃ اللہ تعالیٰ علیہ (544 ہجری / 1149 عیسوی) نے تصنیف فرمایا۔ یہ صرف ایک کتاب نہیں، بلکہ حضور ﷺ کی محبت سے بھرپور ایک عظیم ورثہ ہے جو ہر مسلمان کو یہ سکھاتا ہے کہ آپ ﷺ کے بارے میں کیا عقیدہ رکھنا چاہیے، کس طرح محبت کرنی چاہیے اور کس ادب کے ساتھ آپ ﷺ کا ذکر کرنا چاہیے۔'}
             </Text>
             <Text
               style={{
-                color: colors.text.secondary,
+                color: colors.text.primary,
                 fontSize: typography.size.sm,
                 lineHeight: 22,
               }}
             >
-              {currentLanguageId === "roman-urdu"
-                ? 'Yeh mubarak kitab chaar hisson mein taqseem ki gayi hai. Pehle hisse mein Qur\'an-e-Kareem aur Ahadees ki roshni mein Huzoor ﷺ ki buland shaan, Allah Ta\'ala ki taraf se ata kiye gaye mojizaat aur Aap ﷺ ki fazilat bayan ki gayi hai. Dusre hisse mein Ummat ke farz bataye gaye hain, yani Huzoor ﷺ par kamil imaan lana, sab se zyada Aap ﷺ se muhabbat karna, Aap ﷺ ki ta\'zeem aur adab karna, aur kasrat se durood-o-salaam pesh karna. Teesre hisse mein Anbiya-e-Kiram ki masoomiyat aur Huzoor ﷺ ki insani zindagi se mutaalliq aham baatein aasaan andaaz mein samjhayi gayi hain. Aakhri hissa Huzoor ﷺ ki bargah mein be-adabi ki sangini, us ke shar\'i ahkaam aur ta\'zeem-o-adab ki hudood ko wazeh karta hai.'
-                : 'یہ مبارک کتاب چار حصوں میں تقسیم کی گئی ہے۔ پہلے حصے میں قرآنِ کریم اور احادیثِ مبارکہ کی روشنی میں حضور ﷺ کی بلند شان، اللہ تعالیٰ کی طرف سے عطا کیے گئے معجزات اور آپ ﷺ کی فضیلت بیان کی گئی ہے۔ دوسرے حصے میں امت کے فرائض بیان کیے گئے ہیں، یعنی حضور ﷺ پر کامل ایمان لانا، سب سے بڑھ کر آپ ﷺ سے محبت کرنا، آپ ﷺ کی تعظیم اور ادب بجا لانا، اور کثرت سے درود و سلام پیش کرنا۔ تیسرے حصے میں انبیائے کرام علیہم السلام کی عصمت اور حضور ﷺ کی بشری زندگی سے متعلق اہم باتوں کو آسان انداز میں بیان کیا گیا ہے۔ آخری حصے میں حضور ﷺ کی بارگاہ میں بے ادبی کی سنگینی، اس کے شرعی احکام اور تعظیم و ادب کی حدود کو واضح کیا گیا ہے۔'}
+              {currentLanguageId === "english"
+                ? 'This blessed work is divided into four sections. The first section presents the exalted status of the Prophet ﷺ, the miracles granted to him by Allah Almighty, and his virtues, all in the light of the Holy Qur\'an and the Prophetic traditions. The second section explains the obligations of the Muslim community towards the Prophet ﷺ, namely to have complete faith in him, to love him above all else, to honor and revere him, and to frequently send blessings and salutations upon him. The third section discusses, in a clear and accessible manner, important matters relating to the infallibility of the Prophets and the human aspects of the Prophet\'s ﷺ life. The final section addresses the seriousness of showing disrespect towards the Prophet ﷺ, the relevant Islamic rulings, and the boundaries of reverence and proper conduct.'
+                : currentLanguageId === "roman-urdu"
+                  ? 'Yeh mubarak kitab chaar hisson mein taqseem ki gayi hai. Pehle hisse mein Qur\'an-e-Kareem aur Ahadees ki roshni mein Huzoor ﷺ ki buland shaan, Allah Ta\'ala ki taraf se ata kiye gaye mojizaat aur Aap ﷺ ki fazilat bayan ki gayi hai. Dusre hisse mein Ummat ke farz bataye gaye hain, yani Huzoor ﷺ par kamil imaan lana, sab se zyada Aap ﷺ se muhabbat karna, Aap ﷺ ki ta\'zeem aur adab karna, aur kasrat se durood-o-salaam pesh karna. Teesre hisse mein Anbiya-e-Kiram ki masoomiyat aur Huzoor ﷺ ki insani zindagi se mutaalliq aham baatein aasaan andaaz mein samjhayi gayi hain. Aakhri hissa Huzoor ﷺ ki bargah mein be-adabi ki sangini, us ke shar\'i ahkaam aur ta\'zeem-o-adab ki hudood ko wazeh karta hai.'
+                  : 'یہ مبارک کتاب چار حصوں میں تقسیم کی گئی ہے۔ پہلے حصے میں قرآنِ کریم اور احادیثِ مبارکہ کی روشنی میں حضور ﷺ کی بلند شان، اللہ تعالیٰ کی طرف سے عطا کیے گئے معجزات اور آپ ﷺ کی فضیلت بیان کی گئی ہے۔ دوسرے حصے میں امت کے فرائض بیان کیے گئے ہیں، یعنی حضور ﷺ پر کامل ایمان لانا، سب سے بڑھ کر آپ ﷺ سے محبت کرنا، آپ ﷺ کی تعظیم اور ادب بجا لانا، اور کثرت سے درود و سلام پیش کرنا۔ تیسرے حصے میں انبیائے کرام علیہم السلام کی عصمت اور حضور ﷺ کی بشری زندگی سے متعلق اہم باتوں کو آسان انداز میں بیان کیا گیا ہے۔ آخری حصے میں حضور ﷺ کی بارگاہ میں بے ادبی کی سنگینی، اس کے شرعی احکام اور تعظیم و ادب کی حدود کو واضح کیا گیا ہے۔'}
             </Text>
           </View>
         </View>

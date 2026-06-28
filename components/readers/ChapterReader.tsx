@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, BackHandler, Modal, Pressable, ScrollView, StatusBar, Text, View } from "react-native";
+import { ActivityIndicator, Animated, BackHandler, Modal, Pressable, ScrollView, StatusBar, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SystemUI from "expo-system-ui";
 import { WebView } from "react-native-webview";
@@ -133,17 +133,21 @@ function buildChapterHtml(chapters: LoadedChapter[], baseUrl: string, initialThe
     .map((chapter) => `<section class="reader-chapter" data-chapter-index="${chapter.index}">${chapter.html}</section>`)
     .join("\n");
 
+  const themeName = initialTheme.isDark ? "dark" : initialTheme.background === "#F5E6C8" ? "sepia" : "light";
+
   return `
 <!DOCTYPE html>
-<html>
+<html data-theme="${themeName}">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <base href="${baseUrl}">
   <style>
     :root { --reader-bg: ${initialTheme.background}; --reader-text: ${initialTheme.text}; --reader-font-size: ${fontSize}px; }
+    :root[data-theme="dark"], :root[data-theme="sepia"] { --page-bg: var(--reader-bg) !important; --paper: var(--reader-bg) !important; --ink: var(--reader-text) !important; --muted: var(--reader-text) !important; --accent: var(--reader-text) !important; --accent-warm: var(--reader-text) !important; --gold: var(--reader-text) !important; --rule: rgba(201, 169, 97, 0.18) !important; }
     html, body { min-height: 100%; margin: 0; padding: 0; background: var(--reader-bg); color: var(--reader-text); }
     body { font-size: var(--reader-font-size); line-height: 1.75; padding: 28px 22px 42px; overflow-x: hidden; }
-    body, p, div, span, li { color: var(--reader-text) !important; }
+    html[data-theme="dark"] body, html[data-theme="dark"] p, html[data-theme="dark"] div, html[data-theme="dark"] span, html[data-theme="dark"] li, html[data-theme="dark"] h1, html[data-theme="dark"] h2, html[data-theme="dark"] h3, html[data-theme="dark"] h4, html[data-theme="dark"] h5, html[data-theme="dark"] h6, html[data-theme="dark"] th, html[data-theme="dark"] td, html[data-theme="dark"] blockquote, html[data-theme="dark"] sup,
+    html[data-theme="sepia"] body, html[data-theme="sepia"] p, html[data-theme="sepia"] div, html[data-theme="sepia"] span, html[data-theme="sepia"] li, html[data-theme="sepia"] h1, html[data-theme="sepia"] h2, html[data-theme="sepia"] h3, html[data-theme="sepia"] h4, html[data-theme="sepia"] h5, html[data-theme="sepia"] h6, html[data-theme="sepia"] th, html[data-theme="sepia"] td, html[data-theme="sepia"] blockquote, html[data-theme="sepia"] sup { color: var(--reader-text) !important; }
     p { margin: 0 0 1em; }
     img, svg { max-width: 100%; height: auto; }
     a { color: inherit; text-decoration: none; pointer-events: none; }
@@ -233,10 +237,11 @@ function buildChapterHtml(chapters: LoadedChapter[], baseUrl: string, initialThe
       });
     }
 
-    window.__setTheme = function(bg, textColor) {
+    window.__setTheme = function(bg, textColor, themeName) {
       var root = document.documentElement;
       root.style.setProperty('--reader-bg', bg);
       root.style.setProperty('--reader-text', textColor);
+      root.setAttribute('data-theme', themeName || 'light');
     };
     window.__setFontSize = function(px) {
       document.documentElement.style.setProperty('--reader-font-size', px + 'px');
@@ -333,14 +338,19 @@ export function ChapterReader({
   const [fontSize, setFontSize] = useState(16);
   const [tocVisible, setTocVisible] = useState(false);
   const [bookmarksVisible, setBookmarksVisible] = useState(false);
-  const [showCompletionModal, setShowCompletionModal] = useState(false);
-  const [completionData, setCompletionData] = useState<{
-    pagesRead: number;
-    durationMinutes: number;
-    currentStreak: number;
-    isNewStreak: boolean;
-    sectionsCompleted?: number;
-  } | null>(null);
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showToast(message: string) {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToastMessage(message);
+    toastOpacity.setValue(0);
+    Animated.timing(toastOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    toastTimeoutRef.current = setTimeout(() => {
+      Animated.timing(toastOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => setToastMessage(null));
+    }, 2500);
+  }
 
   const currentChapter = manifest?.chapters[chapterIndex] ?? null;
   const currentSection = getCurrentSection(volume, {
@@ -500,7 +510,7 @@ export function ChapterReader({
 
   useEffect(() => {
     webViewRef.current?.injectJavaScript(
-      `window.__setTheme && window.__setTheme(${JSON.stringify(themeColors.background)}, ${JSON.stringify(themeColors.text)}); true;`,
+      `window.__setTheme && window.__setTheme(${JSON.stringify(themeColors.background)}, ${JSON.stringify(themeColors.text)}, ${JSON.stringify(readerTheme)}); true;`,
     );
   }, [themeColors]);
 
@@ -532,7 +542,6 @@ export function ChapterReader({
 
     if (durationMs >= 30000) {
       sessionCompletedRef.current = true;
-      const previousStreak = getCurrentStreak();
 
       await addSession({
         languageId: language.id,
@@ -553,16 +562,14 @@ export function ChapterReader({
       }
 
       if (shouldShowModal) {
-        const newStreak = getCurrentStreak();
-        const sectionsCompleted = volume.sections.filter((section) => {
-          const end = section.endProgressPercent ?? section.endPage / volume.totalPages;
-          return sessionStartProgress.current != null
-            ? sessionStartProgress.current <= end && sessionMaxProgress.current > end
-            : false;
-        }).length;
-
-        setCompletionData({ pagesRead, durationMinutes, currentStreak: newStreak, isNewStreak: newStreak > previousStreak, sectionsCompleted });
-        setShowCompletionModal(true);
+        const parts: string[] = [];
+        if (pagesRead > 0) parts.push(`${pagesRead} pages`);
+        parts.push(`${durationMinutes} min`);
+        if (activePlan) {
+          const currentDay = getCurrentPlanDay(volume, activePlan, { progressPercent: sessionMaxProgress.current });
+          if (currentDay > 0) parts.unshift(`Day ${currentDay} ·`);
+        }
+        showToast(parts.join(" "));
         return true;
       }
     }
@@ -572,25 +579,26 @@ export function ChapterReader({
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (showCompletionModal) {
-        setShowCompletionModal(false);
-        void completeSession();
-        router.back();
-        return true;
-      }
-
-      void completeSession().then((showingModal) => {
-        if (!showingModal) router.back();
+      void completeSession().then((showingToast) => {
+        if (showingToast) {
+          setTimeout(() => router.back(), 400);
+        } else {
+          router.back();
+        }
       });
       return true;
     });
 
     return () => backHandler.remove();
-  }, [completeSession, router, showCompletionModal]);
+  }, [completeSession, router]);
 
   const handleBack = () => {
-    void completeSession().then((showingModal) => {
-      if (!showingModal) router.back();
+    void completeSession().then((showingToast) => {
+      if (showingToast) {
+        setTimeout(() => router.back(), 400);
+      } else {
+        router.back();
+      }
     });
   };
 
@@ -867,35 +875,37 @@ export function ChapterReader({
         </Pressable>
       </Modal>
 
-      <Modal visible={showCompletionModal} transparent animationType="fade" onRequestClose={() => setShowCompletionModal(false)}>
-        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 24 }} onPress={() => setShowCompletionModal(false)}>
-          <View style={{ width: "100%", maxWidth: 340, borderRadius: 24, backgroundColor: colors.surface.warmIvory, padding: 28, alignItems: "center", gap: 20 }}>
-            <Ionicons name="checkmark-circle" size={52} color={colors.accent.success} />
-            {completionData ? (
-              <View style={{ width: "100%", gap: 16 }}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                    <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(23, 61, 49, 0.1)", alignItems: "center", justifyContent: "center" }}>
-                      <Ionicons name="book" size={18} color={colors.primary.deepGreen} />
-                    </View>
-                    <Text style={{ color: colors.text.tertiary, fontSize: typography.size.md }}>Pages read</Text>
-                  </View>
-                  <Text style={{ color: colors.text.primary, fontSize: typography.size["2xl"], fontWeight: typography.weight.extrabold }}>{completionData.pagesRead}</Text>
-                </View>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                    <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(23, 61, 49, 0.1)", alignItems: "center", justifyContent: "center" }}>
-                      <Ionicons name="time" size={18} color={colors.primary.deepGreen} />
-                    </View>
-                    <Text style={{ color: colors.text.tertiary, fontSize: typography.size.md }}>Time spent</Text>
-                  </View>
-                  <Text style={{ color: colors.text.primary, fontSize: typography.size["2xl"], fontWeight: typography.weight.extrabold }}>{completionData.durationMinutes} min</Text>
-                </View>
-              </View>
-            ) : null}
+      {toastMessage && (
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            bottom: 100,
+            left: 40,
+            right: 40,
+            alignItems: "center",
+            opacity: toastOpacity,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: colors.primary.deepGreen,
+              paddingHorizontal: 18,
+              paddingVertical: 10,
+              borderRadius: 20,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.15,
+              shadowRadius: 6,
+              elevation: 4,
+            }}
+          >
+            <Text style={{ color: "#FFF9EA", fontSize: typography.size.sm, fontWeight: typography.weight.semibold }}>
+              {toastMessage}
+            </Text>
           </View>
-        </Pressable>
-      </Modal>
+        </Animated.View>
+      )}
     </View>
   );
 }
