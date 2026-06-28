@@ -11,6 +11,18 @@ import {
   getShifaAudioFileUrl,
   type ShifaAudioTrack,
 } from "../../lib/shifa-audio-service";
+import {
+  loadAllAudioProgress,
+  saveAudioProgress,
+  resetAudioProgress,
+  type AudioProgress,
+} from "../../lib/audio-progress-storage";
+import {
+  downloadTrack,
+  deleteDownloadedTrack,
+  getDownloadedTracksInfo,
+  getLocalAudioUri,
+} from "../../lib/audio-download-service";
 
 type SubTab = "library" | "live";
 
@@ -120,16 +132,6 @@ function CustomSlider({
   );
 }
 
-function formatDuration(seconds: number | null): string {
-  if (!seconds || seconds <= 0) {
-    return "--:--";
-  }
-
-  const minutes = Math.floor(seconds / 60);
-  const remainderSeconds = seconds % 60;
-  return `${minutes}:${remainderSeconds.toString().padStart(2, "0")}`;
-}
-
 function formatPlaybackMillis(millis: number): string {
   if (!Number.isFinite(millis) || millis <= 0) {
     return "0:00";
@@ -157,6 +159,15 @@ export default function AudioScreen() {
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekPositionMillis, setSeekPositionMillis] = useState(0);
+  const [audioProgress, setAudioProgress] = useState<Record<string, AudioProgress>>({});
+  const lastSavedPositionRef = useRef<number>(0);
+  const pendingSeekRef = useRef<number | null>(null);
+  const activeTrackIdRef = useRef<string | null>(null);
+  const startTokenRef = useRef(0);
+  const downloadedIdsRef = useRef<Set<string>>(new Set());
+  const downloadingIdsRef = useRef<Set<string>>(new Set());
+  const [downloadedIds, setDownloadedIds] = useState<Set<string>>(new Set());
+  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
 
   const isDark = resolvedTheme === "dark";
   const screenBackground = isDark ? "#0B100D" : colors.surface.lightCream;
@@ -166,6 +177,7 @@ export default function AudioScreen() {
   const softPanelBackground = isDark ? "rgba(255, 249, 234, 0.05)" : "rgba(255, 249, 234, 0.72)";
   const mutedGoldSurface = isDark ? "rgba(201, 169, 97, 0.14)" : "rgba(201, 169, 97, 0.18)";
   const tabInactiveBackground = isDark ? "rgba(255, 249, 234, 0.07)" : "rgba(23, 61, 49, 0.06)";
+  const tabInactiveBorder = isDark ? "rgba(241, 224, 164, 0.12)" : "rgba(23, 61, 49, 0.14)";
   const activeTrack = useMemo(
     () => tracks.find((track) => track.id === activeTrackId) ?? null,
     [activeTrackId, tracks],
@@ -174,14 +186,28 @@ export default function AudioScreen() {
     durationMillis > 0 ? Math.min(positionMillis / durationMillis, 1) : 0;
 
   const unloadSound = useCallback(async () => {
-    if (!playerRef.current) {
+    const player = playerRef.current;
+    if (!player) {
       return;
     }
 
     statusSubscriptionRef.current?.remove();
     statusSubscriptionRef.current = null;
-    playerRef.current.remove();
     playerRef.current = null;
+    activeTrackIdRef.current = null;
+    pendingSeekRef.current = null;
+
+    try {
+      player.pause();
+    } catch {
+      // ignore pause errors during teardown
+    }
+
+    try {
+      player.remove();
+    } catch {
+      // ignore removal errors during teardown
+    }
   }, []);
 
   const onPlaybackStatusUpdate = useCallback((status: AudioStatus) => {
@@ -195,10 +221,55 @@ export default function AudioScreen() {
     setDurationMillis(Math.floor(status.duration * 1000));
     setIsPlaying(status.playing);
 
+    const currentTrackId = activeTrackIdRef.current;
+
+    if (currentTrackId && status.duration > 0) {
+      const posMs = Math.floor(status.currentTime * 1000);
+      const durMs = Math.floor(status.duration * 1000);
+
+      // Throttled save — persist every ~3 seconds of movement
+      if (Math.abs(posMs - lastSavedPositionRef.current) > 3000) {
+        lastSavedPositionRef.current = posMs;
+        const percent = durMs > 0 ? posMs / durMs : 0;
+        void saveAudioProgress(currentTrackId, {
+          positionMillis: posMs,
+          durationMillis: durMs,
+          progressPercent: Math.min(1, percent),
+          updatedAt: new Date().toISOString(),
+        }).then(() => {
+          setAudioProgress((prev) => ({
+            ...prev,
+            [currentTrackId]: {
+              positionMillis: posMs,
+              durationMillis: durMs,
+              progressPercent: Math.min(1, percent),
+              updatedAt: new Date().toISOString(),
+            },
+          }));
+        });
+      }
+    }
+
+    // Pending seek from resume
+    if (pendingSeekRef.current != null && status.currentTime >= 0) {
+      const seekTo = pendingSeekRef.current;
+      pendingSeekRef.current = null;
+      playerRef.current?.seekTo(seekTo / 1000).catch(() => {});
+    }
+
     if (status.didJustFinish) {
       setIsPlaying(false);
       setPositionMillis(0);
       setActiveTrackId(null);
+      activeTrackIdRef.current = null;
+      if (currentTrackId) {
+        void resetAudioProgress(currentTrackId);
+        setAudioProgress((prev) => {
+          const next = { ...prev };
+          delete next[currentTrackId];
+          return next;
+        });
+      }
     }
   }, [isSeeking]);
 
@@ -210,6 +281,18 @@ export default function AudioScreen() {
       shouldRouteThroughEarpiece: false,
       shouldPlayInBackground: false,
     }).catch(() => { });
+  }, []);
+
+  useEffect(() => {
+    void loadAllAudioProgress().then(setAudioProgress);
+  }, []);
+
+  useEffect(() => {
+    void getDownloadedTracksInfo().then((map) => {
+      const ids = new Set(Object.keys(map));
+      downloadedIdsRef.current = ids;
+      setDownloadedIds(ids);
+    });
   }, []);
 
   useEffect(() => {
@@ -235,27 +318,51 @@ export default function AudioScreen() {
           return;
         }
 
+        const startToken = startTokenRef.current + 1;
+        startTokenRef.current = startToken;
         await unloadSound();
 
+        if (startToken !== startTokenRef.current) {
+          return;
+        }
+
         setActiveTrackId(track.id);
-        setPositionMillis(0);
+        activeTrackIdRef.current = track.id;
+        const saved = audioProgress[track.id];
+        const startPositionMs = saved?.positionMillis ?? 0;
+        setPositionMillis(startPositionMs);
         setDurationMillis((track.durationSeconds ?? 0) * 1000);
 
+        const audioUri =
+          (await getLocalAudioUri(track.id)) ?? getShifaAudioFileUrl(track.audioFileId);
+
         const player = createAudioPlayer(
-          { uri: getShifaAudioFileUrl(track.audioFileId) },
+          { uri: audioUri },
           { updateInterval: 250 },
         );
         statusSubscriptionRef.current = player.addListener("playbackStatusUpdate", onPlaybackStatusUpdate);
         playerRef.current = player;
+
+        if (startToken !== startTokenRef.current) {
+          player.pause();
+          player.remove();
+          return;
+        }
+
         setIsPlaying(true);
         player.play();
+
+        if (startPositionMs > 0) {
+          pendingSeekRef.current = startPositionMs;
+        }
       } catch {
         setPlaybackError("Couldn't start audio. Please try another track.");
         setIsPlaying(false);
         setActiveTrackId(null);
+        activeTrackIdRef.current = null;
       }
     },
-    [activeTrackId, isPlaying, onPlaybackStatusUpdate, unloadSound],
+    [activeTrackId, isPlaying, onPlaybackStatusUpdate, unloadSound, audioProgress],
   );
 
   const handleLiveStreamToggle = useCallback(async () => {
@@ -273,8 +380,16 @@ export default function AudioScreen() {
         return;
       }
 
+      const startToken = startTokenRef.current + 1;
+      startTokenRef.current = startToken;
       await unloadSound();
+
+      if (startToken !== startTokenRef.current) {
+        return;
+      }
+
       setActiveTrackId(null);
+      activeTrackIdRef.current = null;
       setIsLiveStreaming(true);
       setPositionMillis(0);
       setDurationMillis(0);
@@ -285,14 +400,50 @@ export default function AudioScreen() {
       );
       statusSubscriptionRef.current = player.addListener("playbackStatusUpdate", onPlaybackStatusUpdate);
       playerRef.current = player;
+
+      if (startToken !== startTokenRef.current) {
+        player.pause();
+        player.remove();
+        return;
+      }
+
       setIsPlaying(true);
       player.play();
     } catch {
       setPlaybackError("Couldn't connect to live stream. Please try again.");
       setIsPlaying(false);
       setIsLiveStreaming(false);
+      activeTrackIdRef.current = null;
     }
   }, [isLiveStreaming, isPlaying, onPlaybackStatusUpdate, unloadSound]);
+
+  const handleDownloadToggle = useCallback(
+    async (track: ShifaAudioTrack) => {
+      if (downloadingIdsRef.current.has(track.id)) return;
+
+      const isDownloaded = downloadedIdsRef.current.has(track.id);
+      if (isDownloaded) {
+        await deleteDownloadedTrack(track.id);
+        downloadedIdsRef.current = new Set(downloadedIdsRef.current);
+        downloadedIdsRef.current.delete(track.id);
+        setDownloadedIds(new Set(downloadedIdsRef.current));
+      } else {
+        downloadingIdsRef.current = new Set(downloadingIdsRef.current);
+        downloadingIdsRef.current.add(track.id);
+        setDownloadingIds(new Set(downloadingIdsRef.current));
+        const result = await downloadTrack(track);
+        downloadingIdsRef.current = new Set(downloadingIdsRef.current);
+        downloadingIdsRef.current.delete(track.id);
+        setDownloadingIds(new Set(downloadingIdsRef.current));
+        if (result) {
+          downloadedIdsRef.current = new Set(downloadedIdsRef.current);
+          downloadedIdsRef.current.add(track.id);
+          setDownloadedIds(new Set(downloadedIdsRef.current));
+        }
+      }
+    },
+    [],
+  );
 
   const handleSeek = useCallback(async (value: number) => {
     if (playerRef.current && durationMillis > 0) {
@@ -371,67 +522,82 @@ export default function AudioScreen() {
           style={{
             flexDirection: "row",
             gap: 8,
-            backgroundColor: softPanelBackground,
             borderRadius: 22,
             padding: 5,
-            borderWidth: 1,
-            borderColor: cardBorderColor,
           }}
         >
           <Pressable
             onPress={() => setActiveTab("library")}
             style={({ pressed }) => ({
               flex: 1,
-              backgroundColor:
-                activeTab === "library"
-                  ? tabInactiveBackground
-                  : colors.primary.deepGreen,
-              paddingVertical: 10,
-              borderRadius: 17,
               opacity: pressed ? 0.85 : 1,
             })}
           >
-            <Text
+            <View
               style={{
-                color:
+                width: "100%",
+                backgroundColor:
                   activeTab === "library"
-                    ? colors.text.secondary
-                    : colors.text.onPrimary,
-                fontSize: typography.size.sm,
-                fontWeight: typography.weight.semibold,
-                textAlign: "center",
+                    ? "#173D31"
+                    : tabInactiveBackground,
+                borderWidth: 1,
+                borderColor: activeTab === "library" ? "#173D31" : tabInactiveBorder,
+                paddingVertical: 10,
+                paddingHorizontal: 14,
+                borderRadius: 17,
               }}
             >
-              Library
-            </Text>
+              <Text
+                style={{
+                  color:
+                    activeTab === "library"
+                      ? "#FFF9EA"
+                      : colors.text.secondary,
+                  fontSize: typography.size.sm,
+                  fontWeight: typography.weight.semibold,
+                  textAlign: "center",
+                }}
+              >
+                Library
+              </Text>
+            </View>
           </Pressable>
 
           <Pressable
             onPress={() => setActiveTab("live")}
             style={({ pressed }) => ({
               flex: 1,
-              backgroundColor:
-                activeTab === "live"
-                  ? tabInactiveBackground
-                  : colors.primary.deepGreen,
-              paddingVertical: 10,
-              borderRadius: 17,
               opacity: pressed ? 0.85 : 1,
             })}
           >
-            <Text
+            <View
               style={{
-                color:
+                width: "100%",
+                backgroundColor:
                   activeTab === "live"
-                    ? colors.text.secondary
-                    : colors.text.onPrimary,
-                fontSize: typography.size.sm,
-                fontWeight: typography.weight.semibold,
-                textAlign: "center",
+                    ? "#173D31"
+                    : tabInactiveBackground,
+                borderWidth: 1,
+                borderColor: activeTab === "live" ? "#173D31" : tabInactiveBorder,
+                paddingVertical: 10,
+                paddingHorizontal: 14,
+                borderRadius: 17,
               }}
             >
-              Live Stream
-            </Text>
+              <Text
+                style={{
+                  color:
+                    activeTab === "live"
+                      ? "#FFF9EA"
+                      : colors.text.secondary,
+                  fontSize: typography.size.sm,
+                  fontWeight: typography.weight.semibold,
+                  textAlign: "center",
+                }}
+              >
+                Live Stream
+              </Text>
+            </View>
           </Pressable>
         </View>
       </View>
@@ -611,49 +777,61 @@ export default function AudioScreen() {
                     >
                       {item.title}
                     </Text>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 4,
-                          backgroundColor: mutedGoldSurface,
-                          borderRadius: 999,
-                          paddingHorizontal: 8,
-                          paddingVertical: 4,
-                        }}
-                      >
-                        <Ionicons name="time-outline" size={12} color={colors.text.tertiary} />
-                        <Text
-                          style={{
-                            color: colors.text.tertiary,
-                            fontSize: typography.size.xs,
-                            fontWeight: typography.weight.semibold,
-                          }}
-                        >
-                          {formatDuration(item.durationSeconds)}
-                        </Text>
-                      </View>
-                      {isActive ? (
-                        <Text
-                          style={{
-                            color: colors.secondary.mutedGold,
-                            fontSize: typography.size.xs,
-                            fontWeight: typography.weight.bold,
-                          }}
-                        >
-                          {isThisPlaying ? "Playing" : "Paused"}
-                        </Text>
-                      ) : null}
-                    </View>
                   </View>
 
-                  <Ionicons
-                    name="chevron-forward"
-                    size={18}
-                    color={isActive ? colors.secondary.mutedGold : colors.text.subtle}
-                  />
+                  <Pressable
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      void handleDownloadToggle(item);
+                    }}
+                    hitSlop={8}
+                    style={({ pressed }) => ({
+                      opacity: pressed ? 0.6 : 1,
+                      padding: 4,
+                    })}
+                  >
+                    <Ionicons
+                      name={
+                        downloadingIds.has(item.id)
+                          ? "sync-circle"
+                          : downloadedIds.has(item.id)
+                            ? "checkmark-circle"
+                            : "cloud-download-outline"
+                      }
+                      size={20}
+                      color={
+                        downloadingIds.has(item.id)
+                          ? colors.secondary.mutedGold
+                          : downloadedIds.has(item.id)
+                            ? colors.secondary.mutedGold
+                            : isActive
+                              ? colors.secondary.mutedGold
+                              : colors.text.subtle
+                      }
+                    />
+                  </Pressable>
                 </View>
+
+                {!isActive && audioProgress[item.id]?.progressPercent > 0 && (
+                  <View
+                    style={{
+                      marginTop: 10,
+                      height: 3,
+                      borderRadius: 2,
+                      backgroundColor: mutedGoldSurface,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <View
+                      style={{
+                        height: "100%",
+                        width: `${Math.round((audioProgress[item.id]?.progressPercent ?? 0) * 100)}%`,
+                        backgroundColor: colors.secondary.mutedGold,
+                        borderRadius: 2,
+                      }}
+                    />
+                  </View>
+                )}
               </Pressable>
             );
           }}
@@ -794,6 +972,8 @@ export default function AudioScreen() {
                   height: 108,
                   borderRadius: 54,
                   backgroundColor: colors.primary.deepGreen,
+                  borderWidth: isDark ? 1 : 2,
+                  borderColor: isDark ? "rgba(241, 224, 164, 0.18)" : colors.secondary.lightGold,
                   alignItems: "center",
                   justifyContent: "center",
                   opacity: pressed ? 0.86 : 1,
@@ -803,7 +983,7 @@ export default function AudioScreen() {
                 <Ionicons
                   name={isLiveStreaming && isPlaying ? "pause" : "play"}
                   size={46}
-                  color={colors.text.onPrimary}
+                  color={colors.secondary.lightGold}
                 />
               </Pressable>
             </View>
@@ -906,29 +1086,22 @@ export default function AudioScreen() {
                 width: 46,
                 height: 46,
                 borderRadius: 17,
-                backgroundColor: colors.secondary.lightGold,
+                backgroundColor: "#FFFFFF",
                 alignItems: "center",
                 justifyContent: "center",
+                borderWidth: 2,
+                borderColor: "#000000",
                 opacity: pressed ? 0.8 : 1,
               })}
             >
               <Ionicons
                 name={isPlaying ? "pause" : "play"}
                 size={22}
-                color={colors.primary.deepGreen}
+                color="#000000"
               />
             </Pressable>
 
             <View style={{ flex: 1, gap: 4 }}>
-              <Text
-                style={{
-                  color: colors.secondary.lightGold,
-                  fontSize: typography.size.xs,
-                  fontWeight: typography.weight.bold,
-                }}
-              >
-                Now Playing
-              </Text>
               <Text
                 style={{
                   color: colors.text.onPrimary,
@@ -1131,6 +1304,8 @@ export default function AudioScreen() {
                       backgroundColor: colors.primary.deepGreen,
                       alignItems: "center",
                       justifyContent: "center",
+                      borderWidth: 2,
+                      borderColor: colors.secondary.lightGold,
                       opacity: pressed ? 0.86 : 1,
                       ...shadows.md,
                     })}
@@ -1138,7 +1313,7 @@ export default function AudioScreen() {
                     <Ionicons
                       name={isPlaying ? "pause" : "play"}
                       size={36}
-                      color={colors.text.onPrimary}
+                      color={colors.secondary.lightGold}
                     />
                   </Pressable>
 

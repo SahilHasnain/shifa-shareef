@@ -1,0 +1,1101 @@
+{
+  "metadata": {
+    "exportedAt": "2026-06-28T06:16:54.322Z",
+    "totalItems": 109,
+    "version": "1.0",
+    "source": "Appwrite Database",
+    "note": "Static fallback export. Data may be outdated."
+  },
+  "data": [
+    {
+      "id": "6a06afc4000240df1666",
+      "title": "Dars e Shifa Shareef Ep#01 - Mufti Hassan Attari",
+      "audioFileId": "6a0807c30018045e9df1",
+      "durationSeconds": 3066,
+      "uploadedAt": "2016-01-28T07:36:20.000+00:00",
+      "youtubeId": "smH4sB7cfcQ",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 1
+    },
+    {
+      "id": "6a06afc300215df265f8",
+      "title": "Dars e Shifa Shareef Ep#02 - Mufti Hassan Attari",
+      "audioFileId": "6a0806fd00210944d952",
+      "durationSeconds": 1980,
+      "uploadedAt": "2016-02-02T07:36:56.000+00:00",
+      "youtubeId": "gMCUf6rXU9c",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 2
+    },
+    {
+      "id": "6a06afc2003e7b07d3e9",
+      "title": "Dars e Shifa Shareef- Ep#03 - Shan-o-Azmat-e-Mustafa",
+      "audioFileId": "6a080660002ebd63bb1d",
+      "durationSeconds": 3013,
+      "uploadedAt": "2016-02-10T05:12:00.000+00:00",
+      "youtubeId": "Hp3X2yC7RIs",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 3
+    },
+    {
+      "id": "6a06afc20023ffaf5862",
+      "title": "Dars-e-Shifa Shareef Ep#4 - Quran e Pak Main Nabi Kareem ki Shan ka Bayan",
+      "audioFileId": "6a080d7d002f555ddb78",
+      "durationSeconds": 2431,
+      "uploadedAt": "2016-02-16T04:45:41.000+00:00",
+      "youtubeId": "fqSYtZgCB0Y",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 4
+    },
+    {
+      "id": "6a06afc10020c9d183cb",
+      "title": "Dars e Shifa Shareef Ep#05  - Nabi Kareem ki Mubarak Sifaat",
+      "audioFileId": "6a08034d002004780fc4",
+      "durationSeconds": 2932,
+      "uploadedAt": "2016-02-25T05:06:04.000+00:00",
+      "youtubeId": "JEmAiY3Vm-o",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 5
+    },
+    {
+      "id": "6a06afc2000317ad41f7",
+      "title": "Dars e Shifa Shareef - Ep#06",
+      "audioFileId": "6a08044a003151a61ebd",
+      "durationSeconds": 3039,
+      "uploadedAt": "2016-03-07T04:23:15.000+00:00",
+      "youtubeId": "6UeyLoK-yxI",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 6
+    },
+    {
+      "id": "6a06afc100008b49a0f8",
+      "title": "Dars e Shifa Shareef Ep#07   Huzoor ki Noori Sifat",
+      "audioFileId": "6a080267003dccf55fd1",
+      "durationSeconds": 2321,
+      "uploadedAt": "2016-03-19T12:04:38.000+00:00",
+      "youtubeId": "zT975Omwosw",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 7
+    },
+    {
+      "id": "6a06afc00024f14617e7",
+      "title": "Dars E Shifa Shareef - Ep 08 - Zikr e Mustafa Ki Rif'atain",
+      "audioFileId": "6a0801d000067384319c",
+      "durationSeconds": 3139,
+      "uploadedAt": "2016-12-07T07:27:04.000+00:00",
+      "youtubeId": "GJhjfpzIh7A",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 8
+    },
+    {
+      "id": "6a06afc00004d4a4cabd",
+      "title": "Islam | The chapter of cure | درسِ شفاء شریف | Dars e Shifa Ep 09",
+      "audioFileId": "6a080172001826017549",
+      "durationSeconds": 2267,
+      "uploadedAt": "2017-07-17T10:00:01.000+00:00",
+      "youtubeId": "Oy5kMb1iAcs",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 9
+    },
+    {
+      "id": "6a06afbf0029015a16e7",
+      "title": "Islam - The chapter of cure - درسِ شفاء شریف - Dars e Shifa Ep 10",
+      "audioFileId": "6a07fe9a000b859a4d79",
+      "durationSeconds": 2960,
+      "uploadedAt": "2017-07-17T10:00:03.000+00:00",
+      "youtubeId": "moN0BI3WAeI",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 10
+    },
+    {
+      "id": "6a06afbf00087255532f",
+      "title": "Islam | The chapter of cure | درسِ شفاء شریف | Dars e Shifa Ep 11",
+      "audioFileId": "6a07fdca003b5a9d8068",
+      "durationSeconds": 2876,
+      "uploadedAt": "2017-07-17T10:00:01.000+00:00",
+      "youtubeId": "2V2H7wsuVIM",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 11
+    },
+    {
+      "id": "6a06afbe0028004db941",
+      "title": "Islam - The chapter of cure - درسِ شفاء شریف - Dars e Shifa Ep 12",
+      "audioFileId": "6a07fcb9001f6c020f4a",
+      "durationSeconds": 3193,
+      "uploadedAt": "2017-07-17T10:00:04.000+00:00",
+      "youtubeId": "wEfpSxKNBBk",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 12
+    },
+    {
+      "id": "6a06afbe000e2e3b44f3",
+      "title": "Islam | The chapter of cure | درسِ شفاء شریف | Dars e Shifa Ep 13",
+      "audioFileId": "6a07fba5000ce09b4106",
+      "durationSeconds": 2802,
+      "uploadedAt": "2017-07-17T10:00:05.000+00:00",
+      "youtubeId": "lLt3PeyfEbc",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 13
+    },
+    {
+      "id": "6a06afbd00311da63a22",
+      "title": "Islam - The chapter of cure - درسِ شفاء شریف - Dars e Shifa Ep 14",
+      "audioFileId": "6a07fa95002d50054d2e",
+      "durationSeconds": 2263,
+      "uploadedAt": "2017-07-17T10:00:03.000+00:00",
+      "youtubeId": "AwA_Ux8MMy4",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 14
+    },
+    {
+      "id": "6a06afbd0014689d3e2d",
+      "title": "Islam | The chapter of cure | درسِ شفاء شریف | Dars e Shifa Ep 15",
+      "audioFileId": "6a07f9ac001f14e2871c",
+      "durationSeconds": 2598,
+      "uploadedAt": "2017-07-17T10:00:00.000+00:00",
+      "youtubeId": "9kBOzkhwnOw",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 15
+    },
+    {
+      "id": "6a06afbc0038a07db451",
+      "title": "Islam - The chapter of cure - درسِ شفاء شریف - Dars e Shifa Ep 16",
+      "audioFileId": "6a07f8f5001c07404b63",
+      "durationSeconds": 2870,
+      "uploadedAt": "2017-07-17T10:00:05.000+00:00",
+      "youtubeId": "XIE6aSl-rkw",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 16
+    },
+    {
+      "id": "6a06afbc0018b5078de8",
+      "title": "Islam | The chapter of cure | درسِ شفاء شریف | Dars e Shifa Ep 17",
+      "audioFileId": "6a07f822003a02d2f99b",
+      "durationSeconds": 2864,
+      "uploadedAt": "2017-07-17T10:00:05.000+00:00",
+      "youtubeId": "pfGOilZnHv4",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 17
+    },
+    {
+      "id": "6a06afbc000369cebcc0",
+      "title": "Islam - The chapter of cure - درسِ شفاء شریف - Dars e Shifa Ep 18",
+      "audioFileId": "6a080ce2001678ecd7d8",
+      "durationSeconds": 3228,
+      "uploadedAt": "2017-07-17T10:00:01.000+00:00",
+      "youtubeId": "9kYWTKDiQes",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 18
+    },
+    {
+      "id": "6a06afbb00205acfcd8d",
+      "title": "Dars e Shifa Shareef - Ep19",
+      "audioFileId": "6a07f645000ffb9353a9",
+      "durationSeconds": 2576,
+      "uploadedAt": "2016-09-30T04:07:36.000+00:00",
+      "youtubeId": "VAsbYvDBLaw",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 19
+    },
+    {
+      "id": "6a06afba003d27b3cf51",
+      "title": "Dars e Shifa Shareef - Ep 20",
+      "audioFileId": "6a07f5900005528a21a2",
+      "durationSeconds": 3137,
+      "uploadedAt": "2016-09-30T04:07:43.000+00:00",
+      "youtubeId": "eINRFGio6x8",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 20
+    },
+    {
+      "id": "6a06afba001bee2c25d2",
+      "title": "Dars e Shifa Shareef - Ep21",
+      "audioFileId": "6a07f528001a26e22d91",
+      "durationSeconds": 2790,
+      "uploadedAt": "2016-09-02T08:18:21.000+00:00",
+      "youtubeId": "6DaAhuOJag8",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 21
+    },
+    {
+      "id": "6a06afb9003a7502c233",
+      "title": "Islam | The chapter of cure | درسِ شفاء شریف | Dars e Shifa Ep 22",
+      "audioFileId": "6a07f4ad0011f991f350",
+      "durationSeconds": 3444,
+      "uploadedAt": "2017-07-17T10:00:02.000+00:00",
+      "youtubeId": "XcMAvK4Gbzw",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 22
+    },
+    {
+      "id": "6a06afb9001fbeec832d",
+      "title": "Dars e Shifa Shareef - Ep23",
+      "audioFileId": "6a07f43c001b423f274f",
+      "durationSeconds": 3102,
+      "uploadedAt": "2016-09-19T09:32:48.000+00:00",
+      "youtubeId": "5ILPAQJVz0A",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 23
+    },
+    {
+      "id": "6a06afb9000012a86813",
+      "title": "Dars E Shifa Shareef - Ep 24",
+      "audioFileId": "6a07f3d7001471e09bd0",
+      "durationSeconds": 2913,
+      "uploadedAt": "2016-10-17T09:57:48.000+00:00",
+      "youtubeId": "Sa0uxfiCTCw",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 24
+    },
+    {
+      "id": "6a06afb80029b10a3f1b",
+      "title": "Dars e Shifa Shareef - Ep 25",
+      "audioFileId": "6a07f378002c1f9bf408",
+      "durationSeconds": 2702,
+      "uploadedAt": "2016-10-22T09:58:59.000+00:00",
+      "youtubeId": "461MEHpxBe8",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 25
+    },
+    {
+      "id": "6a06afb800092da725d1",
+      "title": "Dars e Shifa Shareef - Ep 26",
+      "audioFileId": "6a07f31f001ec8ec7d15",
+      "durationSeconds": 2670,
+      "uploadedAt": "2016-10-31T05:23:31.000+00:00",
+      "youtubeId": "FE0TPxALdMQ",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 26
+    },
+    {
+      "id": "6a06afb7002d94a23107",
+      "title": "Dars e Shifa Shareef - Ep 27 - Sarkar ki Zahanat, Nazar Aur Taqat Kay Kamalat",
+      "audioFileId": "6a07f2c1001779c0747a",
+      "durationSeconds": 2621,
+      "uploadedAt": "2016-11-14T08:18:30.000+00:00",
+      "youtubeId": "SZxSJGdFOQY",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 27
+    },
+    {
+      "id": "6a06afb700126b4da3db",
+      "title": "Dars e Shifa Shareef - Ep 28",
+      "audioFileId": "6a07f25b003d999849ed",
+      "durationSeconds": 3131,
+      "uploadedAt": "2016-11-14T04:29:37.000+00:00",
+      "youtubeId": "P2Wv6YHBk1M",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 28
+    },
+    {
+      "id": "6a06afb600375b98bd24",
+      "title": "Dars e Shifa - Ep 29 - Huzoor Ka Buland o Aali Shajra e Nisbat",
+      "audioFileId": "6a07f1ed0003155e6819",
+      "durationSeconds": 3037,
+      "uploadedAt": "2016-11-21T04:42:22.000+00:00",
+      "youtubeId": "nRsM_m9Ht2M",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 29
+    },
+    {
+      "id": "6a06afb6001ddfc48d73",
+      "title": "Dars e Shifa Shareef - Ep 30",
+      "audioFileId": "6a07f19300223701bf4f",
+      "durationSeconds": 2072,
+      "uploadedAt": "2016-11-26T08:05:16.000+00:00",
+      "youtubeId": "2eeoRqH0ln8",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 30
+    },
+    {
+      "id": "6a06afb5003ade5bb143",
+      "title": "Dars e Shifa Shareef Ep 31 | Madani Channel | 16 December 2016",
+      "audioFileId": "6a07f12900396e8203eb",
+      "durationSeconds": 3136,
+      "uploadedAt": "2016-12-17T07:29:53.000+00:00",
+      "youtubeId": "qN3ctYNyXwA",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 31
+    },
+    {
+      "id": "6a06afb50020005a660d",
+      "title": "Dars e Shifa Shareef Ep 32 | Huzoor e Akram Ka Afo Darguzar",
+      "audioFileId": "6a07f0ba0038424ac5d9",
+      "durationSeconds": 3083,
+      "uploadedAt": "2016-12-25T11:33:14.000+00:00",
+      "youtubeId": "XOqglni74NI",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 32
+    },
+    {
+      "id": "6a06afb4003e2943a576",
+      "title": "Dars e Shifa Shareef Ep#33 - Huzoor Ka Afu o Darguzar Aur Jood o Karam | Madani Channel",
+      "audioFileId": "6a07f04b0012b68ebbe0",
+      "durationSeconds": 3034,
+      "uploadedAt": "2017-01-03T06:35:23.000+00:00",
+      "youtubeId": "wZjXWuhVUWI",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 33
+    },
+    {
+      "id": "6a06afb40024468e1303",
+      "title": "Dars e Shifa Shareef Ep#34 - Aaqa Ki Haya aur Bahaduri Ka Bayan | Madani Channel",
+      "audioFileId": "6a07effd0000e3ebc736",
+      "durationSeconds": 1960,
+      "uploadedAt": "2017-01-10T05:45:43.000+00:00",
+      "youtubeId": "mwT9-WpPZW0",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 34
+    },
+    {
+      "id": "6a06afb400044e5d55dd",
+      "title": "Dars E Shifa Shareef - Ep 35 | Huzoor Ka Andaz e Husn e Muashrat | Madani Channel",
+      "audioFileId": "6a07ef9d001e4746bed3",
+      "durationSeconds": 2686,
+      "uploadedAt": "2017-01-16T05:54:54.000+00:00",
+      "youtubeId": "OH8Ok-25Lbo",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 35
+    },
+    {
+      "id": "6a06afb300244494c977",
+      "title": "Dars e Shifa Shareef Ep 36 | Madani Channel",
+      "audioFileId": "6a07ef41002d1f875202",
+      "durationSeconds": 2478,
+      "uploadedAt": "2017-01-21T07:41:31.000+00:00",
+      "youtubeId": "G5tF7D4v9-w",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 36
+    },
+    {
+      "id": "6a06afb3000a153e6a00",
+      "title": "Dars e Shifa Shareef - Ep37 - Sarkar ki Tawazo aur Silah Rehmi - Madani Channel",
+      "audioFileId": "6a07eeed002fb994ebbf",
+      "durationSeconds": 2577,
+      "uploadedAt": "2017-01-28T10:17:59.000+00:00",
+      "youtubeId": "TsJwbfZY5U8",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 37
+    },
+    {
+      "id": "6a06afb200294e49adda",
+      "title": "Dars e Shifa Shareef Ep#38 | Madani Channel",
+      "audioFileId": "6a07ee8c002244ccb38f",
+      "durationSeconds": 2905,
+      "uploadedAt": "2017-02-07T11:59:35.000+00:00",
+      "youtubeId": "128CMbKjzZk",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 38
+    },
+    {
+      "id": "6a06afb200159e2a0fa3",
+      "title": "Dars E Shifa Shareef | Ep 39 | Sarkar ki Naik Seerat | Madani Channel",
+      "audioFileId": "6a07ee2e0022642309b7",
+      "durationSeconds": 2614,
+      "uploadedAt": "2017-02-11T06:47:29.000+00:00",
+      "youtubeId": "kLQD7kawyQg",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 39
+    },
+    {
+      "id": "6a06afb20001d475d7cf",
+      "title": "Dars e Shifa Shareef | Ep 40 | Huzoor Ki Duniya Se Bay Ragbati | Madani Channel",
+      "audioFileId": "6a07edc4003c657a9c3e",
+      "durationSeconds": 2241,
+      "uploadedAt": "2017-02-20T04:56:26.000+00:00",
+      "youtubeId": "K0h6g5ObT_s",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 40
+    },
+    {
+      "id": "6a06afb1002c6012091e",
+      "title": "Dars e Shifa Shareef | Ep 41 | Rasool Allah Ka Khauf e Khuda | Madani Channel",
+      "audioFileId": "6a07ed6f002241b54942",
+      "durationSeconds": 2497,
+      "uploadedAt": "2017-02-27T11:27:30.000+00:00",
+      "youtubeId": "AbRymFBR_48",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 41
+    },
+    {
+      "id": "6a06afb1001846315469",
+      "title": "Islam | Dars e Shifa Shareef Ep 42 | Madani Channel",
+      "audioFileId": "6a07ed0f0037c65775f3",
+      "durationSeconds": 3176,
+      "uploadedAt": "2017-03-16T07:51:02.000+00:00",
+      "youtubeId": "imPXA1wl27M",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 42
+    },
+    {
+      "id": "6a06afb00033a9cda6d8",
+      "title": "Islam | Top 10 Habits of Holy Prophet | Dars e Shifa Shareef Ep 43 | Madani Channel",
+      "audioFileId": "6a07eca40017d601c859",
+      "durationSeconds": 2913,
+      "uploadedAt": "2017-03-16T07:36:27.000+00:00",
+      "youtubeId": "Aztgx41WqEw",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 43
+    },
+    {
+      "id": "6a06afb000180e045d59",
+      "title": "Islam | Dars e Shifa Shareef Ep 44 | Madani Channel",
+      "audioFileId": "6a07ec3a002c03db4f6d",
+      "durationSeconds": 2505,
+      "uploadedAt": "2017-03-21T11:53:16.000+00:00",
+      "youtubeId": "7jjfMAQcl1A",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 44
+    },
+    {
+      "id": "6a06afb000044b533541",
+      "title": "Islam | The chapter of cure | درسِ شفاء شریف | Dars e Shifa Ep 45",
+      "audioFileId": "6a07ebd6001f9b436710",
+      "durationSeconds": 2717,
+      "uploadedAt": "2017-10-15T08:00:03.000+00:00",
+      "youtubeId": "OmnmVT-Tp-8",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 45
+    },
+    {
+      "id": "6a06afaf00221b9368e2",
+      "title": "Islam - The Status of Muhammed in the Presence of ALLAH - Dars e Shifa Shareef Ep 46",
+      "audioFileId": "6a07eb67000309c3c5c4",
+      "durationSeconds": 2578,
+      "uploadedAt": "2017-04-06T06:55:11.000+00:00",
+      "youtubeId": "eyBFvziott8",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 46
+    },
+    {
+      "id": "6a06afaf0001c9a88ec0",
+      "title": "Journey of Meraj being awakening | Dars e Shifa Shareef Ep 47 | عالمِ بیداری میں معراجِ مصطفٰے ﷺ",
+      "audioFileId": "6a07eb000025566bebea",
+      "durationSeconds": 3143,
+      "uploadedAt": "2017-05-30T07:00:02.000+00:00",
+      "youtubeId": "wcB97p7XbRw",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 47
+    },
+    {
+      "id": "6a06afae002966476bda",
+      "title": "Darse Shifa Shareef Ep 48   Meraj ki Hikmat   Madani Channel",
+      "audioFileId": "6a07ea97000a5c90397a",
+      "durationSeconds": 3002,
+      "uploadedAt": "2017-04-14T09:44:09.000+00:00",
+      "youtubeId": "VAkEzzz5QG8",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 48
+    },
+    {
+      "id": "6a06afae0007dfe60653",
+      "title": "Meraj | Jismani Ya Rohani? | Dars e Shifa Shareef Ep 49 | The Night of Meraj | Islam",
+      "audioFileId": "6a07ea390015e6b364ac",
+      "durationSeconds": 2623,
+      "uploadedAt": "2017-05-06T09:00:05.000+00:00",
+      "youtubeId": "nqxLliMaYUk",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 49
+    },
+    {
+      "id": "6a06afad0023879c8d1d",
+      "title": "Islam - The chapter of cure - Nabi Kareem ne ALLAH Ka Deedar Kiya - Dars e Shifa Ep 50",
+      "audioFileId": "6a080c8f00395eccda56",
+      "durationSeconds": 2883,
+      "uploadedAt": "2017-05-15T06:03:11.000+00:00",
+      "youtubeId": "cNJF6KbX9xw",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 50
+    },
+    {
+      "id": "6a06afac0038ba0a55fa",
+      "title": "Islam | The chapter of cure | درسِ شفاء شریف | Safar e Meraj | Dars e Shifa Ep 51",
+      "audioFileId": "6a07e9a000073287e035",
+      "durationSeconds": 2700,
+      "uploadedAt": "2017-07-17T10:00:01.000+00:00",
+      "youtubeId": "_xWO8k4nIEY",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 51
+    },
+    {
+      "id": "6a06afac000591e4a8b8",
+      "title": "Islam - The chapter of cure - درسِ شفاء شریف - Qayamat Main Muqam e Mustafa - Dars e Shifa Ep 52",
+      "audioFileId": "6a0758730023e723b6f2",
+      "durationSeconds": 3015,
+      "uploadedAt": "2017-07-17T10:00:04.000+00:00",
+      "youtubeId": "WCmau4I0jME",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 52
+    },
+    {
+      "id": "6a06afab002f2b2cbad7",
+      "title": "Dars e Shifa Shareef Ep 53 - Huzoor Allah kay Habib o Khalil",
+      "audioFileId": "6a075792003d8f3004c7",
+      "durationSeconds": 3008,
+      "uploadedAt": "2017-10-15T08:00:04.000+00:00",
+      "youtubeId": "hXNApXlsdfY",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 53
+    },
+    {
+      "id": "6a06afab000c6b9fbd06",
+      "title": "Dars e Shifa Shareef Ep 54 - Shafat e Mustafa",
+      "audioFileId": "6a075690000dbd3c6c5d",
+      "durationSeconds": 2564,
+      "uploadedAt": "2017-10-15T08:00:01.000+00:00",
+      "youtubeId": "1fxFyB6iFKk",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 54
+    },
+    {
+      "id": "6a06afaa00285f89d62f",
+      "title": "Dars e Shifa Shareef Ep 55 - Qayamat kay Din Nafsa Nafsi aur Shafat e Mustafa",
+      "audioFileId": "6a07559c0000882dd757",
+      "durationSeconds": 2502,
+      "uploadedAt": "2017-10-15T08:00:01.000+00:00",
+      "youtubeId": "4RnNUCcn1xg",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 55
+    },
+    {
+      "id": "6a06afaa0012fd36d711",
+      "title": "Islam | The Chapter of Cure | Maqam e Mustafa | Dars e Shifa Shareef Ep 56 | درسِ شفاء شریف",
+      "audioFileId": "6a07e9520033549678e0",
+      "durationSeconds": 2527,
+      "uploadedAt": "2018-03-16T10:00:01.000+00:00",
+      "youtubeId": "aRLSss2mRUM",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 56
+    },
+    {
+      "id": "6a06afa9003d44f90bac",
+      "title": "Islam | The Chapter of Cure | Aaqa Kay Mubarak Naam - Part 01 | Dars e Shifa Ep 57 | درسِ شفاء شریف",
+      "audioFileId": "6a0753bb0032fca0fd5d",
+      "durationSeconds": 3477,
+      "uploadedAt": "2018-03-16T10:00:07.000+00:00",
+      "youtubeId": "FmBhWh4yD10",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 57
+    },
+    {
+      "id": "6a06afa9002117a3177e",
+      "title": "Islam | The Chapter of Cure | Aaqa Kay Mubarak Naam - Part 02 | Dars e Shifa Ep 58 | درسِ شفاء شریف",
+      "audioFileId": "6a075309002761b9ff2e",
+      "durationSeconds": 2415,
+      "uploadedAt": "2018-03-16T10:00:31.000+00:00",
+      "youtubeId": "g6Tbuo6wozM",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 58
+    },
+    {
+      "id": "6a06afa9000727accea2",
+      "title": "Islam | The Chapter of Cure | Aaqa Kay Mubarak Naam - Part 03 | Dars e Shifa Ep 59 | درسِ شفاء شریف",
+      "audioFileId": "6a07520d0021cf64fdfe",
+      "durationSeconds": 2380,
+      "uploadedAt": "2018-03-16T10:00:09.000+00:00",
+      "youtubeId": "oL3xTbXa3Bc",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 59
+    },
+    {
+      "id": "6a06afa8002b47b2c3d2",
+      "title": "Islam | The Chapter of Cure | Mojazat e Mustafa - Part 01 | Dars e Shifa Ep 60 | درسِ شفاء شریف",
+      "audioFileId": "6a0751180010a2a269dd",
+      "durationSeconds": 2732,
+      "uploadedAt": "2018-03-16T10:00:34.000+00:00",
+      "youtubeId": "WfQ5xlSpQhk",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 60
+    },
+    {
+      "id": "6a06afa800104259209b",
+      "title": "Islam - The chapter of cure - Mojzat E Mustafa - Dars e Shifa Ep 61 - درسِ شفاء شریف",
+      "audioFileId": "6a0750010023c1ce3dcd",
+      "durationSeconds": 3424,
+      "uploadedAt": "2017-10-12T09:00:03.000+00:00",
+      "youtubeId": "LaXGVwh6BhM",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 61
+    },
+    {
+      "id": "6a06afa700337b11cd70",
+      "title": "Islam | The chapter of cure | Hadees Ka Bayan | Dars e Shifa Ep 62 | درسِ شفاء شریف",
+      "audioFileId": "6a074f1d001e2b2175ce",
+      "durationSeconds": 2320,
+      "uploadedAt": "2018-01-27T11:00:02.000+00:00",
+      "youtubeId": "Ve7P9MfeAxg",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 62
+    },
+    {
+      "id": "6a06afa70017a8927781",
+      "title": "Islam | The Chapter of Cure | Quran Pak Nabi Kareem Ka Azeem Mojaza | Dars e Shifa Ep 63 | درسِ شفاء",
+      "audioFileId": "6a074e6d001fbba51635",
+      "durationSeconds": 2698,
+      "uploadedAt": "2018-03-16T10:00:12.000+00:00",
+      "youtubeId": "v_RpouhdGVM",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 63
+    },
+    {
+      "id": "6a06afa6003cdeced805",
+      "title": "Islam ┇ The chapter of cure ┇ Quran e Pak Ka Usloob Aur Ajaz ┇ Dars e Shifa Ep 64 ┇ درسِ شفاء شریف",
+      "audioFileId": "6a074d4c003b335109f8",
+      "durationSeconds": 2859,
+      "uploadedAt": "2018-01-27T11:00:08.000+00:00",
+      "youtubeId": "x4-kkVTYzsM",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 64
+    },
+    {
+      "id": "6a06afa600289a17d0ce",
+      "title": "Islam - The chapter of cure - Sarkar Ke Umi Hone Ka Mafhoom - Dars e Shifa Ep 65 - درسِ شفاء شریف",
+      "audioFileId": "6a074c8f0026dbc3ea22",
+      "durationSeconds": 3040,
+      "uploadedAt": "2018-01-27T11:00:01.000+00:00",
+      "youtubeId": "8h9N4A1PxeA",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 65
+    },
+    {
+      "id": "6a06afa6000e0b12c905",
+      "title": "The chapter of cure | Quran Pak Nabi Kareem Ka Azeem Mojza | Dars e Shifa Ep 66 | درسِ شفاء شریف",
+      "audioFileId": "6a074ba70031d8db8199",
+      "durationSeconds": 2601,
+      "uploadedAt": "2018-01-27T11:00:02.000+00:00",
+      "youtubeId": "UQG4GD9RMMw",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 66
+    },
+    {
+      "id": "6a06afa5001ad0c4e7d7",
+      "title": "Islam ┇ The chapter of cure ┇ Mojza Shaq e Qamar ┇ Dars e Shifa Ep 67 ┇ درسِ شفاء شریف",
+      "audioFileId": "6a074aa3001820111f38",
+      "durationSeconds": 2656,
+      "uploadedAt": "2018-01-27T11:00:02.000+00:00",
+      "youtubeId": "eF7p9w4IB6g",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 67
+    },
+    {
+      "id": "6a06afa4003937bfc4bf",
+      "title": "The chapter of cure - Mubarak Ungliyon Se Pani Ka Chashma - Dars e Shifa Ep 68 - درسِ شفاء شریف",
+      "audioFileId": "6a0749c6003839d27992",
+      "durationSeconds": 2316,
+      "uploadedAt": "2018-01-27T11:00:03.000+00:00",
+      "youtubeId": "i2o5qGbb7OU",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 68
+    },
+    {
+      "id": "6a06afa30039fa888772",
+      "title": "Islam | The chapter of cure | Zaat e Mustafa Ki Barkat | Dars e Shifa Ep 69 | درسِ شفاء شریف",
+      "audioFileId": "6a0748ad000f4c24bd1e",
+      "durationSeconds": 2833,
+      "uploadedAt": "2018-01-27T11:00:03.000+00:00",
+      "youtubeId": "s0FumO3_0Tk",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 69
+    },
+    {
+      "id": "6a06afa3001daf262634",
+      "title": "Islam┇The chapter of cure┇Nabuwat Ki Gawahi Darakhton Ki Zaban Se┇Dars e Shifa Ep 70┇درسِ شفاء شریف",
+      "audioFileId": "6a0747a60007dc4ac1a7",
+      "durationSeconds": 2599,
+      "uploadedAt": "2018-01-27T11:00:01.000+00:00",
+      "youtubeId": "UrAWu5VFXjw",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 70
+    },
+    {
+      "id": "6a06afa2003ad4a5258a",
+      "title": "Islam - The chapter of cure - Nabuwat Ki Gawahi Hajar Ki Zaban Se - Dars e Shifa Ep 71",
+      "audioFileId": "6a0746c1000a8cf601a1",
+      "durationSeconds": 2265,
+      "uploadedAt": "2018-01-27T11:00:01.000+00:00",
+      "youtubeId": "KV0SDxCNVvA",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 71
+    },
+    {
+      "id": "6a06afa2001b0b0373f8",
+      "title": "Islam | The chapter of cure | Nabuwat Ki Gawahi Janwaron Ki Zaban Se | Dars e Shifa Ep 72",
+      "audioFileId": "6a07465e002b563185a9",
+      "durationSeconds": 2168,
+      "uploadedAt": "2018-01-27T11:00:02.000+00:00",
+      "youtubeId": "VxvpLno6X_4",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 72
+    },
+    {
+      "id": "6a06afa1003a0478cb70",
+      "title": "Islam┇The chapter of cure┇Nabi Kareem Ka Murdon Ko Zinda Karna┇Dars e Shifa Ep 73┇درسِ شفاء شریف",
+      "audioFileId": "6a0745fa003e09e72d03",
+      "durationSeconds": 2508,
+      "uploadedAt": "2018-01-27T11:00:01.000+00:00",
+      "youtubeId": "QHnXDiTq03U",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 73
+    },
+    {
+      "id": "6a06afa10019dd3acac0",
+      "title": "Islam - The chapter of cure - Dua e Mustafa - Dars e Shifa Ep 74 - درسِ شفاء شریف",
+      "audioFileId": "6a0745910018f495048f",
+      "durationSeconds": 2559,
+      "uploadedAt": "2018-01-27T12:00:01.000+00:00",
+      "youtubeId": "1xR9M9UN9q0",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 74
+    },
+    {
+      "id": "6a06afa0003756a57fe5",
+      "title": "Islam | The chapter of cure | Mojzat e Mustafa | Dars e Shifa Ep 75 | درسِ شفاء شریف",
+      "audioFileId": "6a0745270005398ad267",
+      "durationSeconds": 2517,
+      "uploadedAt": "2018-02-02T08:00:02.000+00:00",
+      "youtubeId": "Z_MHqN_w8yI",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 75
+    },
+    {
+      "id": "6a06afa000102d0e1110",
+      "title": "Islam | The Chapter of Cure | Barakat e Mustafa | Dars e Shifa Shareef Ep 76 | درسِ شفاء شریف",
+      "audioFileId": "6a0744bd00055999d0b7",
+      "durationSeconds": 2232,
+      "uploadedAt": "2018-03-16T10:00:03.000+00:00",
+      "youtubeId": "WscS4nAUCSY",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 76
+    },
+    {
+      "id": "6a06af9f002712772cb2",
+      "title": "Islam | The Chapter of Cure | Huzoor Ka Ghaib Ki Khabrain Dena | Dars e Shifa Ep 77 | درسِ شفاء شریف",
+      "audioFileId": "6a074442001b6848acd6",
+      "durationSeconds": 2916,
+      "uploadedAt": "2018-03-16T10:00:48.000+00:00",
+      "youtubeId": "muuyZvfacjk",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 77
+    },
+    {
+      "id": "6a06af9f000753017929",
+      "title": "Islam | The Chapter of Cure | Shan e Mustafa | Dars e Shifa Shareef Ep 78 | درسِ شفاء شریف",
+      "audioFileId": "6a0743d70014fbbfee98",
+      "durationSeconds": 2409,
+      "uploadedAt": "2018-03-16T12:00:04.000+00:00",
+      "youtubeId": "SlqAeSPib3o",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 78
+    },
+    {
+      "id": "6a06af9e001d75710e6f",
+      "title": "Islam | The Chapter of Cure | Hifazat e Mustafa | Dars e Shifa Shareef Ep 79 | درسِ شفاء شریف",
+      "audioFileId": "6a0743710007aeef7da5",
+      "durationSeconds": 2438,
+      "uploadedAt": "2018-03-16T12:00:01.000+00:00",
+      "youtubeId": "6tT9cTwpygA",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 79
+    },
+    {
+      "id": "6a06af9e0002d3967b21",
+      "title": "Islam | The Chapter of Cure | Nabi Kareem Ka Ilm o Marifat | Dars e Shifa Ep 80 | درسِ شفاء شریف",
+      "audioFileId": "6a0743050022faea2c30",
+      "durationSeconds": 2605,
+      "uploadedAt": "2018-03-16T12:00:04.000+00:00",
+      "youtubeId": "GaSqzPslbuE",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 80
+    },
+    {
+      "id": "6a06af9d0025abc62cac",
+      "title": "Islam | The Chapter of Cure | Ilm o Marifat e Mustafa | Dars e Shifa Shareef Ep 81 | درسِ شفاء شریف",
+      "audioFileId": "6a07429900234287ae0b",
+      "durationSeconds": 2308,
+      "uploadedAt": "2018-03-16T12:00:03.000+00:00",
+      "youtubeId": "ORQDVWwxiCM",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 81
+    },
+    {
+      "id": "6a06af9d000b233b54d2",
+      "title": "Islam | The Chapter of Cure | Nabi Kareem Kay Aanay Ki Khabrain | Dars e Shifa Ep 82 | درسِ شفاء",
+      "audioFileId": "6a074221002506e12073",
+      "durationSeconds": 2614,
+      "uploadedAt": "2018-03-22T12:25:39.000+00:00",
+      "youtubeId": "gxFiDjvE6yM",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 82
+    },
+    {
+      "id": "6a06af9c0029cb0503c5",
+      "title": "Islam | The Chapter of Cure | Huzoorﷺ Kay Mojzat | Dars e Shifa Shareef Ep 83 | درسِ شفاء شریف",
+      "audioFileId": "6a0741d1003a860e2fbb",
+      "durationSeconds": 1590,
+      "uploadedAt": "2018-03-27T06:02:12.000+00:00",
+      "youtubeId": "mb7hdf2Jc4M",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 83
+    },
+    {
+      "id": "6a06af9c000e157be4d9",
+      "title": "Islam | The chapter of cure | Huzoor Ke Mujazat Kaseer Hain | Dars e Shifa Ep 84 | درسِ شفاء شریف",
+      "audioFileId": "6a0741640008d3ad7f08",
+      "durationSeconds": 3083,
+      "uploadedAt": "2018-04-02T13:33:51.000+00:00",
+      "youtubeId": "1w1j0T4fXD8",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 84
+    },
+    {
+      "id": "6a06af9b002c19e1d069",
+      "title": "Islam ┇ The chapter of cure ┇ Nabi Kareem ( ﷺ ) Per Iman Lana ┇ Dars e Shifa Ep 85 ┇ درسِ شفاء شریف",
+      "audioFileId": "6a0740e3000afde966f6",
+      "durationSeconds": 2877,
+      "uploadedAt": "2018-04-10T10:26:56.000+00:00",
+      "youtubeId": "Mox5IzMa-Pk",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 85
+    },
+    {
+      "id": "6a06af9b00096c4b5a7c",
+      "title": "Islam - The chapter of cure - Itteba e Rasool Ki Zaroorat - Dars e Shifa Ep 86 - درسِ شفاء شریف",
+      "audioFileId": "6a07406d00106839cd5a",
+      "durationSeconds": 2484,
+      "uploadedAt": "2018-04-19T12:17:54.000+00:00",
+      "youtubeId": "pccNPdfesOI",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 86
+    },
+    {
+      "id": "6a06af9a00251ed4550b",
+      "title": "Islam | The chapter of cure | Sunnat e Rasool Ki Ahmiyat | Dars e Shifa Ep 87 | درسِ شفاء شریف",
+      "audioFileId": "6a073ffd000b3dbe9715",
+      "durationSeconds": 2517,
+      "uploadedAt": "2018-04-27T07:03:43.000+00:00",
+      "youtubeId": "bIC8Kd50i_s",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 87
+    },
+    {
+      "id": "6a06af9a00027edfaed8",
+      "title": "Islam ┇ The chapter of cure ┇ Sunnat e Mustafa Ki Ahmiyat ┇ Dars e Shifa Ep 88 ┇ درسِ شفاء شریف",
+      "audioFileId": "6a073f96000e8dc42224",
+      "durationSeconds": 2192,
+      "uploadedAt": "2018-05-05T09:00:04.000+00:00",
+      "youtubeId": "Jzg0TkJCGN4",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 88
+    },
+    {
+      "id": "6a06af99001e42610428",
+      "title": "The chapter of cure - Dars e Shifa Ep 89 - درسِ شفاء شریف - Sunnat e Mustafa Ki Mukhalifat Karna",
+      "audioFileId": "6a073f440026dd4047c6",
+      "durationSeconds": 1848,
+      "uploadedAt": "2018-05-05T09:15:00.000+00:00",
+      "youtubeId": "4Sf3JgyyCsU",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 89
+    },
+    {
+      "id": "6a06af99000a283efead",
+      "title": "Ishq e Rasool | Dars e Shifa Ep 90 | درسِ شفاء شریف | The chapter of cure",
+      "audioFileId": "6a073ec00004298de4f8",
+      "durationSeconds": 2480,
+      "uploadedAt": "2018-09-01T05:00:02.000+00:00",
+      "youtubeId": "xzzVwitfDMc",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 90
+    },
+    {
+      "id": "6a06af9800317da486af",
+      "title": "Ishq e Rasool aur Is Ki Alamat Kya Hai? ┇ Dars e Shifa Ep 91 ┇ درسِ شفاء شریف ┇ The chapter of cure",
+      "audioFileId": "6a073e420036d3585a41",
+      "durationSeconds": 2975,
+      "uploadedAt": "2018-09-01T10:00:04.000+00:00",
+      "youtubeId": "LUJ37OrDUvg",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 91
+    },
+    {
+      "id": "6a06af9800102f3cac4b",
+      "title": "Mohabbat e Rasool aur Is Ki Alamat Kya Hai? – Dars e Shifa Ep 92 – درسِ شفاء شریف",
+      "audioFileId": "6a073db600173ccbd9b3",
+      "durationSeconds": 3078,
+      "uploadedAt": "2018-09-01T11:00:03.000+00:00",
+      "youtubeId": "WE6vN7pWTgI",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 92
+    },
+    {
+      "id": "6a06af97002b2f4979b6",
+      "title": "Nabi Karim Say Mohabbat Ki Haqiqat | Dars e Shifa Ep 93 | درسِ شفاء شریف | The chapter of cure",
+      "audioFileId": "6a073d35003e40d93380",
+      "durationSeconds": 3059,
+      "uploadedAt": "2018-09-01T11:00:07.000+00:00",
+      "youtubeId": "ss5_xKsVFOk",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 93
+    },
+    {
+      "id": "6a06af970003f4d01a46",
+      "title": "Tazeem e Mustafa ┇ Dars e Shifa Ep 94 ┇ درسِ شفاء شریف ┇ The chapter of cure",
+      "audioFileId": "6a073cb000329a2e3165",
+      "durationSeconds": 3200,
+      "uploadedAt": "2018-09-11T11:00:03.000+00:00",
+      "youtubeId": "AcyCOdylK7k",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 94
+    },
+    {
+      "id": "6a06af96001fbad68a15",
+      "title": "Zikr e Mustafa aur Aslaaf Ka Andaaz – Dars e Shifa Ep 95 – درسِ شفاء شریف – The chapter of cure",
+      "audioFileId": "6a073c2a0009ac391f69",
+      "durationSeconds": 2954,
+      "uploadedAt": "2018-09-11T11:00:04.000+00:00",
+      "youtubeId": "jni-sanxevs",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 95
+    },
+    {
+      "id": "6a06af9600097e3e43d0",
+      "title": "Nisbat e Rasool Ka Adab O Ahtram | Dars e Shifa Ep 96 | درسِ شفاء شریف | The chapter of cure",
+      "audioFileId": "6a073ba30019dabaf2ef",
+      "durationSeconds": 2637,
+      "uploadedAt": "2018-09-11T11:00:04.000+00:00",
+      "youtubeId": "lXKx8g72rhI",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 96
+    },
+    {
+      "id": "6a06af950033d0d139d2",
+      "title": "Islaaf Ka Andaz E Tazeem O Takreem ┇ Dars e Shifa Ep 97 ┇ درسِ شفاء شریف ┇ The chapter of cure",
+      "audioFileId": "6a073b37000c0df99d48",
+      "durationSeconds": 2426,
+      "uploadedAt": "2018-10-04T08:00:05.000+00:00",
+      "youtubeId": "yKfznFgdZyY",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 97
+    },
+    {
+      "id": "6a06af95001a14798e08",
+      "title": "Sahaba Kiram Ki Tazeem – Dars e Shifa Ep 98 – درسِ شفاء شریف – The chapter of cure",
+      "audioFileId": "6a073ad8001d637bec18",
+      "durationSeconds": 2138,
+      "uploadedAt": "2018-10-12T13:30:01.000+00:00",
+      "youtubeId": "_t8y0w4dLYg",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 98
+    },
+    {
+      "id": "6a06af9500002cdf3684",
+      "title": "Madina Ki Tazeem aur Islaaf Ka Andaaz | Dars e Shifa Ep 99 | درسِ شفاء شریف | The chapter of cure",
+      "audioFileId": "6a073a6c00148f4ab31f",
+      "durationSeconds": 2771,
+      "uploadedAt": "2018-10-12T13:30:00.000+00:00",
+      "youtubeId": "Ix1SHEP08Yk",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 99
+    },
+    {
+      "id": "6a06af94001eb4e3dbe9",
+      "title": "Durood-e-Pak Kay Ahkam ┇ Dars e Shifa Ep 100 ┇ درسِ شفاء شریف ┇ The chapter of cure",
+      "audioFileId": "6a0739fe003e664973c2",
+      "durationSeconds": 2512,
+      "uploadedAt": "2018-10-31T06:00:00.000+00:00",
+      "youtubeId": "AqIXPSVqMII",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 100
+    },
+    {
+      "id": "6a06af940008fe91ebfc",
+      "title": "Darood Sharif Parhnay Kay Muqamat aur Kalimat – Dars e Shifa Ep 101 – The chapter of cure",
+      "audioFileId": "6a073990001816619859",
+      "durationSeconds": 2823,
+      "uploadedAt": "2018-10-31T06:30:00.000+00:00",
+      "youtubeId": "qWw4kDFB2u8",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 101
+    },
+    {
+      "id": "6a06af930026d1200119",
+      "title": "Durood Sharif | Dars e Shifa Ep 102 | درسِ شفاء شریف | The chapter of cure",
+      "audioFileId": "6a0739140032c2a67d9c",
+      "durationSeconds": 2642,
+      "uploadedAt": "2018-10-31T07:00:02.000+00:00",
+      "youtubeId": "S3O9u-LOwCo",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 102
+    },
+    {
+      "id": "6a06af930012a0ead008",
+      "title": "Durood e Pak Parhne Kay Ahkamat ┇ Dars e Shifa Ep 103 ┇ درسِ شفاء شریف ┇ The chapter of cure",
+      "audioFileId": "6a0738c300132f811e86",
+      "durationSeconds": 1504,
+      "uploadedAt": "2018-12-03T13:00:06.000+00:00",
+      "youtubeId": "KxIiSJaWGUM",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 103
+    },
+    {
+      "id": "6a06af920031ea2731c7",
+      "title": "Durood O Salam Kay Ahkam Aur Bargha E Risalat Ki Hazri – Dars e Shifa Ep 104 – The chapter of cure",
+      "audioFileId": "6a073857000cba7d8869",
+      "durationSeconds": 2951,
+      "uploadedAt": "2018-12-03T13:15:00.000+00:00",
+      "youtubeId": "DGN_EaasOTw",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 104
+    },
+    {
+      "id": "6a06af920016394c99ed",
+      "title": "Bargah e Risalat Main Hazri Ke Adaab | Dars e Shifa Ep 105 | درسِ شفاء شریف | The chapter of cure",
+      "audioFileId": "6a0737ec0002192654b9",
+      "durationSeconds": 2571,
+      "uploadedAt": "2018-12-17T12:30:00.000+00:00",
+      "youtubeId": "HmFVYBbbSds",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 105
+    },
+    {
+      "id": "6a06af910039156fdc9e",
+      "title": "Muqaddas Maqamat Kay Fazail ┇ Dars e Shifa Ep 106 ┇ درسِ شفاء شریف ┇ The chapter of cure",
+      "audioFileId": "6a073769001834cd95fe",
+      "durationSeconds": 3238,
+      "uploadedAt": "2018-12-19T12:30:00.000+00:00",
+      "youtubeId": "YwfcvwAIGRY",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 106
+    },
+    {
+      "id": "6a06af910015f59decab",
+      "title": "Ambiya e Kiram Ko Bashar Banane Ki Hikmatain – Dars e Shifa Ep 107 – درسِ شفاء – The chapter of cure",
+      "audioFileId": "6a06ba1200139470ef06",
+      "durationSeconds": 2570,
+      "uploadedAt": "2018-12-19T12:30:00.000+00:00",
+      "youtubeId": "QjVxt4YaC4w",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 107
+    },
+    {
+      "id": "6a06afc40022765daa51",
+      "title": "Wo Baatain Jo Ambiya Kiram Kay Liye Zarori Ya Mana Hain | Dars e Shifa Ep 108 | درسِ شفاء شریف",
+      "audioFileId": "6a0808860029c5f68ef2",
+      "durationSeconds": 2969,
+      "uploadedAt": "2019-03-06T07:43:02.000+00:00",
+      "youtubeId": "u_LqmxRbVlY",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 108
+    },
+    {
+      "id": "6a06afc400380db6d119",
+      "title": "Last Episode Dars e Shifa ┇ Khatm e Shifa Shareef ┇ Akhri Qist - آخری قسط",
+      "audioFileId": "6a08098500022e3492f0",
+      "durationSeconds": 3021,
+      "uploadedAt": "2019-04-02T11:00:02.000+00:00",
+      "youtubeId": "9rLdbqNaysQ",
+      "channelName": "Dars-e-Shifa Shareef | Mufti Hassan Attari | مفتی حسّان عطاری",
+      "sortOrder": 109
+    }
+  ]
+}

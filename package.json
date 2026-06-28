@@ -23,6 +23,7 @@
     "submit:android": "eas submit --platform android --latest",
     "submit:ios": "eas submit --platform ios --latest",
     "split-epub": "npm --prefix scripts run split-epub --",
+    "export-audios": "npm --prefix scripts run export-audios",
     "typecheck": "npx tsc --noEmit"
   },
   "dependencies": {

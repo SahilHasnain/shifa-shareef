@@ -5,11 +5,13 @@
   "main": "convert-pdf-to-images.js",
   "scripts": {
     "convert": "node convert-pdf-to-images.js",
-    "split-epub": "node split-epub-to-chapters.js"
+    "split-epub": "node split-epub-to-chapters.js",
+    "export-audios": "node export-shifa-audios.js"
   },
   "dependencies": {
     "adm-zip": "^0.5.17",
     "fast-xml-parser": "^5.9.2",
+    "node-appwrite": "^26.2.0",
     "pdf-poppler": "^0.2.1",
     "sharp": "^0.33.0"
   }

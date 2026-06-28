@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Client, Databases, Query } from "appwrite";
 
 const FALLBACK_AUDIO_CONFIG = {
@@ -204,6 +205,62 @@ export async function fetchShifaAudioTracks(
     .filter((track): track is ShifaAudioTrack => Boolean(track));
 
   return sorted(dedupeTracks(fallbackTracks));
+}
+
+const CACHE_KEY = "shifa-shareef:audio-tracks-cache";
+
+type CachedTracks = {
+  tracks: ShifaAudioTrack[];
+  cachedAt: string;
+};
+
+export async function loadCachedAudioTracks(): Promise<ShifaAudioTrack[] | null> {
+  try {
+    const raw = await AsyncStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const cached: CachedTracks = JSON.parse(raw);
+    return cached.tracks;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveCachedAudioTracks(tracks: ShifaAudioTrack[]): Promise<void> {
+  try {
+    const data: CachedTracks = {
+      tracks,
+      cachedAt: new Date().toISOString(),
+    };
+    await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch {
+    // silently fail
+  }
+}
+
+const STATIC_FALLBACK_URL =
+  process.env.EXPO_PUBLIC_AUDIO_FALLBACK_URL ??
+  "https://cdn.jsdelivr.net/gh/SahilHasnain/shifa-shareef@main/exports/shifa-audios-export.json";
+
+type StaticExport = {
+  metadata: {
+    exportedAt: string;
+    totalItems: number;
+    version: string;
+    source: string;
+    note: string;
+  };
+  data: ShifaAudioTrack[];
+};
+
+export async function fetchStaticFallbackTracks(): Promise<ShifaAudioTrack[] | null> {
+  try {
+    const response = await fetch(STATIC_FALLBACK_URL);
+    if (!response.ok) return null;
+    const json: StaticExport = await response.json();
+    return json.data ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function getShifaAudioFileUrl(audioFileId: string): string {
