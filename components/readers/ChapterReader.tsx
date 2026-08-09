@@ -17,6 +17,7 @@ import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useReadingSessions } from "../../hooks/useReadingSessions";
 import { getCurrentPlanDay, getPlanItemForDay, isPlanDayComplete } from "../../lib/plan-resolver";
 import { getCurrentSection } from "../../lib/section-resolver";
+import { getCachedChapter, saveCachedChapter, getCachedCss, saveCachedCss } from "../../lib/reader-content-cache";
 
 type ChapterManifest = {
   title?: string;
@@ -128,173 +129,66 @@ function getInitialChapterIndex(
   return 0;
 }
 
-function buildChapterHtml(chapters: LoadedChapter[], baseUrl: string, initialTheme: (typeof READER_THEME_COLORS)[keyof typeof READER_THEME_COLORS], fontSize: number): string {
+function buildChapterHtml(chapters: LoadedChapter[], initialTheme: (typeof READER_THEME_COLORS)[keyof typeof READER_THEME_COLORS], fontSize: number, inlinedCss?: string): string {
   const chapterSections = chapters
-    .map((chapter) => `<section class="reader-chapter" data-chapter-index="${chapter.index}">${chapter.html}</section>`)
+    .map((chapter) => {
+      let html = chapter.html;
+      if (inlinedCss) {
+        html = html.replace(/<link[^>]*rel=["']?stylesheet["']?[^>]*>/gi, "");
+      }
+      return '<section class="reader-chapter" data-chapter-index="' + chapter.index + '">' + html + "</section>";
+    })
     .join("\n");
 
   const themeName = initialTheme.isDark ? "dark" : initialTheme.background === "#F5E6C8" ? "sepia" : "light";
 
-  return `
-<!DOCTYPE html>
-<html data-theme="${themeName}">
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <base href="${baseUrl}">
-  <style>
-    :root { --reader-bg: ${initialTheme.background}; --reader-text: ${initialTheme.text}; --reader-font-size: ${fontSize}px; }
-    :root[data-theme="dark"], :root[data-theme="sepia"] { --page-bg: var(--reader-bg) !important; --paper: var(--reader-bg) !important; --ink: var(--reader-text) !important; --muted: var(--reader-text) !important; --accent: var(--reader-text) !important; --accent-warm: var(--reader-text) !important; --gold: var(--reader-text) !important; --rule: rgba(201, 169, 97, 0.18) !important; }
-    html, body { min-height: 100%; margin: 0; padding: 0; background: var(--reader-bg); color: var(--reader-text); }
-    body { font-size: var(--reader-font-size); line-height: 1.75; padding: 28px 22px 42px; overflow-x: hidden; }
-    html[data-theme="dark"] body, html[data-theme="dark"] p, html[data-theme="dark"] div, html[data-theme="dark"] span, html[data-theme="dark"] li, html[data-theme="dark"] h1, html[data-theme="dark"] h2, html[data-theme="dark"] h3, html[data-theme="dark"] h4, html[data-theme="dark"] h5, html[data-theme="dark"] h6, html[data-theme="dark"] th, html[data-theme="dark"] td, html[data-theme="dark"] blockquote, html[data-theme="dark"] sup,
-    html[data-theme="sepia"] body, html[data-theme="sepia"] p, html[data-theme="sepia"] div, html[data-theme="sepia"] span, html[data-theme="sepia"] li, html[data-theme="sepia"] h1, html[data-theme="sepia"] h2, html[data-theme="sepia"] h3, html[data-theme="sepia"] h4, html[data-theme="sepia"] h5, html[data-theme="sepia"] h6, html[data-theme="sepia"] th, html[data-theme="sepia"] td, html[data-theme="sepia"] blockquote, html[data-theme="sepia"] sup { color: var(--reader-text) !important; }
-    p { margin: 0 0 1em; }
-    img, svg { max-width: 100%; height: auto; }
-    a { color: inherit; text-decoration: none; pointer-events: none; }
-    .reader-chapter { min-height: 70vh; padding-bottom: 28px; margin-bottom: 28px; border-bottom: 1px solid rgba(201, 169, 97, 0.18); }
-    .reader-chapter:last-child { border-bottom: 0; }
-    ::-webkit-scrollbar { display: none; }
-    * { scrollbar-width: none; -ms-overflow-style: none; box-sizing: border-box; }
-  </style>
-</head>
-<body>
-  <main id="reader-root">${chapterSections}</main>
-  <script>
-    var lastSentAt = 0;
-    var restored = false;
-    var requestedNextAfter = null;
-    var requestedPreviousBefore = null;
-
-    function getSections() {
-      return Array.prototype.slice.call(document.querySelectorAll('.reader-chapter'));
-    }
-
-    function getActiveSection() {
-      var sections = getSections();
-      if (sections.length === 0) return null;
-      var probeY = window.scrollY + Math.max(80, window.innerHeight * 0.28);
-      var active = sections[0];
-      for (var i = 0; i < sections.length; i++) {
-        var section = sections[i];
-        if (section.offsetTop <= probeY) active = section;
-      }
-      return active;
-    }
-
-    function getChapterProgress(section) {
-      if (!section) return 0;
-      var sectionTop = section.offsetTop;
-      var maxScroll = Math.max(1, section.offsetHeight - window.innerHeight);
-      return Math.min(1, Math.max(0, (window.scrollY - sectionTop) / maxScroll));
-    }
-
-    function maybeRequestNext() {
-      var sections = getSections();
-      var last = sections[sections.length - 1];
-      if (!last) return;
-      var afterIndex = Number(last.getAttribute('data-chapter-index'));
-      var distanceFromBottom = last.offsetTop + last.offsetHeight - (window.scrollY + window.innerHeight);
-      if (distanceFromBottom < 900 && requestedNextAfter !== afterIndex) {
-        requestedNextAfter = afterIndex;
-        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'NEED_NEXT', afterIndex: afterIndex }));
-      }
-    }
-
-    function maybeRequestPrevious() {
-      var sections = getSections();
-      var first = sections[0];
-      if (!first) return;
-      var beforeIndex = Number(first.getAttribute('data-chapter-index'));
-      if (window.scrollY - first.offsetTop < 700 && requestedPreviousBefore !== beforeIndex) {
-        requestedPreviousBefore = beforeIndex;
-        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'NEED_PREVIOUS', beforeIndex: beforeIndex }));
-      }
-    }
-
-    function sendProgress(force) {
-      var now = Date.now();
-      if (!force && now - lastSentAt < 500) return;
-      lastSentAt = now;
-      var active = getActiveSection();
-      var chapterIndex = active ? Number(active.getAttribute('data-chapter-index')) : 0;
-      window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'PROGRESS', chapterIndex: chapterIndex, chapterProgress: getChapterProgress(active) }));
-      maybeRequestNext();
-      maybeRequestPrevious();
-    }
-
-    function restoreProgress(chapterIndex, progress) {
-      if (restored) return;
-      restored = true;
-      requestAnimationFrame(function() {
-        var section = document.querySelector('.reader-chapter[data-chapter-index="' + chapterIndex + '"]') || getActiveSection();
-        var maxScroll = section ? Math.max(0, section.offsetHeight - window.innerHeight) : 0;
-        var sectionTop = section ? section.offsetTop : 0;
-        window.scrollTo(0, sectionTop + maxScroll * Math.min(1, Math.max(0, progress || 0)));
-        setTimeout(function() {
-          sendProgress(true);
-          window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'READY' }));
-        }, 80);
-      });
-    }
-
-    window.__setTheme = function(bg, textColor, themeName) {
-      var root = document.documentElement;
-      root.style.setProperty('--reader-bg', bg);
-      root.style.setProperty('--reader-text', textColor);
-      root.setAttribute('data-theme', themeName || 'light');
-    };
-    window.__setFontSize = function(px) {
-      document.documentElement.style.setProperty('--reader-font-size', px + 'px');
-    };
-
-    document.addEventListener('message', function(event) {
-      try {
-        var message = JSON.parse(event.data);
-        if (message.type === 'RESTORE') restoreProgress(message.chapterIndex, message.chapterProgress);
-      } catch (err) {}
-    });
-    window.addEventListener('message', function(event) {
-      try {
-        var message = JSON.parse(event.data);
-        if (message.type === 'RESTORE') restoreProgress(message.chapterIndex, message.chapterProgress);
-      } catch (err) {}
-    });
-    window.__appendChapter = function(chapterIndex, html) {
-      if (document.querySelector('.reader-chapter[data-chapter-index="' + chapterIndex + '"]')) return;
-      var section = document.createElement('section');
-      section.className = 'reader-chapter';
-      section.setAttribute('data-chapter-index', String(chapterIndex));
-      section.innerHTML = html;
-      document.getElementById('reader-root').appendChild(section);
-      requestedNextAfter = null;
-      setTimeout(function() { sendProgress(true); }, 80);
-    };
-    window.__prependChapter = function(chapterIndex, html) {
-      if (document.querySelector('.reader-chapter[data-chapter-index="' + chapterIndex + '"]')) return;
-      var root = document.getElementById('reader-root');
-      var previousHeight = document.documentElement.scrollHeight;
-      var previousScroll = window.scrollY;
-      var section = document.createElement('section');
-      section.className = 'reader-chapter';
-      section.setAttribute('data-chapter-index', String(chapterIndex));
-      section.innerHTML = html;
-      root.insertBefore(section, root.firstChild);
-      requestedPreviousBefore = null;
-      requestAnimationFrame(function() {
-        var heightDelta = document.documentElement.scrollHeight - previousHeight;
-        window.scrollTo(0, previousScroll + heightDelta);
-        setTimeout(function() { sendProgress(true); }, 80);
-      });
-    };
-    window.addEventListener('scroll', function() { sendProgress(false); }, { passive: true });
-    window.addEventListener('load', function() { restoreProgress(${chapters[0]?.index ?? 0}, 0); });
-    setTimeout(function() { restoreProgress(${chapters[0]?.index ?? 0}, 0); }, 250);
-    document.body.addEventListener('click', function() {
-      window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'TOGGLE_CONTROLS' }));
-    });
-  </script>
-</body>
-</html>`;
+  return [
+    "<!DOCTYPE html>",
+    '<html data-theme="' + themeName + '">',
+    "<head>",
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">',
+    inlinedCss ? "<style>" + inlinedCss + "</style>" : "",
+    "<style>",
+    ":root { --reader-bg: " + initialTheme.background + "; --reader-text: " + initialTheme.text + "; --reader-font-size: " + fontSize + "px; }",
+    ':root[data-theme="dark"], :root[data-theme="sepia"] { --page-bg: var(--reader-bg) !important; --paper: var(--reader-bg) !important; --ink: var(--reader-text) !important; --muted: var(--reader-text) !important; --accent: var(--reader-text) !important; --accent-warm: var(--reader-text) !important; --gold: var(--reader-text) !important; --rule: rgba(201, 169, 97, 0.18) !important; }',
+    "html, body { min-height: 100%; margin: 0; padding: 0; background: var(--reader-bg); color: var(--reader-text); }",
+    "body { font-size: var(--reader-font-size); line-height: 1.75; padding: 28px 22px 42px; overflow-x: hidden; }",
+    'html[data-theme="dark"] body, html[data-theme="dark"] p, html[data-theme="dark"] div, html[data-theme="dark"] span, html[data-theme="dark"] li, html[data-theme="dark"] h1, html[data-theme="dark"] h2, html[data-theme="dark"] h3, html[data-theme="dark"] h4, html[data-theme="dark"] h5, html[data-theme="dark"] h6, html[data-theme="dark"] th, html[data-theme="dark"] td, html[data-theme="dark"] blockquote, html[data-theme="dark"] sup,',
+    'html[data-theme="sepia"] body, html[data-theme="sepia"] p, html[data-theme="sepia"] div, html[data-theme="sepia"] span, html[data-theme="sepia"] li, html[data-theme="sepia"] h1, html[data-theme="sepia"] h2, html[data-theme="sepia"] h3, html[data-theme="sepia"] h4, html[data-theme="sepia"] h5, html[data-theme="sepia"] h6, html[data-theme="sepia"] th, html[data-theme="sepia"] td, html[data-theme="sepia"] blockquote, html[data-theme="sepia"] sup { color: var(--reader-text) !important; }',
+    "p { margin: 0 0 1em; }",
+    "img, svg { max-width: 100%; height: auto; }",
+    "a { color: inherit; text-decoration: none; pointer-events: none; }",
+    ".reader-chapter { min-height: 70vh; padding-bottom: 28px; margin-bottom: 28px; border-bottom: 1px solid rgba(201, 169, 97, 0.18); }",
+    ".reader-chapter:last-child { border-bottom: 0; }",
+    "::-webkit-scrollbar { display: none; }",
+    "* { scrollbar-width: none; -ms-overflow-style: none; box-sizing: border-box; }",
+    "</style>",
+    "</head>",
+    "<body>",
+    '<main id="reader-root">' + chapterSections + "</main>",
+    "<script>",
+    "var lastSentAt = 0;",
+    "var restored = false;",
+    "var requestedNextAfter = null;",
+    "var requestedPreviousBefore = null;",
+    "function getSections() { return Array.prototype.slice.call(document.querySelectorAll('.reader-chapter')); }",
+    "function getActiveSection() { var sections = getSections(); if (sections.length === 0) return null; var probeY = window.scrollY + Math.max(80, window.innerHeight * 0.28); var active = sections[0]; for (var i = 0; i < sections.length; i++) { var section = sections[i]; if (section.offsetTop <= probeY) active = section; } return active; }",
+    "function getChapterProgress(section) { if (!section) return 0; var sectionTop = section.offsetTop; var maxScroll = Math.max(1, section.offsetHeight - window.innerHeight); return Math.min(1, Math.max(0, (window.scrollY - sectionTop) / maxScroll)); }",
+    "function maybeRequestNext() { var sections = getSections(); var last = sections[sections.length - 1]; if (!last) return; var afterIndex = Number(last.getAttribute('data-chapter-index')); var distanceFromBottom = last.offsetTop + last.offsetHeight - (window.scrollY + window.innerHeight); if (distanceFromBottom < 900 && requestedNextAfter !== afterIndex) { requestedNextAfter = afterIndex; window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'NEED_NEXT', afterIndex: afterIndex })); } }",
+    "function maybeRequestPrevious() { var sections = getSections(); var first = sections[0]; if (!first) return; var beforeIndex = Number(first.getAttribute('data-chapter-index')); if (window.scrollY - first.offsetTop < 700 && requestedPreviousBefore !== beforeIndex) { requestedPreviousBefore = beforeIndex; window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'NEED_PREVIOUS', beforeIndex: beforeIndex })); } }",
+    "function sendProgress(force) { var now = Date.now(); if (!force && now - lastSentAt < 500) return; lastSentAt = now; var active = getActiveSection(); var chapterIndex = active ? Number(active.getAttribute('data-chapter-index')) : 0; window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'PROGRESS', chapterIndex: chapterIndex, chapterProgress: getChapterProgress(active) })); maybeRequestNext(); maybeRequestPrevious(); }",
+    "function restoreProgress(chapterIndex, progress) { if (restored) return; restored = true; requestAnimationFrame(function() { var section = document.querySelector('.reader-chapter[data-chapter-index=\"' + chapterIndex + '\"]') || getActiveSection(); var maxScroll = section ? Math.max(0, section.offsetHeight - window.innerHeight) : 0; var sectionTop = section ? section.offsetTop : 0; window.scrollTo(0, sectionTop + maxScroll * Math.min(1, Math.max(0, progress || 0))); setTimeout(function() { sendProgress(true); window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'READY' })); }, 80); }); }",
+    "window.__setTheme = function(bg, textColor, themeName) { var root = document.documentElement; root.style.setProperty('--reader-bg', bg); root.style.setProperty('--reader-text', textColor); root.setAttribute('data-theme', themeName || 'light'); };",
+    "window.__setFontSize = function(px) { document.documentElement.style.setProperty('--reader-font-size', px + 'px'); };",
+    "document.addEventListener('message', function(event) { try { var message = JSON.parse(event.data); if (message.type === 'RESTORE') restoreProgress(message.chapterIndex, message.chapterProgress); } catch (err) {} });",
+    "window.addEventListener('message', function(event) { try { var message = JSON.parse(event.data); if (message.type === 'RESTORE') restoreProgress(message.chapterIndex, message.chapterProgress); } catch (err) {} });",
+    "window.__appendChapter = function(html, index) { var e = document.createElement('section'); e.className = 'reader-chapter'; e.setAttribute('data-chapter-index', index); e.innerHTML = html; document.getElementById('reader-root').appendChild(e); };",
+    "window.__prependChapter = function(html, index) { var e = document.createElement('section'); e.className = 'reader-chapter'; e.setAttribute('data-chapter-index', index); e.innerHTML = html; var r = document.getElementById('reader-root'); r.insertBefore(e, r.firstChild); };",
+    "window.__initialTheme = '" + themeName + "'; __setTheme(__initialTheme);",
+    "</script>",
+    "</body>",
+    "</html>",
+  ].join("\n");
 }
 
 export function ChapterReader({
@@ -325,6 +219,7 @@ export function ChapterReader({
   const lastSavedLocatorRef = useRef<string | null>(null);
   const initialLocatorRef = useRef(initialLocator);
   const initialProgressPercentRef = useRef(initialProgressPercent);
+  const cachedCssRef = useRef<string | null>(null);
 
   const [manifest, setManifest] = useState<ChapterManifest | null>(null);
   const [chapterIndex, setChapterIndex] = useState(0);
@@ -365,8 +260,8 @@ export function ChapterReader({
 
   const readerHtml = useMemo(() => {
     if (loadedChapters.length === 0) return null;
-    return buildChapterHtml(loadedChapters, `${assetBaseUrl}/`, themeColors, fontSize);
-  }, [assetBaseUrl, loadedChapters]); // theme, fontSize excluded — applied via injectJavaScript to avoid WebView reload
+    return buildChapterHtml(loadedChapters, themeColors, fontSize, cachedCssRef.current ?? undefined);
+  }, [loadedChapters]); // theme, fontSize excluded — applied via injectJavaScript to avoid WebView reload
   const webViewSource = useMemo(() => {
     return readerHtml ? { html: readerHtml } : undefined;
   }, [readerHtml]);
@@ -385,30 +280,46 @@ export function ChapterReader({
     if (!chapter) return null;
 
     const chapterUrl = resolveChapterUrl(assetBaseUrl, chapter.href);
-    const cached = chapterCacheRef.current.get(chapterUrl);
-    if (cached) {
-      return cached;
+    const inMemory = chapterCacheRef.current.get(chapterUrl);
+    if (inMemory) {
+      return inMemory;
+    }
+
+    const onDisk = await getCachedChapter(language.id, volume.id, chapter.href);
+    if (onDisk) {
+      chapterCacheRef.current.set(chapterUrl, onDisk);
+      return onDisk;
     }
 
     const response = await fetch(chapterUrl);
     if (!response.ok) throw new Error(`Failed to load chapter ${index + 1}`);
     const html = extractReadableContent(await response.text());
     chapterCacheRef.current.set(chapterUrl, html);
+    void saveCachedChapter(language.id, volume.id, chapter.href, html);
     return html;
-  }, [assetBaseUrl, manifest]);
+  }, [assetBaseUrl, language.id, manifest, volume.id]);
 
   const prefetchChapter = useCallback(async (index: number) => {
     if (!manifest || index < 0 || index >= manifest.chapters.length) return;
-    const chapterUrl = resolveChapterUrl(assetBaseUrl, manifest.chapters[index].href);
+    const chapter = manifest.chapters[index];
+    const chapterUrl = resolveChapterUrl(assetBaseUrl, chapter.href);
     if (chapterCacheRef.current.has(chapterUrl)) return;
 
     try {
+      const cached = await getCachedChapter(language.id, volume.id, chapter.href);
+      if (cached) {
+        chapterCacheRef.current.set(chapterUrl, cached);
+        return;
+      }
+
       const response = await fetch(chapterUrl);
       if (response.ok) {
-        chapterCacheRef.current.set(chapterUrl, extractReadableContent(await response.text()));
+        const html = extractReadableContent(await response.text());
+        chapterCacheRef.current.set(chapterUrl, html);
+        void saveCachedChapter(language.id, volume.id, chapter.href, html);
       }
     } catch { }
-  }, [assetBaseUrl, manifest]);
+  }, [assetBaseUrl, language.id, manifest, volume.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -456,6 +367,28 @@ export function ChapterReader({
     void loadManifest();
     return () => { cancelled = true; };
   }, [language.id, manifestUrl, onFallbackRequested, volume.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCss() {
+      const cached = await getCachedCss(language.id, volume.id);
+      if (cached) {
+        cachedCssRef.current = cached;
+        return;
+      }
+      try {
+        const cssUrl = `${assetBaseUrl}/styles/book.css`;
+        const res = await fetch(cssUrl);
+        if (res.ok) {
+          const css = await res.text();
+          cachedCssRef.current = css;
+          void saveCachedCss(language.id, volume.id, css);
+        }
+      } catch {}
+    }
+    void loadCss();
+    return () => { cancelled = true; };
+  }, [assetBaseUrl, language.id, volume.id]);
 
   useEffect(() => {
     if (!manifest) return;

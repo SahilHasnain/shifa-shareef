@@ -3,10 +3,12 @@ import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { AppThemeProvider, useAppTheme } from "../hooks/useAppTheme";
+import { useAutoDownload } from "../hooks/useAutoDownload";
 import { useMultiVolumeMigration } from "../hooks/useMultiVolumeMigration";
 
 export default function RootLayout() {
   useMultiVolumeMigration();
+  useAutoDownload();
 
   return (
     <AppThemeProvider>
