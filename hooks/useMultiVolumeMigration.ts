@@ -43,14 +43,6 @@ export function useMultiVolumeMigration() {
           );
         }
 
-        const oldPlan = await AsyncStorage.getItem("shifa-shareef:active-plan");
-        if (oldPlan) {
-          await AsyncStorage.setItem(
-            `shifa-shareef:active-plan-${DEFAULT_VOLUME_ID}`,
-            oldPlan,
-          );
-        }
-
         await AsyncStorage.setItem(
           `shifa-shareef:current-volume-id-${DEFAULT_LANGUAGE_ID}`,
           DEFAULT_VOLUME_ID,
@@ -93,15 +85,6 @@ export function useMultiVolumeMigration() {
             await AsyncStorage.setItem(
               `shifa-shareef:bookmarks-${DEFAULT_LANGUAGE_ID}-${volumeId}`,
               JSON.stringify(migratedBookmarks),
-            );
-          }
-
-          const planKey = `shifa-shareef:active-plan-${volumeId}`;
-          const plan = await AsyncStorage.getItem(planKey);
-          if (plan) {
-            await AsyncStorage.setItem(
-              `shifa-shareef:active-plan-${DEFAULT_LANGUAGE_ID}-${volumeId}`,
-              plan,
             );
           }
 

@@ -15,14 +15,8 @@ import type { Language, Volume } from "../../data/types";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useBookmarks } from "../../hooks/useBookmarks";
 import { READER_THEME_COLORS, useReaderTheme } from "../../hooks/useReaderTheme";
-import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useReadingSessions } from "../../hooks/useReadingSessions";
 import { getBookmarkDisplayLabel } from "../../lib/bookmark-resolver";
-import {
-  getCurrentPlanDay,
-  getPlanItemForDay,
-  isPlanDayComplete,
-} from "../../lib/plan-resolver";
 import { getCurrentSection } from "../../lib/section-resolver";
 import { SessionCompletionModal } from "../SessionCompletionModal";
 
@@ -414,7 +408,6 @@ export function EpubReader({
     bookmarks,
     getBookmarkForLocation,
   } = useBookmarks(volume.id, language.id);
-  const { activePlan, completePlanDay } = useReadingPlan(volume.id, language.id);
   const { addSession, getCurrentStreak } = useReadingSessions();
 
   const sessionStartTime = useRef(Date.now());
@@ -638,21 +631,6 @@ export function EpubReader({
         durationMinutes,
       });
 
-      if (activePlan) {
-        const currentDay = getCurrentPlanDay(volume, activePlan, {
-          progressPercent: sessionMaxProgress.current,
-        });
-        const planItem = getPlanItemForDay(activePlan, currentDay);
-        if (
-          planItem &&
-          isPlanDayComplete(volume, planItem, {
-            progressPercent: sessionMaxProgress.current,
-          })
-        ) {
-          await completePlanDay(currentDay);
-        }
-      }
-
       if (shouldShowModal) {
         const newStreak = getCurrentStreak();
         const sectionsCompleted = volume.sections.filter((section) => {
@@ -678,9 +656,7 @@ export function EpubReader({
 
     return false;
   }, [
-    activePlan,
     addSession,
-    completePlanDay,
     getCurrentStreak,
     language.id,
     volume,

@@ -3,3 +3,5 @@ assets/pdf/
 
 # Page images - loaded remotely from CDN (bundled pages are fallback only)
 assets/pages/
+android/
+ios/

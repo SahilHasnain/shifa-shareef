@@ -28,19 +28,112 @@ import {
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
-import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useVolumeProgress } from "../../hooks/useVolumeProgress";
-import {
-  getCurrentPlanDay,
-  getPlanDayProgress,
-  getPlanItemForDay,
-  getPlanItemNavigationTarget,
-} from "../../lib/plan-resolver";
 import {
   buildReaderHref,
   getCurrentSection,
   getResumeNavigationTarget,
 } from "../../lib/section-resolver";
+
+function hexToRgb(hex: string): [number, number, number] {
+  const normalized = hex.replace("#", "");
+  const value =
+    normalized.length === 3
+      ? normalized
+          .split("")
+          .map((part) => part + part)
+          .join("")
+      : normalized;
+  const number = parseInt(value, 16);
+  return [(number >> 16) & 255, (number >> 8) & 255, number & 255];
+}
+
+function rgbToHex([r, g, b]: [number, number, number]) {
+  const clamp = (part: number) =>
+    Math.max(0, Math.min(255, Math.round(part)))
+      .toString(16)
+      .padStart(2, "0");
+  return `#${clamp(r)}${clamp(g)}${clamp(b)}`;
+}
+
+function interpolateColor(from: string, to: string, amount: number) {
+  const fromRgb = hexToRgb(from);
+  const toRgb = hexToRgb(to);
+  return rgbToHex([
+    fromRgb[0] + (toRgb[0] - fromRgb[0]) * amount,
+    fromRgb[1] + (toRgb[1] - fromRgb[1]) * amount,
+    fromRgb[2] + (toRgb[2] - fromRgb[2]) * amount,
+  ]);
+}
+
+function OpenBookFab({
+  size,
+  colors,
+  href,
+}: {
+  size: number;
+  colors: ReturnType<typeof useAppTheme>["colors"];
+  href: string;
+}) {
+  const steps = 10;
+  const fabRouter = useRouter();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Open book"
+      onPress={() => fabRouter.push(href as any)}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.28,
+        shadowRadius: 10,
+        elevation: 8,
+      }}
+    >
+      <View
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          overflow: "hidden",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {Array.from({ length: steps }).map((_, index) => (
+          <View
+            key={index}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: size / steps,
+              transform: [{ translateY: (size / steps) * index }],
+              backgroundColor: interpolateColor(colors.secondary.mutedGold, colors.secondary.warmGold, index / (steps - 1)),
+            }}
+          />
+        ))}
+        <View
+          style={{
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor: "rgba(255,255,255,0.12)",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Ionicons name="book" size={Math.round(size * 0.44)} color="#1B1206" />
+        </View>
+      </View>
+    </Pressable>
+  );
+}
 
 function ContinueReadingContent({
   languageId,
@@ -109,20 +202,10 @@ export default function HomeScreen() {
   const { currentVolumeId, switchVolume } = useCurrentVolume(currentLanguageId);
   const currentVolume = getVolumeByLanguageAndId(currentLanguageId, currentVolumeId);
   const { progress } = useVolumeProgress(currentVolumeId, currentLanguageId);
-  const { activePlan } = useReadingPlan(currentVolumeId, currentLanguageId);
 
   const [displayVolumeId, setDisplayVolumeId] = useState(currentVolumeId);
   const [langMenuVisible, setLangMenuVisible] = useState(false);
 
-  const currentPlanDay = activePlan
-    ? getCurrentPlanDay(currentVolume, activePlan, progress)
-    : 1;
-  const currentPlanProgress = activePlan
-    ? getPlanDayProgress(currentVolume, activePlan, progress)
-    : 0;
-  const todayPlanItem = activePlan
-    ? getPlanItemForDay(activePlan, currentPlanDay)
-    : undefined;
   const showVolumeControls = shouldShowVolumeLabel(currentLanguageId);
   const currentVolumeIndex = useMemo(
     () =>
@@ -493,252 +576,6 @@ export default function HomeScreen() {
           </Animated.View>
         </View>
 
-        {activePlan ? (
-          <View
-            style={{
-              backgroundColor: primaryCardBackground,
-              borderRadius: 24,
-              borderWidth: isDark ? 1 : 0,
-              borderColor: darkCardBorder,
-              padding: 20,
-              gap: 16,
-              ...shadows.md,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 12,
-              }}
-            >
-              <View
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 26,
-                  backgroundColor: isDark
-                    ? "rgba(241, 224, 164, 0.14)"
-                    : colors.surface.softBeige,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Ionicons
-                  name="calendar"
-                  size={26}
-                  color={colors.secondary.mutedGold}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    color: colors.secondary.mutedGold,
-                    fontSize: typography.size.xs,
-                    fontWeight: typography.weight.bold,
-                    letterSpacing: 0.5,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Active Plan
-                </Text>
-                <Text
-                  style={{
-                    color: colors.text.primary,
-                    fontSize: typography.size.xl,
-                    fontWeight: typography.weight.extrabold,
-                    marginTop: 2,
-                  }}
-                >
-                  {activePlan.title}
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => router.push("/plans/" as any)}
-                style={({ pressed }) => ({
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: darkGoldWash,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  opacity: pressed ? 0.7 : 1,
-                })}
-              >
-                <Ionicons
-                  name="chevron-forward"
-                  size={20}
-                  color={colors.secondary.mutedGold}
-                />
-              </Pressable>
-            </View>
-
-            <View
-              style={{
-                backgroundColor: isDark
-                  ? "rgba(241, 224, 164, 0.08)"
-                  : "rgba(201, 169, 97, 0.10)",
-                borderRadius: 16,
-                padding: 16,
-                gap: 12,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    color: colors.text.primary,
-                    fontSize: typography.size["3xl"],
-                    fontWeight: typography.weight.extrabold,
-                  }}
-                >
-                  Day {currentPlanDay}
-                </Text>
-                <View style={{ alignItems: "flex-end" }}>
-                  <Text
-                    style={{
-                      color: colors.secondary.mutedGold,
-                      fontSize: typography.size["2xl"],
-                      fontWeight: typography.weight.extrabold,
-                    }}
-                  >
-                    {currentPlanProgress}%
-                  </Text>
-                  <Text
-                    style={{
-                      color: colors.text.muted,
-                      fontSize: typography.size.sm,
-                      marginTop: 2,
-                    }}
-                  >
-                    of {activePlan.totalDays} days
-                  </Text>
-                </View>
-              </View>
-              <View
-                style={{
-                  height: 10,
-                  backgroundColor: isDark
-                    ? "rgba(201, 169, 97, 0.12)"
-                    : "rgba(201, 169, 97, 0.18)",
-                  borderRadius: 5,
-                  overflow: "hidden",
-                }}
-              >
-                <View
-                  style={{
-                    height: "100%",
-                    width: `${currentPlanProgress}%`,
-                    backgroundColor: colors.secondary.mutedGold,
-                    borderRadius: 5,
-                  }}
-                />
-              </View>
-            </View>
-
-            {todayPlanItem ? (
-              <Pressable
-                onPress={() =>
-                  router.push(
-                    buildReaderHref(
-                      currentLanguageId,
-                      currentVolumeId,
-                      getPlanItemNavigationTarget(currentVolume, todayPlanItem),
-                    ) as any,
-                  )
-                }
-                style={({ pressed }) => ({
-                  borderRadius: 999,
-                  backgroundColor: isDark
-                    ? colors.surface.softBeige
-                    : colors.secondary.lightGold,
-                  paddingHorizontal: 20,
-                  paddingVertical: 14,
-                  alignItems: "center",
-                  opacity: pressed ? 0.85 : 1,
-                })}
-              >
-                <Text
-                  style={{
-                    color: isDark
-                      ? colors.secondary.lightGold
-                      : colors.primary.deepGreen,
-                    fontSize: typography.size.base,
-                    fontWeight: typography.weight.extrabold,
-                  }}
-                >
-                  Continue: {todayPlanItem.label}
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
-        ) : (
-          <Pressable
-            onPress={() => router.push("/plans/" as any)}
-            style={({ pressed }) => ({
-              backgroundColor: quietCardBackground,
-              borderRadius: 16,
-              borderWidth: isDark ? 1 : 0,
-              borderColor: quietCardBorder,
-              paddingHorizontal: 16,
-              paddingVertical: 14,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 12,
-              opacity: pressed ? 0.85 : 1,
-              ...(isDark ? {} : shadows.sm),
-            })}
-          >
-            <View
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                backgroundColor: isDark
-                  ? "rgba(241, 224, 164, 0.10)"
-                  : "rgba(201, 169, 97, 0.14)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Ionicons
-                name="calendar-outline"
-                size={18}
-                color={colors.secondary.mutedGold}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  color: colors.text.primary,
-                  fontSize: typography.size.base,
-                  fontWeight: typography.weight.bold,
-                }}
-              >
-                Want structure? Try a reading plan
-              </Text>
-              <Text
-                style={{
-                  color: colors.text.tertiary,
-                  fontSize: typography.size.sm,
-                  marginTop: 2,
-                }}
-              >
-                1-week, 3-week, and flexible plans
-              </Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={colors.text.tertiary}
-            />
-          </Pressable>
-        )}
 
         <View
           style={{
@@ -810,10 +647,10 @@ export default function HomeScreen() {
               }}
             >
               {currentLanguageId === "english"
-                ? 'For more than eight centuries, Ash-Shifa has been regarded as the most renowned and authoritative book on the status, rank, and rights of the Noble Prophet Sayyiduna Muhammad Mustafa ﷺ. This magnificent work was authored by the eminent Maliki scholar and jurist Qadi Iyad (رحمۃ اللہ تعالیٰ علیہ) (544 AH / 1149 CE). It is not merely a book; rather, it is a great legacy filled with love for the Prophet ﷺ, teaching every Muslim what beliefs they should hold about him, how they should love him, and with what reverence and respect they should mention him.'
+                ? 'Ash-Shifa, written by Qadi Iyad رحمۃ اللہ تعالیٰ علیہ, is a timeless work on the status, rights, and love of the Noble Prophet ﷺ.'
                 : currentLanguageId === "roman-urdu"
-                  ? 'Aath sadiyon se bhi zyada arsay se "Ash-Shifa" Huzoor Nabi-e-Kareem Sayyiduna Muhammad Mustafa ﷺ ki shaan, martabay aur huqooq par likhi gayi sab se mashhoor aur mu\'tabar kitab mani jati hai. Is azeem kitab ko buzurg Maliki alim aur faqeeh Qazi Iyaz رحمۃ اللہ تعالیٰ علیہ (544 Hijri / 1149 Iswi) ne tasneef farmaya. Yeh sirf ek kitab nahin, balkeh Huzoor ﷺ ki muhabbat se bharpur ek azeem virsa hai jo har Musalman ko yeh sikhata hai ke Aap ﷺ ke bare mein kya aqeedah rakhna chahiye, kis tarah muhabbat karni chahiye aur kis adab ke sath Aap ﷺ ka zikr karna chahiye.'
-                  : 'آٹھ صدیوں سے بھی زیادہ عرصے سے "الشفا" حضور نبیِ کریم سیدنا محمد مصطفیٰ ﷺ کی شان، مرتبے اور حقوق پر لکھی گئی سب سے مشہور اور معتبر کتاب مانی جاتی ہے۔ اس عظیم کتاب کو بزرگ مالکی عالم اور فقیہ قاضی عیاض رحمۃ اللہ تعالیٰ علیہ (544 ہجری / 1149 عیسوی) نے تصنیف فرمایا۔ یہ صرف ایک کتاب نہیں، بلکہ حضور ﷺ کی محبت سے بھرپور ایک عظیم ورثہ ہے جو ہر مسلمان کو یہ سکھاتا ہے کہ آپ ﷺ کے بارے میں کیا عقیدہ رکھنا چاہیے، کس طرح محبت کرنی چاہیے اور کس ادب کے ساتھ آپ ﷺ کا ذکر کرنا چاہیے۔'}
+                  ? 'Ash-Shifa Qazi Iyaz رحمۃ اللہ تعالیٰ علیہ ki azeem tasneef hai jo Huzoor ﷺ ki shaan, huqooq aur muhabbat ko samjhati hai.'
+                  : 'الشفا قاضی عیاض رحمۃ اللہ تعالیٰ علیہ کی عظیم تصنیف ہے، جو حضور ﷺ کی شان، حقوق اور محبت کو سمجھاتی ہے۔'}
             </Text>
             <Text
               style={{
@@ -823,14 +660,39 @@ export default function HomeScreen() {
               }}
             >
               {currentLanguageId === "english"
-                ? 'This blessed work is divided into four sections. The first section presents the exalted status of the Prophet ﷺ, the miracles granted to him by Allah Almighty, and his virtues, all in the light of the Holy Qur\'an and the Prophetic traditions. The second section explains the obligations of the Muslim community towards the Prophet ﷺ, namely to have complete faith in him, to love him above all else, to honor and revere him, and to frequently send blessings and salutations upon him. The third section discusses, in a clear and accessible manner, important matters relating to the infallibility of the Prophets and the human aspects of the Prophet\'s ﷺ life. The final section addresses the seriousness of showing disrespect towards the Prophet ﷺ, the relevant Islamic rulings, and the boundaries of reverence and proper conduct.'
+                ? 'Across four sections, it explores the Prophet\'s ﷺ virtues, miracles, rights, character, and the adab of mentioning him.'
                 : currentLanguageId === "roman-urdu"
-                  ? 'Yeh mubarak kitab chaar hisson mein taqseem ki gayi hai. Pehle hisse mein Qur\'an-e-Kareem aur Ahadees ki roshni mein Huzoor ﷺ ki buland shaan, Allah Ta\'ala ki taraf se ata kiye gaye mojizaat aur Aap ﷺ ki fazilat bayan ki gayi hai. Dusre hisse mein Ummat ke farz bataye gaye hain, yani Huzoor ﷺ par kamil imaan lana, sab se zyada Aap ﷺ se muhabbat karna, Aap ﷺ ki ta\'zeem aur adab karna, aur kasrat se durood-o-salaam pesh karna. Teesre hisse mein Anbiya-e-Kiram ki masoomiyat aur Huzoor ﷺ ki insani zindagi se mutaalliq aham baatein aasaan andaaz mein samjhayi gayi hain. Aakhri hissa Huzoor ﷺ ki bargah mein be-adabi ki sangini, us ke shar\'i ahkaam aur ta\'zeem-o-adab ki hudood ko wazeh karta hai.'
-                  : 'یہ مبارک کتاب چار حصوں میں تقسیم کی گئی ہے۔ پہلے حصے میں قرآنِ کریم اور احادیثِ مبارکہ کی روشنی میں حضور ﷺ کی بلند شان، اللہ تعالیٰ کی طرف سے عطا کیے گئے معجزات اور آپ ﷺ کی فضیلت بیان کی گئی ہے۔ دوسرے حصے میں امت کے فرائض بیان کیے گئے ہیں، یعنی حضور ﷺ پر کامل ایمان لانا، سب سے بڑھ کر آپ ﷺ سے محبت کرنا، آپ ﷺ کی تعظیم اور ادب بجا لانا، اور کثرت سے درود و سلام پیش کرنا۔ تیسرے حصے میں انبیائے کرام علیہم السلام کی عصمت اور حضور ﷺ کی بشری زندگی سے متعلق اہم باتوں کو آسان انداز میں بیان کیا گیا ہے۔ آخری حصے میں حضور ﷺ کی بارگاہ میں بے ادبی کی سنگینی، اس کے شرعی احکام اور تعظیم و ادب کی حدود کو واضح کیا گیا ہے۔'}
+                  ? 'Chaar hisson mein Huzoor ﷺ ki fazilat, mojizaat, huqooq, seerat aur zikr ke adab bayan kiye gaye hain.'
+                  : 'چار حصوں میں حضور ﷺ کی فضیلت، معجزات، حقوق، سیرت اور ذکر کے آداب بیان کیے گئے ہیں۔'}
             </Text>
           </View>
         </View>
       </ScrollView>
+
+      {!isAnimatingRef.current ? (
+        <View
+          pointerEvents="box-none"
+          style={{
+            position: "absolute",
+            right: 16,
+            bottom: insets.bottom - 30,
+            zIndex: 50,
+          }}
+        >
+          <OpenBookFab
+            size={56}
+            colors={colors}
+            href={buildReaderHref(
+              currentLanguageId,
+              displayVolumeId,
+              getResumeNavigationTarget(
+                currentDisplayVolume,
+                currentDisplayProgress,
+              ),
+            )}
+          />
+        </View>
+      ) : null}
     </View>
   );
 }

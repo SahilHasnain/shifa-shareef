@@ -46,10 +46,6 @@ function ThemedRootLayout() {
           name="reader/[page]"
           options={{ animation: "slide_from_right" }}
         />
-        <Stack.Screen
-          name="plans/index"
-          options={{ animation: "slide_from_bottom" }}
-        />
       </Stack>
     </GestureHandlerRootView>
   );

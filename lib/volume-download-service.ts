@@ -12,6 +12,7 @@ import {
   hasCachedChapter,
   saveCachedChapter,
   saveCachedCss,
+  saveCachedImage,
 } from "./reader-content-cache";
 
 const DOWNLOADS_META_KEY = "shifa-shareef:volume-downloads";
@@ -264,6 +265,21 @@ export async function downloadVolume(
         const response = await fetchWithTimeout(url);
         const content = extractReadableContent(await response.text());
         await saveCachedChapter(languageId, volumeId, href, content);
+
+        const imageUrls = Array.from(
+          content.matchAll(/<img\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi),
+          (match) => {
+            const src = match[1];
+            if (/^https?:\/\//i.test(src)) return src;
+            if (/^data:/i.test(src)) return null;
+            return `${getChapterAssetBaseUrl(languageId, volumeId)}/${src.replace(/^\.\//, "")}`;
+          },
+        ).filter((imageUrl): imageUrl is string => Boolean(imageUrl));
+
+        for (const imageUrl of imageUrls) {
+          if (isCancelled()) throw new DownloadCancelledError();
+          await saveCachedImage(languageId, volumeId, imageUrl).catch(() => {});
+        }
       } catch {
         if (isCancelled()) throw new DownloadCancelledError();
       }

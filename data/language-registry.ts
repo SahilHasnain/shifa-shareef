@@ -1,24 +1,20 @@
-import { VOLUME1_PLANS } from "./languages/urdu/volume1/plans";
 import {
   VOLUME1_SECTIONS,
   VOLUME1_TOTAL_PAGES,
 } from "./languages/urdu/volume1/sections";
-import { VOLUME2_PLANS } from "./languages/urdu/volume2/plans";
 import {
   VOLUME2_SECTIONS,
   VOLUME2_TOTAL_PAGES,
 } from "./languages/urdu/volume2/sections";
-import { ROMAN_URDU_VOLUME1_PLANS } from "./languages/roman-urdu/volume1/plans";
 import {
   ROMAN_URDU_VOLUME1_SECTIONS,
   ROMAN_URDU_VOLUME1_TOTAL_PAGES,
 } from "./languages/roman-urdu/volume1/sections";
-import { ENGLISH_VOLUME1_PLANS } from "./languages/english/volume1/plans";
 import {
   ENGLISH_VOLUME1_SECTIONS,
   ENGLISH_VOLUME1_TOTAL_PAGES,
 } from "./languages/english/volume1/sections";
-import type { Language, ReadingPlan, Section, Volume } from "./types";
+import type { Language, Section, Volume } from "./types";
 
 export const DEFAULT_LANGUAGE_ID = "english";
 export const DEFAULT_LANGUAGE_TITLE = "English";
@@ -36,50 +32,23 @@ function withSectionProgress(sections: Section[], totalPages: number): Section[]
   }));
 }
 
-function withPlanProgress(plans: ReadingPlan[], totalPages: number): ReadingPlan[] {
-  return plans.map((plan) => ({
-    ...plan,
-    items: plan.items.map((item) => ({
-      ...item,
-      startProgressPercent:
-        item.startProgressPercent ?? (item.startPage - 1) / totalPages,
-      endProgressPercent:
-        item.endProgressPercent ?? item.endPage / totalPages,
-    })),
-  }));
-}
-
 function buildVolume(
   id: string,
   title: string,
   totalPages: number,
   sections: Section[],
-  plans: ReadingPlan[],
 ): Volume {
   return {
     id,
     title,
     totalPages,
     sections: withSectionProgress(sections, totalPages),
-    plans: withPlanProgress(plans, totalPages),
   };
 }
 
 const URDU_VOLUMES: Volume[] = [
-  buildVolume(
-    "volume1",
-    "Volume 1",
-    VOLUME1_TOTAL_PAGES,
-    VOLUME1_SECTIONS,
-    VOLUME1_PLANS,
-  ),
-  buildVolume(
-    "volume2",
-    "Volume 2",
-    VOLUME2_TOTAL_PAGES,
-    VOLUME2_SECTIONS,
-    VOLUME2_PLANS,
-  ),
+  buildVolume("volume1", "Volume 1", VOLUME1_TOTAL_PAGES, VOLUME1_SECTIONS),
+  buildVolume("volume2", "Volume 2", VOLUME2_TOTAL_PAGES, VOLUME2_SECTIONS),
 ];
 
 const ROMAN_URDU_VOLUMES: Volume[] = [
@@ -88,7 +57,6 @@ const ROMAN_URDU_VOLUMES: Volume[] = [
     "Roman Urdu",
     ROMAN_URDU_VOLUME1_TOTAL_PAGES,
     ROMAN_URDU_VOLUME1_SECTIONS,
-    ROMAN_URDU_VOLUME1_PLANS,
   ),
 ];
 
@@ -98,7 +66,6 @@ const ENGLISH_VOLUMES: Volume[] = [
     "English",
     ENGLISH_VOLUME1_TOTAL_PAGES,
     ENGLISH_VOLUME1_SECTIONS,
-    ENGLISH_VOLUME1_PLANS,
   ),
 ];
 

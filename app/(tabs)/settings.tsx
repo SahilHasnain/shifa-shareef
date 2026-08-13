@@ -5,9 +5,9 @@ import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { shadows, typography } from "../../constants/theme";
-import { LANGUAGES } from "../../data/languages";
 import type { AppThemePreference, Language, Volume } from "../../data/types";
 import { useAppTheme } from "../../hooks/useAppTheme";
+import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import {
   cancelVolumeDownload,
   downloadVolume,
@@ -80,22 +80,22 @@ function DownloadsSection() {
   const rowBackground = isDark ? "rgba(26, 37, 32, 0.58)" : colors.surface.softBeige;
   const rowBorderColor = isDark ? "rgba(255, 255, 255, 0.05)" : "transparent";
 
+  const { currentLanguage } = useCurrentLanguage();
+
   const [states, setStates] = useState<Record<string, VolumeDownloadState>>({});
   const [inflight, setInflight] = useState<Record<string, boolean>>({});
   const [progress, setProgress] = useState<Record<string, number>>({});
 
   const refreshStates = useCallback(async () => {
     const next: Record<string, VolumeDownloadState> = {};
-    for (const language of LANGUAGES) {
-      for (const volume of language.volumes) {
-        next[downloadsKey(language.id, volume.id)] = await getVolumeDownloadState(
-          language.id,
-          volume.id,
-        );
-      }
+    for (const volume of currentLanguage.volumes) {
+      next[downloadsKey(currentLanguage.id, volume.id)] = await getVolumeDownloadState(
+        currentLanguage.id,
+        volume.id,
+      );
     }
     setStates(next);
-  }, []);
+  }, [currentLanguage]);
 
   useEffect(() => {
     void refreshStates();
@@ -159,10 +159,12 @@ function DownloadsSection() {
   };
 
   const rows: { language: Language; volume: Volume; key: string }[] = [];
-  for (const language of LANGUAGES) {
-    for (const volume of language.volumes) {
-      rows.push({ language, volume, key: downloadsKey(language.id, volume.id) });
-    }
+  for (const volume of currentLanguage.volumes) {
+    rows.push({
+      language: currentLanguage,
+      volume,
+      key: downloadsKey(currentLanguage.id, volume.id),
+    });
   }
 
   return (
@@ -199,7 +201,7 @@ function DownloadsSection() {
           Book Downloads
         </Text>
         <Text style={{ color: colors.text.tertiary, fontSize: typography.size.sm, marginTop: 2 }}>
-          Download a language to read it fully offline.
+          Download the {currentLanguage.title} content to read it fully offline.
         </Text>
       </View>
 

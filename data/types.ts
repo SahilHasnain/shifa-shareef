@@ -22,26 +22,6 @@ export type ReadingProgress = {
   currentSectionTitle?: string;
 };
 
-export type ReadingPlanItem = {
-  day: number;
-  label: string;
-  startPage: number;
-  endPage: number;
-  estimatedMinutes: number;
-  /** Cached percentage range for plan status and navigation */
-  startProgressPercent?: number;
-  endProgressPercent?: number;
-};
-
-export type ReadingPlan = {
-  id: string;
-  title: string;
-  description: string;
-  totalDays: number;
-  pagesPerDay: number;
-  items: ReadingPlanItem[];
-};
-
 export type Bookmark = {
   id: string;
   languageId: string;
@@ -71,7 +51,6 @@ export type Volume = {
   subtitle?: string;
   totalPages: number;
   sections: Section[];
-  plans: ReadingPlan[];
 };
 
 export type Language = {
@@ -88,7 +67,6 @@ export type VolumeProgress = {
   progressPercent?: number;
   completedPages: number[];
   bookmarks: Bookmark[];
-  activePlanId?: string;
 };
 
 export type AppThemePreference = "system" | "light" | "dark";

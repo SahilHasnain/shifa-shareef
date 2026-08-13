@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Animated, BackHandler, Modal, Pressable, ScrollView, StatusBar, Text, View } from "react-native";
+import { ActivityIndicator, Animated, BackHandler, Modal, PanResponder, Pressable, ScrollView, StatusBar, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SystemUI from "expo-system-ui";
 import { WebView } from "react-native-webview";
@@ -13,11 +13,9 @@ import { typography } from "../../constants/theme";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { READER_THEME_COLORS, useReaderTheme } from "../../hooks/useReaderTheme";
 import { useBookmarks } from "../../hooks/useBookmarks";
-import { useReadingPlan } from "../../hooks/useReadingPlan";
 import { useReadingSessions } from "../../hooks/useReadingSessions";
-import { getCurrentPlanDay, getPlanItemForDay, isPlanDayComplete } from "../../lib/plan-resolver";
 import { getCurrentSection } from "../../lib/section-resolver";
-import { getCachedChapter, saveCachedChapter, getCachedCss, saveCachedCss } from "../../lib/reader-content-cache";
+import { getCachedChapter, saveCachedChapter, getCachedCss, saveCachedCss, saveCachedImage, rewriteImageTags } from "../../lib/reader-content-cache";
 
 type ChapterManifest = {
   title?: string;
@@ -129,7 +127,7 @@ function getInitialChapterIndex(
   return 0;
 }
 
-function buildChapterHtml(chapters: LoadedChapter[], initialTheme: (typeof READER_THEME_COLORS)[keyof typeof READER_THEME_COLORS], fontSize: number, inlinedCss?: string): string {
+function buildChapterHtml(chapters: LoadedChapter[], baseUrl: string, initialTheme: (typeof READER_THEME_COLORS)[keyof typeof READER_THEME_COLORS], fontSize: number, inlinedCss?: string): string {
   const chapterSections = chapters
     .map((chapter) => {
       let html = chapter.html;
@@ -147,6 +145,7 @@ function buildChapterHtml(chapters: LoadedChapter[], initialTheme: (typeof READE
     '<html data-theme="' + themeName + '">',
     "<head>",
     '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">',
+    '<base href="' + baseUrl + '">',
     inlinedCss ? "<style>" + inlinedCss + "</style>" : "",
     "<style>",
     ":root { --reader-bg: " + initialTheme.background + "; --reader-text: " + initialTheme.text + "; --reader-font-size: " + fontSize + "px; }",
@@ -168,22 +167,32 @@ function buildChapterHtml(chapters: LoadedChapter[], initialTheme: (typeof READE
     '<main id="reader-root">' + chapterSections + "</main>",
     "<script>",
     "var lastSentAt = 0;",
+    "var lastRequestAt = 0;",
     "var restored = false;",
     "var requestedNextAfter = null;",
     "var requestedPreviousBefore = null;",
     "function getSections() { return Array.prototype.slice.call(document.querySelectorAll('.reader-chapter')); }",
     "function getActiveSection() { var sections = getSections(); if (sections.length === 0) return null; var probeY = window.scrollY + Math.max(80, window.innerHeight * 0.28); var active = sections[0]; for (var i = 0; i < sections.length; i++) { var section = sections[i]; if (section.offsetTop <= probeY) active = section; } return active; }",
     "function getChapterProgress(section) { if (!section) return 0; var sectionTop = section.offsetTop; var maxScroll = Math.max(1, section.offsetHeight - window.innerHeight); return Math.min(1, Math.max(0, (window.scrollY - sectionTop) / maxScroll)); }",
-    "function maybeRequestNext() { var sections = getSections(); var last = sections[sections.length - 1]; if (!last) return; var afterIndex = Number(last.getAttribute('data-chapter-index')); var distanceFromBottom = last.offsetTop + last.offsetHeight - (window.scrollY + window.innerHeight); if (distanceFromBottom < 900 && requestedNextAfter !== afterIndex) { requestedNextAfter = afterIndex; window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'NEED_NEXT', afterIndex: afterIndex })); } }",
-    "function maybeRequestPrevious() { var sections = getSections(); var first = sections[0]; if (!first) return; var beforeIndex = Number(first.getAttribute('data-chapter-index')); if (window.scrollY - first.offsetTop < 700 && requestedPreviousBefore !== beforeIndex) { requestedPreviousBefore = beforeIndex; window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'NEED_PREVIOUS', beforeIndex: beforeIndex })); } }",
+    "function canRequest() { var now = Date.now(); if (now - lastRequestAt < 800) return false; lastRequestAt = now; return true; }",
+    "function maybeRequestNext() { var sections = getSections(); var last = sections[sections.length - 1]; if (!last) return; var afterIndex = Number(last.getAttribute('data-chapter-index')); var distanceFromBottom = last.offsetTop + last.offsetHeight - (window.scrollY + window.innerHeight); if (distanceFromBottom < 900 && requestedNextAfter !== afterIndex && canRequest()) { requestedNextAfter = afterIndex; window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'NEED_NEXT', afterIndex: afterIndex })); } }",
+    "function maybeRequestPrevious() { var sections = getSections(); var first = sections[0]; if (!first) return; var beforeIndex = Number(first.getAttribute('data-chapter-index')); if (window.scrollY - first.offsetTop < 700 && requestedPreviousBefore !== beforeIndex && canRequest()) { requestedPreviousBefore = beforeIndex; window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'NEED_PREVIOUS', beforeIndex: beforeIndex })); } }",
     "function sendProgress(force) { var now = Date.now(); if (!force && now - lastSentAt < 500) return; lastSentAt = now; var active = getActiveSection(); var chapterIndex = active ? Number(active.getAttribute('data-chapter-index')) : 0; window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'PROGRESS', chapterIndex: chapterIndex, chapterProgress: getChapterProgress(active) })); maybeRequestNext(); maybeRequestPrevious(); }",
     "function restoreProgress(chapterIndex, progress) { if (restored) return; restored = true; requestAnimationFrame(function() { var section = document.querySelector('.reader-chapter[data-chapter-index=\"' + chapterIndex + '\"]') || getActiveSection(); var maxScroll = section ? Math.max(0, section.offsetHeight - window.innerHeight) : 0; var sectionTop = section ? section.offsetTop : 0; window.scrollTo(0, sectionTop + maxScroll * Math.min(1, Math.max(0, progress || 0))); setTimeout(function() { sendProgress(true); window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'READY' })); }, 80); }); }",
     "window.__setTheme = function(bg, textColor, themeName) { var root = document.documentElement; root.style.setProperty('--reader-bg', bg); root.style.setProperty('--reader-text', textColor); root.setAttribute('data-theme', themeName || 'light'); };",
     "window.__setFontSize = function(px) { document.documentElement.style.setProperty('--reader-font-size', px + 'px'); };",
     "document.addEventListener('message', function(event) { try { var message = JSON.parse(event.data); if (message.type === 'RESTORE') restoreProgress(message.chapterIndex, message.chapterProgress); } catch (err) {} });",
     "window.addEventListener('message', function(event) { try { var message = JSON.parse(event.data); if (message.type === 'RESTORE') restoreProgress(message.chapterIndex, message.chapterProgress); } catch (err) {} });",
-    "window.__appendChapter = function(html, index) { var e = document.createElement('section'); e.className = 'reader-chapter'; e.setAttribute('data-chapter-index', index); e.innerHTML = html; document.getElementById('reader-root').appendChild(e); };",
-    "window.__prependChapter = function(html, index) { var e = document.createElement('section'); e.className = 'reader-chapter'; e.setAttribute('data-chapter-index', index); e.innerHTML = html; var r = document.getElementById('reader-root'); r.insertBefore(e, r.firstChild); };",
+    "window.__appendChapter = function(index, html) { if (document.querySelector('.reader-chapter[data-chapter-index=\"' + index + '\"]')) return; var e = document.createElement('section'); e.className = 'reader-chapter'; e.setAttribute('data-chapter-index', String(index)); e.innerHTML = html; document.getElementById('reader-root').appendChild(e); requestedNextAfter = null; refreshScroll(); setTimeout(function() { sendProgress(true); }, 80); };",
+    "window.__prependChapter = function(index, html) { if (document.querySelector('.reader-chapter[data-chapter-index=\"' + index + '\"]')) return; var root = document.getElementById('reader-root'); var previousHeight = document.documentElement.scrollHeight; var previousScroll = window.scrollY; var e = document.createElement('section'); e.className = 'reader-chapter'; e.setAttribute('data-chapter-index', String(index)); e.innerHTML = html; root.insertBefore(e, root.firstChild); requestedPreviousBefore = null; refreshScroll(); requestAnimationFrame(function() { var heightDelta = document.documentElement.scrollHeight - previousHeight; window.scrollTo(0, previousScroll + heightDelta); setTimeout(function() { sendProgress(true); }, 80); }); };",
+    "function refreshScroll() { var height = document.documentElement.scrollHeight; document.body.style.minHeight = (height + 1) + 'px'; requestAnimationFrame(function() { document.body.style.minHeight = ''; }); }",
+    "var stuckSentAt = 0;",
+    "function sendStuckHint() { var now = Date.now(); if (now - stuckSentAt < 5000) return; stuckSentAt = now; window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'STUCK' })); }",
+    "function checkStuck() { var atBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 4; if (atBottom && requestedNextAfter !== null) { sendStuckHint(); } }",
+    "window.addEventListener('scroll', function() { sendProgress(false); checkStuck(); }, { passive: true });",
+    "window.addEventListener('load', function() { restoreProgress(" + (chapters[0]?.index ?? 0) + ", 0); });",
+    "setTimeout(function() { restoreProgress(" + (chapters[0]?.index ?? 0) + ", 0); }, 250);",
+    "document.body.addEventListener('click', function() { window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'TOGGLE_CONTROLS' })); });",
     "window.__initialTheme = '" + themeName + "'; __setTheme(__initialTheme);",
     "</script>",
     "</body>",
@@ -219,7 +228,8 @@ export function ChapterReader({
   const lastSavedLocatorRef = useRef<string | null>(null);
   const initialLocatorRef = useRef(initialLocator);
   const initialProgressPercentRef = useRef(initialProgressPercent);
-  const cachedCssRef = useRef<string | null>(null);
+  const [cachedCss, setCachedCss] = useState<string | null>(null);
+  const [cssReady, setCssReady] = useState(false);
 
   const [manifest, setManifest] = useState<ChapterManifest | null>(null);
   const [chapterIndex, setChapterIndex] = useState(0);
@@ -233,6 +243,9 @@ export function ChapterReader({
   const [fontSize, setFontSize] = useState(16);
   const [tocVisible, setTocVisible] = useState(false);
   const [bookmarksVisible, setBookmarksVisible] = useState(false);
+  const [scrubProgress, setScrubProgress] = useState<number | null>(null);
+  const sliderWidthRef = useRef(1);
+  const isScrubbingRef = useRef(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -254,14 +267,13 @@ export function ChapterReader({
   }) ?? volume.sections[0];
   const estimatedPage = Math.max(1, Math.round(currentProgress * volume.totalPages) || 1);
   const { isBookmarked, addBookmark, removeBookmark, bookmarks, getBookmarkForLocation } = useBookmarks(volume.id, language.id);
-  const { activePlan, completePlanDay } = useReadingPlan(volume.id, language.id);
-  const { addSession, getCurrentStreak } = useReadingSessions();
+  const { addSession } = useReadingSessions();
   const locationIsBookmarked = isBookmarked(estimatedPage, makeLocator(chapterIndex, chapterProgress), currentProgress);
 
   const readerHtml = useMemo(() => {
-    if (loadedChapters.length === 0) return null;
-    return buildChapterHtml(loadedChapters, themeColors, fontSize, cachedCssRef.current ?? undefined);
-  }, [loadedChapters]); // theme, fontSize excluded — applied via injectJavaScript to avoid WebView reload
+    if (loadedChapters.length === 0 || !cssReady) return null;
+    return buildChapterHtml(loadedChapters, `${assetBaseUrl}/`, themeColors, fontSize, cachedCss ?? undefined);
+  }, [assetBaseUrl, cachedCss, cssReady, loadedChapters]); // theme, fontSize excluded — applied via injectJavaScript to avoid WebView reload
   const webViewSource = useMemo(() => {
     return readerHtml ? { html: readerHtml } : undefined;
   }, [readerHtml]);
@@ -273,6 +285,22 @@ export function ChapterReader({
     const range = getChapterProgressRange(chapter, index, manifest.chapters.length);
     return Math.min(1, Math.max(0, range.start + (range.end - range.start) * progressWithinChapter));
   }, [manifest]);
+
+  const downloadImages = useCallback((html: string) => {
+    const urls = Array.from(
+      html.matchAll(/<img\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi),
+      (match) => {
+        const src = match[1];
+        if (/^https?:\/\//i.test(src)) return src;
+        if (/^data:/i.test(src)) return null;
+        return `${assetBaseUrl}/${src.replace(/^\.\//, "")}`;
+      },
+    ).filter((url): url is string => Boolean(url));
+
+    for (const url of urls) {
+      void saveCachedImage(language.id, volume.id, url).catch(() => {});
+    }
+  }, [assetBaseUrl, language.id, volume.id]);
 
   const getChapterHtml = useCallback(async (index: number) => {
     if (!manifest) return null;
@@ -287,17 +315,20 @@ export function ChapterReader({
 
     const onDisk = await getCachedChapter(language.id, volume.id, chapter.href);
     if (onDisk) {
-      chapterCacheRef.current.set(chapterUrl, onDisk);
-      return onDisk;
+      const rewritten = await rewriteImageTags(onDisk, language.id, volume.id, assetBaseUrl);
+      chapterCacheRef.current.set(chapterUrl, rewritten);
+      return rewritten;
     }
 
     const response = await fetch(chapterUrl);
     if (!response.ok) throw new Error(`Failed to load chapter ${index + 1}`);
     const html = extractReadableContent(await response.text());
-    chapterCacheRef.current.set(chapterUrl, html);
+    void downloadImages(html);
+    const rewritten = await rewriteImageTags(html, language.id, volume.id, assetBaseUrl);
+    chapterCacheRef.current.set(chapterUrl, rewritten);
     void saveCachedChapter(language.id, volume.id, chapter.href, html);
-    return html;
-  }, [assetBaseUrl, language.id, manifest, volume.id]);
+    return rewritten;
+  }, [assetBaseUrl, downloadImages, language.id, manifest, volume.id]);
 
   const prefetchChapter = useCallback(async (index: number) => {
     if (!manifest || index < 0 || index >= manifest.chapters.length) return;
@@ -315,11 +346,12 @@ export function ChapterReader({
       const response = await fetch(chapterUrl);
       if (response.ok) {
         const html = extractReadableContent(await response.text());
+        void downloadImages(html);
         chapterCacheRef.current.set(chapterUrl, html);
         void saveCachedChapter(language.id, volume.id, chapter.href, html);
       }
     } catch { }
-  }, [assetBaseUrl, language.id, manifest, volume.id]);
+  }, [assetBaseUrl, downloadImages, language.id, manifest, volume.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -371,20 +403,23 @@ export function ChapterReader({
   useEffect(() => {
     let cancelled = false;
     async function loadCss() {
-      const cached = await getCachedCss(language.id, volume.id);
-      if (cached) {
-        cachedCssRef.current = cached;
-        return;
-      }
       try {
+        const cached = await getCachedCss(language.id, volume.id);
+        if (cached) {
+          setCachedCss(cached);
+          return;
+        }
         const cssUrl = `${assetBaseUrl}/styles/book.css`;
         const res = await fetch(cssUrl);
         if (res.ok) {
           const css = await res.text();
-          cachedCssRef.current = css;
+          setCachedCss(css);
           void saveCachedCss(language.id, volume.id, css);
         }
       } catch {}
+      finally {
+        if (!cancelled) setCssReady(true);
+      }
     }
     void loadCss();
     return () => { cancelled = true; };
@@ -486,29 +521,17 @@ export function ChapterReader({
         durationMinutes,
       });
 
-      if (activePlan) {
-        const currentDay = getCurrentPlanDay(volume, activePlan, { progressPercent: sessionMaxProgress.current });
-        const planItem = getPlanItemForDay(activePlan, currentDay);
-        if (planItem && isPlanDayComplete(volume, planItem, { progressPercent: sessionMaxProgress.current })) {
-          await completePlanDay(currentDay);
-        }
-      }
-
       if (shouldShowModal) {
         const parts: string[] = [];
         if (pagesRead > 0) parts.push(`${pagesRead} pages`);
         parts.push(`${durationMinutes} min`);
-        if (activePlan) {
-          const currentDay = getCurrentPlanDay(volume, activePlan, { progressPercent: sessionMaxProgress.current });
-          if (currentDay > 0) parts.unshift(`Day ${currentDay} ·`);
-        }
         showToast(parts.join(" "));
         return true;
       }
     }
 
     return false;
-  }, [activePlan, addSession, completePlanDay, getCurrentStreak, language.id, volume]);
+  }, [addSession, language.id, volume]);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -545,6 +568,57 @@ export function ChapterReader({
     setTocVisible(false);
     setBookmarksVisible(false);
   }, [calculateGlobalProgress, manifest]);
+
+  const updateScrub = useCallback((locationX: number) => {
+    const fraction = Math.min(1, Math.max(0, locationX / sliderWidthRef.current));
+    setScrubProgress(fraction);
+  }, []);
+
+  const seekToProgress = useCallback((progress: number) => {
+    if (!manifest || manifest.chapters.length === 0) return;
+    const clamped = Math.min(1, Math.max(0, progress));
+
+    let chapterIndex = 0;
+    for (let i = 0; i < manifest.chapters.length; i += 1) {
+      const range = getChapterProgressRange(manifest.chapters[i], i, manifest.chapters.length);
+      if (clamped >= range.start && clamped <= range.end) {
+        chapterIndex = i;
+        break;
+      }
+      if (clamped < range.start) break;
+    }
+
+    const chapter = manifest.chapters[chapterIndex];
+    const range = getChapterProgressRange(chapter, chapterIndex, manifest.chapters.length);
+    const chapterProgress = range.end > range.start ? (clamped - range.start) / (range.end - range.start) : 0;
+    goToChapter(chapterIndex, Math.min(1, Math.max(0, chapterProgress)));
+  }, [goToChapter, manifest]);
+
+  const sliderPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (event) => {
+          isScrubbingRef.current = true;
+          updateScrub(event.nativeEvent.locationX);
+        },
+        onPanResponderMove: (event) => {
+          updateScrub(event.nativeEvent.locationX);
+        },
+        onPanResponderRelease: (event) => {
+          const fraction = Math.min(1, Math.max(0, event.nativeEvent.locationX / sliderWidthRef.current));
+          setScrubProgress(null);
+          isScrubbingRef.current = false;
+          seekToProgress(fraction);
+        },
+        onPanResponderTerminate: () => {
+          setScrubProgress(null);
+          isScrubbingRef.current = false;
+        },
+      }),
+    [seekToProgress, updateScrub],
+  );
 
   const toggleBookmark = async () => {
     const locator = makeLocator(chapterIndex, chapterProgress);
@@ -637,6 +711,8 @@ export function ChapterReader({
       } else if (message.type === "NEED_PREVIOUS") {
         const previousIndex = typeof message.beforeIndex === "number" ? message.beforeIndex - 1 : chapterIndex - 1;
         void appendPreviousChapter(previousIndex);
+      } else if (message.type === "STUCK") {
+        showToast("Loading next chapter... pull up a little and scroll down");
       }
     } catch { }
   };
@@ -679,8 +755,8 @@ export function ChapterReader({
           <Pressable onPress={() => { const next = readerTheme === "light" ? "sepia" : readerTheme === "sepia" ? "dark" : "light"; void setReaderTheme(next); }} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
             <Ionicons name={readerTheme === "dark" ? "moon" : readerTheme === "sepia" ? "cafe" : "sunny"} size={20} color={colors.text.onPrimary} />
           </Pressable>
-          <Pressable onPress={() => setTocVisible(true)} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
-            <Ionicons name="list" size={22} color={colors.text.onPrimary} />
+          <Pressable onPress={toggleBookmark} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: locationIsBookmarked ? colors.secondary.lightGold : colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+            <Ionicons name={locationIsBookmarked ? "bookmark" : "bookmark-outline"} size={22} color={locationIsBookmarked ? colors.primary.deepGreen : colors.text.onPrimary} />
           </Pressable>
         </View>
       )}
@@ -712,9 +788,16 @@ export function ChapterReader({
         <SafeAreaView edges={["bottom"]} style={{ position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: colors.overlay.dark }}>
           <View style={{ paddingTop: 18, paddingBottom: 18, paddingHorizontal: 20, gap: 18 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-              <Text style={{ color: colors.text.onPrimary, fontSize: typography.size.base, fontWeight: typography.weight.semibold, minWidth: 50 }}>{Math.round(currentProgress * 100)}%</Text>
-              <View style={{ flex: 1, height: 8, backgroundColor: colors.overlay.light, borderRadius: 4, overflow: "hidden" }}>
-                <View style={{ height: "100%", width: `${Math.round(currentProgress * 100)}%`, backgroundColor: colors.secondary.lightGold, borderRadius: 4 }} />
+              <Text style={{ color: colors.text.onPrimary, fontSize: typography.size.base, fontWeight: typography.weight.semibold, minWidth: 50 }}>{Math.round((scrubProgress ?? currentProgress) * 100)}%</Text>
+              <View
+                style={{ flex: 1, height: 24, justifyContent: "center" }}
+                onLayout={(event) => { sliderWidthRef.current = Math.max(1, event.nativeEvent.layout.width); }}
+                {...sliderPanResponder.panHandlers}
+              >
+                <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.overlay.light, overflow: "hidden" }}>
+                  <View style={{ height: "100%", width: `${Math.round((scrubProgress ?? currentProgress) * 100)}%`, backgroundColor: colors.secondary.lightGold, borderRadius: 4 }} />
+                </View>
+                <View style={{ position: "absolute", left: `${Math.round((scrubProgress ?? currentProgress) * 100)}%`, top: 3, width: 18, height: 18, marginLeft: -9, borderRadius: 9, backgroundColor: colors.secondary.warmGold, borderWidth: 0 }} />
               </View>
             </View>
 
@@ -729,8 +812,8 @@ export function ChapterReader({
                 </Pressable>
               </View>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 18 }}>
-                <Pressable onPress={toggleBookmark} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: locationIsBookmarked ? colors.secondary.lightGold : colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
-                  <Ionicons name={locationIsBookmarked ? "bookmark" : "bookmark-outline"} size={22} color={locationIsBookmarked ? colors.primary.deepGreen : colors.text.onPrimary} />
+                <Pressable onPress={() => setTocVisible(true)} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+                  <Ionicons name="list" size={22} color={colors.text.onPrimary} />
                 </Pressable>
               </View>
             </View>
@@ -740,9 +823,9 @@ export function ChapterReader({
 
       <Modal visible={tocVisible} animationType="slide" transparent onRequestClose={() => setTocVisible(false)}>
         <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }} onPress={() => setTocVisible(false)}>
-          <View style={{ maxHeight: "78%", backgroundColor: colors.surface.warmIvory, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 12, overflow: "hidden" }}>
-            <View style={{ width: 42, height: 4, borderRadius: 999, backgroundColor: "rgba(23,61,49,0.18)", alignSelf: "center", marginBottom: 18 }} />
-            <View style={{ paddingHorizontal: 22, paddingBottom: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <View style={{ maxHeight: "64%", backgroundColor: colors.surface.warmIvory, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 10, overflow: "hidden" }}>
+            <View style={{ width: 42, height: 4, borderRadius: 999, backgroundColor: "rgba(23,61,49,0.18)", alignSelf: "center", marginBottom: 12 }} />
+            <View style={{ paddingHorizontal: 20, paddingBottom: 10, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: colors.text.primary, fontSize: typography.size["2xl"], fontWeight: typography.weight.extrabold }}>Chapters</Text>
                 <Text style={{ color: colors.text.tertiary, fontSize: typography.size.sm, marginTop: 4 }}>{manifest?.toc?.length ?? manifest?.chapters.length ?? 0} sections</Text>
@@ -751,7 +834,7 @@ export function ChapterReader({
                 <Ionicons name="close" size={20} color={colors.text.primary} />
               </Pressable>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 28 }}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 18 }}>
               {(manifest?.toc?.length ? manifest.toc : manifest?.chapters.map((chapter, index) => ({
                 label: chapter.title,
                 href: chapter.href,
@@ -773,7 +856,7 @@ export function ChapterReader({
                       backgroundColor: isActive ? colors.primary.deepGreen : "transparent",
                       paddingLeft: 12 + Math.min(item.level, 3) * 16,
                       paddingRight: 12,
-                      paddingVertical: 12,
+                      paddingVertical: 9,
                       opacity: pressed ? 0.78 : 1,
                     })}
                   >
