@@ -5,7 +5,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import { useRouter } from "expo-router";
 import * as SystemUI from "expo-system-ui";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, BackHandler, Modal, Pressable, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, BackHandler, Modal, Platform, Pressable, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
@@ -14,6 +14,7 @@ import { BOOK_TITLE } from "../../data/book";
 import type { Language, Volume } from "../../data/types";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useBookmarks } from "../../hooks/useBookmarks";
+import { useReaderBrightness } from "../../hooks/useReaderBrightness";
 import { READER_THEME_COLORS, useReaderTheme } from "../../hooks/useReaderTheme";
 import { useReadingSessions } from "../../hooks/useReadingSessions";
 import { getBookmarkDisplayLabel } from "../../lib/bookmark-resolver";
@@ -388,6 +389,7 @@ export function EpubReader({
   const [epubBase64, setEpubBase64] = useState<string | null>(null);
   const [cachedLocations, setCachedLocations] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const { brightness, panResponder: brightnessPanResponder, setTrackWidthFromLayout } = useReaderBrightness();
   const [fontSize, setFontSize] = useState(16);
   const [tocVisible, setTocVisible] = useState(false);
   const [toc, setToc] = useState<Array<{ label: string; href: string }>>([]);
@@ -773,35 +775,55 @@ export function EpubReader({
   return (
     <View style={{ flex: 1, backgroundColor: themeColors.background }}>
       {controlsVisible && (
-        <View style={{ position: "absolute", top: 0, left: 0, right: 0, backgroundColor: colors.overlay.dark, paddingTop: 50, paddingBottom: 16, paddingHorizontal: 20, flexDirection: "row", alignItems: "center", gap: 16, zIndex: 10 }}>
-          <Pressable onPress={handleBack} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
-            <Ionicons name="chevron-back" size={24} color={colors.text.onPrimary} />
-          </Pressable>
-          <View style={{ flex: 1, paddingHorizontal: 4 }}>
-            <Text style={{ color: colors.text.onPrimary, fontSize: typography.size.lg, fontWeight: typography.weight.bold }}>{BOOK_TITLE}</Text>
-            <Text style={{ color: colors.text.light, fontSize: typography.size.base, fontWeight: typography.weight.semibold }}>
-              {showVolumeLabel ? `${language.title} • ${volumeDisplayTitle}` : language.title}
-            </Text>
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, backgroundColor: colors.overlay.dark, paddingTop: 50, paddingBottom: 16, paddingHorizontal: 20, gap: 6, zIndex: 10 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+            <Pressable onPress={handleBack} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+              <Ionicons name="chevron-back" size={24} color={colors.text.onPrimary} />
+            </Pressable>
+            <View style={{ flex: 1, paddingHorizontal: 4 }}>
+              <Text style={{ color: colors.text.onPrimary, fontSize: typography.size.lg, fontWeight: typography.weight.bold }}>{BOOK_TITLE}</Text>
+              {showVolumeLabel ? (
+                <Text style={{ color: colors.text.light, fontSize: typography.size.base, fontWeight: typography.weight.semibold }}>
+                  {volumeDisplayTitle}
+                </Text>
+              ) : null}
+            </View>
+            <Pressable onPress={() => setControlsVisible(false)} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+              <Ionicons name="eye-off-outline" size={22} color={colors.text.onPrimary} />
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                const next = readerTheme === "light" ? "sepia" : readerTheme === "sepia" ? "dark" : "light";
+                void setReaderTheme(next);
+              }}
+              style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}
+            >
+              <Ionicons
+                name={readerTheme === "dark" ? "moon" : readerTheme === "sepia" ? "cafe" : "sunny"}
+                size={20}
+                color={colors.text.onPrimary}
+              />
+            </Pressable>
+            <Pressable onPress={() => setTocVisible(true)} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+              <Ionicons name="list" size={22} color={colors.text.onPrimary} />
+            </Pressable>
           </View>
-          <Pressable onPress={() => setControlsVisible(false)} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
-            <Ionicons name="eye-off-outline" size={22} color={colors.text.onPrimary} />
-          </Pressable>
-          <Pressable
-            onPress={() => {
-              const next = readerTheme === "light" ? "sepia" : readerTheme === "sepia" ? "dark" : "light";
-              void setReaderTheme(next);
-            }}
-            style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}
-          >
-            <Ionicons
-              name={readerTheme === "dark" ? "moon" : readerTheme === "sepia" ? "cafe" : "sunny"}
-              size={20}
-              color={colors.text.onPrimary}
-            />
-          </Pressable>
-          <Pressable onPress={() => setTocVisible(true)} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
-            <Ionicons name="list" size={22} color={colors.text.onPrimary} />
-          </Pressable>
+
+          {Platform.OS !== "web" && (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <Ionicons name="sunny-outline" size={16} color={colors.text.onPrimary} />
+              <View
+                onLayout={(event) => setTrackWidthFromLayout(event.nativeEvent.layout.width)}
+                {...brightnessPanResponder.panHandlers}
+                style={{ flex: 1, paddingVertical: 10, justifyContent: "center" }}
+              >
+                <View style={{ height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.22)" }}>
+                  <View style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${brightness * 100}%`, backgroundColor: colors.text.onPrimary, opacity: 0.85, borderRadius: 2 }} />
+                  <View style={{ position: "absolute", top: -5, left: `${brightness * 100}%`, width: 14, height: 14, marginLeft: -7, borderRadius: 7, backgroundColor: colors.text.onPrimary }} />
+                </View>
+              </View>
+            </View>
+          )}
         </View>
       )}
 
