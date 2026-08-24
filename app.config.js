@@ -18,7 +18,7 @@ const getAppName = () => {
   if (IS_PREVIEW) {
     return "Shifa Shareef (Preview)";
   }
-  return "Shifa Shareef";
+  return "Asshifa";
 };
 
 export default {
@@ -36,7 +36,7 @@ export default {
       bundleIdentifier: getUniqueIdentifier(),
     },
     android: {
-      versionCode: 11,
+      versionCode: 12,
       adaptiveIcon: {
         foregroundImage: "./assets/images/icon.png",
       },
