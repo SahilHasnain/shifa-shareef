@@ -33,8 +33,9 @@ export function getSectionStatus(
 export function getCurrentSection(
   volume: Volume,
   progress: ReadingProgress,
+  sections: Section[] = volume.sections,
 ): Section | undefined {
-  return volume.sections.find(
+  return sections.find(
     (section) => getSectionStatus(volume, section, progress) === "current",
   );
 }

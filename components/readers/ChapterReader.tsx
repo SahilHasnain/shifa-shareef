@@ -1,10 +1,10 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Animated, BackHandler, Modal, PanResponder, Platform, Pressable, ScrollView, StatusBar, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SystemUI from "expo-system-ui";
+import { useSQLiteContext } from "expo-sqlite";
 import { WebView } from "react-native-webview";
 
 import { BOOK_TITLE } from "../../data/book";
@@ -15,8 +15,7 @@ import { READER_THEME_COLORS, useReaderTheme } from "../../hooks/useReaderTheme"
 import { useBookmarks } from "../../hooks/useBookmarks";
 import { useReaderBrightness } from "../../hooks/useReaderBrightness";
 import { useReadingSessions } from "../../hooks/useReadingSessions";
-import { getCurrentSection } from "../../lib/section-resolver";
-import { getCachedChapter, saveCachedChapter, getCachedCss, saveCachedCss, saveCachedImage, rewriteImageTags } from "../../lib/reader-content-cache";
+import { loadBookChapters } from "../../lib/book-content";
 
 type ChapterManifest = {
   title?: string;
@@ -28,6 +27,7 @@ type ChapterManifestItem = {
   id?: string;
   title: string;
   href: string;
+  html: string;
   startProgressPercent?: number;
   endProgressPercent?: number;
 };
@@ -50,12 +50,9 @@ type ChapterReaderProps = {
   volume: Volume;
   volumeDisplayTitle: string;
   showVolumeLabel: boolean;
-  manifestUrl: string;
-  assetBaseUrl: string;
   initialLocator?: string;
   initialProgressPercent?: number;
   onProgressChange: (locator: string, progressPercent: number) => void;
-  onFallbackRequested: () => void;
 };
 
 function parseLocator(locator?: string): { chapterIndex: number; chapterProgress: number } | null {
@@ -77,22 +74,6 @@ function parseLocator(locator?: string): { chapterIndex: number; chapterProgress
 
 function makeLocator(chapterIndex: number, chapterProgress: number): string {
   return `chapter:${chapterIndex}:${Math.min(1, Math.max(0, chapterProgress)).toFixed(4)}`;
-}
-
-function resolveChapterUrl(assetBaseUrl: string, href: string): string {
-  if (/^https?:\/\//i.test(href)) return href;
-  return `${assetBaseUrl}/${href.replace(/^\.\//, "")}`;
-}
-
-function extractReadableContent(html: string): string {
-  const headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
-  const headContent = headMatch?.[1] ?? "";
-  const stylesheetLinks = headContent.match(/<link[^>]+rel=["']?stylesheet["']?[^>]*>/gi) ?? [];
-  const embeddedStyles = headContent.match(/<style[^>]*>[\s\S]*?<\/style>/gi) ?? [];
-  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-  const bodyContent = bodyMatch?.[1] ?? html;
-
-  return [...stylesheetLinks, ...embeddedStyles, bodyContent].join("\n");
 }
 
 function getChapterProgressRange(chapter: ChapterManifestItem, index: number, total: number) {
@@ -128,13 +109,10 @@ function getInitialChapterIndex(
   return 0;
 }
 
-function buildChapterHtml(chapters: LoadedChapter[], baseUrl: string, initialTheme: (typeof READER_THEME_COLORS)[keyof typeof READER_THEME_COLORS], fontSize: number, inlinedCss?: string): string {
+function buildChapterHtml(chapters: LoadedChapter[], initialTheme: (typeof READER_THEME_COLORS)[keyof typeof READER_THEME_COLORS], fontSize: number): string {
   const chapterSections = chapters
     .map((chapter) => {
       let html = chapter.html;
-      if (inlinedCss) {
-        html = html.replace(/<link[^>]*rel=["']?stylesheet["']?[^>]*>/gi, "");
-      }
       return '<section class="reader-chapter" data-chapter-index="' + chapter.index + '">' + html + "</section>";
     })
     .join("\n");
@@ -146,8 +124,6 @@ function buildChapterHtml(chapters: LoadedChapter[], baseUrl: string, initialThe
     '<html data-theme="' + themeName + '">',
     "<head>",
     '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">',
-    '<base href="' + baseUrl + '">',
-    inlinedCss ? "<style>" + inlinedCss + "</style>" : "",
     "<style>",
     ":root { --reader-bg: " + initialTheme.background + "; --reader-text: " + initialTheme.text + "; --reader-font-size: " + fontSize + "px; }",
     ':root[data-theme="dark"], :root[data-theme="sepia"] { --page-bg: var(--reader-bg) !important; --paper: var(--reader-bg) !important; --ink: var(--reader-text) !important; --muted: var(--reader-text) !important; --accent: var(--reader-text) !important; --accent-warm: var(--reader-text) !important; --gold: var(--reader-text) !important; --rule: rgba(201, 169, 97, 0.18) !important; }',
@@ -206,19 +182,16 @@ export function ChapterReader({
   volume,
   volumeDisplayTitle,
   showVolumeLabel,
-  manifestUrl,
-  assetBaseUrl,
   initialLocator,
   initialProgressPercent,
   onProgressChange,
-  onFallbackRequested,
 }: ChapterReaderProps) {
   const router = useRouter();
+  const database = useSQLiteContext();
   const { colors } = useAppTheme();
   const { readerTheme, setReaderTheme } = useReaderTheme();
   const themeColors = READER_THEME_COLORS[readerTheme];
   const webViewRef = useRef<WebView>(null);
-  const chapterCacheRef = useRef(new Map<string, string>());
   const loadedChapterIndexesRef = useRef(new Set<number>());
   const appendInFlightRef = useRef(new Set<number>());
   const sessionStartTime = useRef(Date.now());
@@ -229,9 +202,6 @@ export function ChapterReader({
   const lastSavedLocatorRef = useRef<string | null>(null);
   const initialLocatorRef = useRef(initialLocator);
   const initialProgressPercentRef = useRef(initialProgressPercent);
-  const [cachedCss, setCachedCss] = useState<string | null>(null);
-  const [cssReady, setCssReady] = useState(false);
-
   const [manifest, setManifest] = useState<ChapterManifest | null>(null);
   const [chapterIndex, setChapterIndex] = useState(0);
   const [loadAnchorIndex, setLoadAnchorIndex] = useState(0);
@@ -263,19 +233,15 @@ export function ChapterReader({
   }
 
   const currentChapter = manifest?.chapters[chapterIndex] ?? null;
-  const currentSection = getCurrentSection(volume, {
-    progressPercent: currentProgress,
-    lastCfi: makeLocator(chapterIndex, chapterProgress),
-  }) ?? volume.sections[0];
   const estimatedPage = Math.max(1, Math.round(currentProgress * volume.totalPages) || 1);
   const { isBookmarked, addBookmark, removeBookmark, bookmarks, getBookmarkForLocation } = useBookmarks(volume.id, language.id);
   const { addSession } = useReadingSessions();
   const locationIsBookmarked = isBookmarked(estimatedPage, makeLocator(chapterIndex, chapterProgress), currentProgress);
 
   const readerHtml = useMemo(() => {
-    if (loadedChapters.length === 0 || !cssReady) return null;
-    return buildChapterHtml(loadedChapters, `${assetBaseUrl}/`, themeColors, fontSize, cachedCss ?? undefined);
-  }, [assetBaseUrl, cachedCss, cssReady, loadedChapters]); // theme, fontSize excluded — applied via injectJavaScript to avoid WebView reload
+    if (loadedChapters.length === 0) return null;
+    return buildChapterHtml(loadedChapters, themeColors, fontSize);
+  }, [loadedChapters]); // theme and font size are applied by injectJavaScript to avoid WebView reload
   const webViewSource = useMemo(() => {
     return readerHtml ? { html: readerHtml } : undefined;
   }, [readerHtml]);
@@ -288,144 +254,45 @@ export function ChapterReader({
     return Math.min(1, Math.max(0, range.start + (range.end - range.start) * progressWithinChapter));
   }, [manifest]);
 
-  const downloadImages = useCallback((html: string) => {
-    const urls = Array.from(
-      html.matchAll(/<img\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi),
-      (match) => {
-        const src = match[1];
-        if (/^https?:\/\//i.test(src)) return src;
-        if (/^data:/i.test(src)) return null;
-        return `${assetBaseUrl}/${src.replace(/^\.\//, "")}`;
-      },
-    ).filter((url): url is string => Boolean(url));
-
-    for (const url of urls) {
-      void saveCachedImage(language.id, volume.id, url).catch(() => {});
-    }
-  }, [assetBaseUrl, language.id, volume.id]);
-
   const getChapterHtml = useCallback(async (index: number) => {
     if (!manifest) return null;
     const chapter = manifest.chapters[index];
-    if (!chapter) return null;
-
-    const chapterUrl = resolveChapterUrl(assetBaseUrl, chapter.href);
-    const inMemory = chapterCacheRef.current.get(chapterUrl);
-    if (inMemory) {
-      return inMemory;
-    }
-
-    const onDisk = await getCachedChapter(language.id, volume.id, chapter.href);
-    if (onDisk) {
-      const rewritten = await rewriteImageTags(onDisk, language.id, volume.id, assetBaseUrl);
-      chapterCacheRef.current.set(chapterUrl, rewritten);
-      return rewritten;
-    }
-
-    const response = await fetch(chapterUrl);
-    if (!response.ok) throw new Error(`Failed to load chapter ${index + 1}`);
-    const html = extractReadableContent(await response.text());
-    void downloadImages(html);
-    const rewritten = await rewriteImageTags(html, language.id, volume.id, assetBaseUrl);
-    chapterCacheRef.current.set(chapterUrl, rewritten);
-    void saveCachedChapter(language.id, volume.id, chapter.href, html);
-    return rewritten;
-  }, [assetBaseUrl, downloadImages, language.id, manifest, volume.id]);
-
-  const prefetchChapter = useCallback(async (index: number) => {
-    if (!manifest || index < 0 || index >= manifest.chapters.length) return;
-    const chapter = manifest.chapters[index];
-    const chapterUrl = resolveChapterUrl(assetBaseUrl, chapter.href);
-    if (chapterCacheRef.current.has(chapterUrl)) return;
-
-    try {
-      const cached = await getCachedChapter(language.id, volume.id, chapter.href);
-      if (cached) {
-        chapterCacheRef.current.set(chapterUrl, cached);
-        return;
-      }
-
-      const response = await fetch(chapterUrl);
-      if (response.ok) {
-        const html = extractReadableContent(await response.text());
-        void downloadImages(html);
-        chapterCacheRef.current.set(chapterUrl, html);
-        void saveCachedChapter(language.id, volume.id, chapter.href, html);
-      }
-    } catch { }
-  }, [assetBaseUrl, downloadImages, language.id, manifest, volume.id]);
+    return chapter?.html ?? null;
+  }, [manifest]);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadManifest() {
+    async function loadBook() {
       try {
-        const response = await fetch(manifestUrl);
-        if (!response.ok) throw new Error("Chapter manifest not found");
-        const nextManifest = await response.json() as ChapterManifest;
-
-        if (!Array.isArray(nextManifest.chapters) || nextManifest.chapters.length === 0) {
-          throw new Error("Chapter manifest has no chapters");
-        }
+        const chapters = await loadBookChapters(database, language.id, volume.id);
+        if (chapters.length === 0) throw new Error("This book is not available in the bundled library.");
+        const nextManifest: ChapterManifest = {
+          chapters: chapters.map((chapter) => ({
+            id: String(chapter.id),
+            title: chapter.title,
+            href: `section:${chapter.id}`,
+            html: chapter.html,
+            startProgressPercent: chapter.startProgressPercent,
+            endProgressPercent: chapter.endProgressPercent,
+          })),
+        };
 
         if (cancelled) return;
-        await AsyncStorage.setItem(`shifa-shareef:chapter-manifest:${language.id}:${volume.id}`, JSON.stringify(nextManifest));
         const initialChapterIndex = getInitialChapterIndex(nextManifest, initialLocatorRef.current, initialProgressPercentRef.current);
         setManifest(nextManifest);
         setChapterIndex(initialChapterIndex);
         setLoadAnchorIndex(initialChapterIndex);
       } catch (err) {
         if (cancelled) return;
-        if (err instanceof Error && err.message === "Chapter manifest not found") {
-          onFallbackRequested();
-          return;
-        }
-
-        const cachedManifest = await AsyncStorage.getItem(`shifa-shareef:chapter-manifest:${language.id}:${volume.id}`).catch(() => null);
-        if (cachedManifest) {
-          try {
-            const parsed = JSON.parse(cachedManifest) as ChapterManifest;
-            const initialChapterIndex = getInitialChapterIndex(parsed, initialLocatorRef.current, initialProgressPercentRef.current);
-            setManifest(parsed);
-            setChapterIndex(initialChapterIndex);
-            setLoadAnchorIndex(initialChapterIndex);
-            return;
-          } catch { }
-        }
-
-        setError(err instanceof Error ? err.message : "Failed to load chapter manifest");
+        setError(err instanceof Error ? err.message : "Failed to load the bundled book.");
         setIsLoading(false);
       }
     }
 
-    void loadManifest();
+    void loadBook();
     return () => { cancelled = true; };
-  }, [language.id, manifestUrl, onFallbackRequested, volume.id]);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadCss() {
-      try {
-        const cached = await getCachedCss(language.id, volume.id);
-        if (cached) {
-          setCachedCss(cached);
-          return;
-        }
-        const cssUrl = `${assetBaseUrl}/styles/book.css`;
-        const res = await fetch(cssUrl);
-        if (res.ok) {
-          const css = await res.text();
-          setCachedCss(css);
-          void saveCachedCss(language.id, volume.id, css);
-        }
-      } catch {}
-      finally {
-        if (!cancelled) setCssReady(true);
-      }
-    }
-    void loadCss();
-    return () => { cancelled = true; };
-  }, [assetBaseUrl, language.id, volume.id]);
+  }, [database, language.id, volume.id]);
 
   useEffect(() => {
     if (!manifest) return;
@@ -453,9 +320,6 @@ export function ChapterReader({
 
         if (cancelled) return;
         setLoadedChapters(nextLoaded);
-        if (!cancelled) {
-          void prefetchChapter(loadAnchorIndex + 2);
-        }
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Failed to load chapter");
@@ -466,7 +330,7 @@ export function ChapterReader({
 
     void load();
     return () => { cancelled = true; };
-  }, [getChapterHtml, loadAnchorIndex, manifest, prefetchChapter]);
+  }, [getChapterHtml, loadAnchorIndex, manifest]);
 
   useEffect(() => {
     StatusBar.setHidden(!controlsVisible, "fade");
@@ -631,7 +495,7 @@ export function ChapterReader({
       await addBookmark(estimatedPage, {
         cfi: locator,
         progressPercent: currentProgress,
-        label: currentChapter?.title ?? currentSection.title,
+        label: currentChapter?.title ?? "Book",
       });
     }
   };
@@ -658,11 +522,10 @@ export function ChapterReader({
       webViewRef.current?.injectJavaScript(
         `window.__appendChapter && window.__appendChapter(${index}, ${JSON.stringify(html)}); true;`,
       );
-      void prefetchChapter(index + 1);
     } finally {
       appendInFlightRef.current.delete(index);
     }
-  }, [getChapterHtml, manifest, prefetchChapter]);
+  }, [getChapterHtml, manifest]);
 
   const appendPreviousChapter = useCallback(async (index: number) => {
     if (!manifest || index < 0 || index >= manifest.chapters.length) return;
@@ -677,11 +540,10 @@ export function ChapterReader({
       webViewRef.current?.injectJavaScript(
         `window.__prependChapter && window.__prependChapter(${index}, ${JSON.stringify(html)}); true;`,
       );
-      void prefetchChapter(index - 1);
     } finally {
       appendInFlightRef.current.delete(index);
     }
-  }, [getChapterHtml, manifest, prefetchChapter]);
+  }, [getChapterHtml, manifest]);
 
   const handleMessage = (event: any) => {
     try {
@@ -731,9 +593,6 @@ export function ChapterReader({
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20, backgroundColor: themeColors.background }}>
         <Text style={{ color: colors.text.primary, fontSize: typography.size.lg, fontWeight: typography.weight.bold, marginBottom: 8 }}>Failed to load reader</Text>
         <Text style={{ color: colors.text.tertiary, fontSize: typography.size.base, textAlign: "center", marginBottom: 16 }}>{error}</Text>
-        <Pressable onPress={onFallbackRequested} style={({ pressed }) => ({ borderRadius: 999, backgroundColor: colors.primary.deepGreen, paddingHorizontal: 18, paddingVertical: 10, opacity: pressed ? 0.8 : 1 })}>
-          <Text style={{ color: colors.text.onPrimary, fontWeight: typography.weight.bold }}>Open EPUB reader</Text>
-        </Pressable>
       </View>
     );
   }

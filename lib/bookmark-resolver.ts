@@ -1,4 +1,4 @@
-import type { Bookmark, ReadingProgress, Volume } from "../data/types";
+import type { Bookmark, ReadingProgress, Section, Volume } from "../data/types";
 import { getCurrentSection } from "./section-resolver";
 import type { ReaderNavigationTarget } from "./section-resolver";
 
@@ -39,11 +39,15 @@ export function getBookmarkDisplayLabel(
   return `${Math.round(getBookmarkPercent(volume, bookmark) * 100)}%`;
 }
 
-export function getBookmarkSection(volume: Volume, bookmark: Bookmark) {
+export function getBookmarkSection(
+  volume: Volume,
+  bookmark: Bookmark,
+  sections?: Section[],
+) {
   const progress: ReadingProgress = {
     progressPercent: getBookmarkPercent(volume, bookmark),
     lastCfi: bookmark.cfi,
   };
 
-  return getCurrentSection(volume, progress);
+  return getCurrentSection(volume, progress, sections);
 }

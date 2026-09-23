@@ -28,12 +28,13 @@ import {
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
+import { useBundledSections } from "../../hooks/useBundledSections";
 import { useVolumeProgress } from "../../hooks/useVolumeProgress";
 import {
   buildReaderHref,
-  getCurrentSection,
   getResumeNavigationTarget,
 } from "../../lib/section-resolver";
+import { getProgressPercent } from "../../lib/progress";
 
 function hexToRgb(hex: string): [number, number, number] {
   const normalized = hex.replace("#", "");
@@ -149,9 +150,15 @@ function ContinueReadingContent({
   const { colors } = useAppTheme();
   const volume = getVolumeByLanguageAndId(languageId, volumeId);
   const { progress } = useVolumeProgress(volumeId, languageId);
-
+  const { sectionsByVolume } = useBundledSections(languageId, [volume]);
+  const sections = sectionsByVolume[volumeId] ?? [];
+  const progressPercent = getProgressPercent(progress);
   const currentSection =
-    getCurrentSection(volume, progress) ?? volume.sections[0];
+    sections.find(
+      (section) =>
+        progressPercent >= (section.startProgressPercent ?? 0) &&
+        progressPercent < (section.endProgressPercent ?? 1),
+    ) ?? sections[0] ?? volume.sections[0];
   const currentVolumeDisplayTitle = getVolumeDisplayTitle(
     languageId,
     volumeId,

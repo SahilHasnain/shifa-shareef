@@ -13,6 +13,7 @@ import {
 } from "../../data/languages";
 import type { Bookmark } from "../../data/types";
 import { useAppTheme } from "../../hooks/useAppTheme";
+import { useBundledSections } from "../../hooks/useBundledSections";
 import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useGlobalStats } from "../../hooks/useGlobalStats";
 import { useLanguageVolumeProgresses } from "../../hooks/useLanguageVolumeProgresses";
@@ -44,6 +45,7 @@ export default function JourneyScreen() {
   const [allBookmarks, setAllBookmarks] = useState<Bookmark[]>([]);
   const { volumeStats, languageStats } = useGlobalStats();
   const { progressByVolume } = useLanguageVolumeProgresses(currentLanguageId);
+  const { sectionsByVolume } = useBundledSections(currentLanguageId, currentLanguage.volumes);
   const {
     sessions,
     getCurrentStreak,
@@ -121,7 +123,7 @@ export default function JourneyScreen() {
         const progress = progressByVolume[filterVolumeId];
         if (!progress) return 0;
 
-        return volume.sections.filter(
+        return (sectionsByVolume[filterVolumeId] ?? []).filter(
           (section) =>
             getSectionStatus(volume, section, progress) === "completed",
         ).length;
@@ -132,7 +134,7 @@ export default function JourneyScreen() {
 
         return (
           total +
-          volume.sections.filter(
+          (sectionsByVolume[volume.id] ?? []).filter(
             (section) =>
               getSectionStatus(volume, section, progress) === "completed",
           ).length
@@ -652,7 +654,11 @@ export default function JourneyScreen() {
                   bookmark.languageId,
                   bookmark.volumeId,
                 );
-                const section = getBookmarkSection(bookmarkVolume, bookmark);
+                const section = getBookmarkSection(
+                  bookmarkVolume,
+                  bookmark,
+                  sectionsByVolume[bookmark.volumeId],
+                );
                 const bookmarkLabel = getBookmarkDisplayLabel(bookmarkVolume, bookmark);
 
                 return (

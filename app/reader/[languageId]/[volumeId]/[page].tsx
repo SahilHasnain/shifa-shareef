@@ -1,8 +1,8 @@
-import { useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect } from "react";
+import { Pressable, Text, View } from "react-native";
 
 import { ChapterReader } from "../../../../components/readers/ChapterReader";
-import { EpubReader } from "../../../../components/readers/EpubReader";
 import {
   getLanguageById,
   getVolumeByLanguageAndId,
@@ -12,8 +12,7 @@ import {
 import { useCurrentLanguage } from "../../../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../../../hooks/useCurrentVolume";
 import { useReadingProgress } from "../../../../hooks/useReadingProgress";
-import { getChapterAssetBaseUrl, getChapterManifestUrl, getEpubUrl } from "../../../../lib/epub-url";
-import { clearLegacyReadingStorage } from "../../../../lib/progress-storage";
+import { useAppTheme } from "../../../../hooks/useAppTheme";
 
 export default function ReaderScreen() {
   const params = useLocalSearchParams<{
@@ -22,14 +21,20 @@ export default function ReaderScreen() {
     cfi?: string;
     progressPercent?: string;
   }>();
+  const router = useRouter();
+  const { colors } = useAppTheme();
   const language = getLanguageById(params.languageId);
   const volume = getVolumeByLanguageAndId(language.id, params.volumeId);
+  const requestedLanguageId = Array.isArray(params.languageId) ? params.languageId[0] : params.languageId;
+  const requestedVolumeId = Array.isArray(params.volumeId) ? params.volumeId[0] : params.volumeId;
+  const bookUnavailable =
+    (requestedLanguageId != null && requestedLanguageId !== language.id) ||
+    (requestedVolumeId != null && requestedVolumeId !== volume.id);
   const showVolumeLabel = shouldShowVolumeLabel(language.id);
   const volumeDisplayTitle = getVolumeDisplayTitle(language.id, volume.id, volume.title);
   const { switchLanguage } = useCurrentLanguage();
   const { switchVolume } = useCurrentVolume(language.id);
   const { progress, saveProgress } = useReadingProgress(volume.id, language.id);
-  const [useEpubFallback, setUseEpubFallback] = useState(false);
 
   const handleProgressChange = useCallback(
     (locator: string, nextProgressPercent: number) => {
@@ -37,10 +42,6 @@ export default function ReaderScreen() {
     },
     [saveProgress],
   );
-
-  const handleFallbackRequested = useCallback(() => {
-    setUseEpubFallback(true);
-  }, []);
 
   const navigationCfi =
     typeof params.cfi === "string" && params.cfi.length > 0
@@ -56,50 +57,37 @@ export default function ReaderScreen() {
     (navigationProgressPercent != null && !Number.isNaN(navigationProgressPercent));
 
   useEffect(() => {
+    if (bookUnavailable) return;
     void switchLanguage(language.id);
     void switchVolume(volume.id);
-  }, [language.id, switchLanguage, switchVolume, volume.id]);
+  }, [bookUnavailable, language.id, switchLanguage, switchVolume, volume.id]);
 
-  useEffect(() => {
-    void clearLegacyReadingStorage();
-  }, []);
-
-  if (!useEpubFallback) {
+  if (bookUnavailable) {
     return (
-      <ChapterReader
-        language={language}
-        volume={volume}
-        volumeDisplayTitle={volumeDisplayTitle}
-        showVolumeLabel={showVolumeLabel}
-        manifestUrl={getChapterManifestUrl(language.id, volume.id)}
-        assetBaseUrl={getChapterAssetBaseUrl(language.id, volume.id)}
-        initialLocator={
-          navigationCfi ?? (hasExplicitNavigation ? undefined : progress.lastCfi)
-        }
-        initialProgressPercent={
-          navigationCfi == null
-            ? navigationProgressPercent ?? (hasExplicitNavigation ? undefined : progress.progressPercent)
-            : undefined
-        }
-        onProgressChange={handleProgressChange}
-        onFallbackRequested={handleFallbackRequested}
-      />
+      <View style={{ flex: 1, backgroundColor: colors.surface.lightCream, alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <Text style={{ color: colors.text.primary, fontSize: 20, fontWeight: "800", textAlign: "center" }}>
+          This edition is not included yet
+        </Text>
+        <Text style={{ color: colors.text.tertiary, fontSize: 15, lineHeight: 22, textAlign: "center", marginTop: 8 }}>
+          More languages and volumes will be available when their content is added to the app.
+        </Text>
+        <Pressable onPress={() => router.back()} style={{ marginTop: 20, borderRadius: 999, backgroundColor: colors.primary.deepGreen, paddingHorizontal: 20, paddingVertical: 12 }}>
+          <Text style={{ color: colors.text.onPrimary, fontWeight: "700" }}>Go back</Text>
+        </Pressable>
+      </View>
     );
   }
 
   return (
-    <EpubReader
+    <ChapterReader
       language={language}
       volume={volume}
       volumeDisplayTitle={volumeDisplayTitle}
       showVolumeLabel={showVolumeLabel}
-      epubUrl={getEpubUrl(language.id, volume.id)}
-      initialCfi={
+      initialLocator={
         navigationCfi ?? (hasExplicitNavigation ? undefined : progress.lastCfi)
       }
-      initialProgressPercent={
-        navigationCfi == null ? navigationProgressPercent : undefined
-      }
+      initialProgressPercent={navigationProgressPercent ?? progress.progressPercent}
       onProgressChange={handleProgressChange}
     />
   );

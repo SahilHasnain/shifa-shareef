@@ -1,12 +1,4 @@
 import {
-  VOLUME1_SECTIONS,
-  VOLUME1_TOTAL_PAGES,
-} from "./languages/urdu/volume1/sections";
-import {
-  VOLUME2_SECTIONS,
-  VOLUME2_TOTAL_PAGES,
-} from "./languages/urdu/volume2/sections";
-import {
   ROMAN_URDU_VOLUME1_SECTIONS,
   ROMAN_URDU_VOLUME1_TOTAL_PAGES,
 } from "./languages/roman-urdu/volume1/sections";
@@ -46,11 +38,6 @@ function buildVolume(
   };
 }
 
-const URDU_VOLUMES: Volume[] = [
-  buildVolume("volume1", "Volume 1", VOLUME1_TOTAL_PAGES, VOLUME1_SECTIONS),
-  buildVolume("volume2", "Volume 2", VOLUME2_TOTAL_PAGES, VOLUME2_SECTIONS),
-];
-
 const ROMAN_URDU_VOLUMES: Volume[] = [
   buildVolume(
     "volume1",
@@ -81,12 +68,6 @@ export const LANGUAGES: Language[] = [
     title: "Roman Urdu",
     nativeTitle: "Roman Urdu",
     volumes: ROMAN_URDU_VOLUMES,
-  },
-  {
-    id: "urdu",
-    title: "Urdu",
-    nativeTitle: "Urdu",
-    volumes: URDU_VOLUMES,
   },
 ];
 

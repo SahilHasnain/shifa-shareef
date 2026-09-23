@@ -8,6 +8,7 @@ import { useCurrentLanguage } from "../../hooks/useCurrentLanguage";
 import { useCurrentVolume } from "../../hooks/useCurrentVolume";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useVolumeProgress } from "../../hooks/useVolumeProgress";
+import { useBundledSections } from "../../hooks/useBundledSections";
 import {
   buildReaderHref,
   getSectionNavigationTarget,
@@ -21,8 +22,10 @@ export default function TopicsScreen() {
   const { currentLanguageId } = useCurrentLanguage();
   const { currentVolume, currentVolumeId } = useCurrentVolume(currentLanguageId);
   const { progress } = useVolumeProgress(currentVolumeId, currentLanguageId);
+  const { sectionsByVolume, isLoading } = useBundledSections(currentLanguageId, [currentVolume]);
+  const sections = sectionsByVolume[currentVolumeId] ?? [];
 
-  const handleSectionPress = (section: (typeof currentVolume.sections)[number]) => {
+  const handleSectionPress = (section: (typeof sections)[number]) => {
     const target = getSectionNavigationTarget(currentVolume, section);
     router.push(buildReaderHref(currentLanguageId, currentVolumeId, target) as any);
   };
@@ -35,7 +38,13 @@ export default function TopicsScreen() {
       >
         <View style={{ paddingHorizontal: 20, gap: 2, paddingTop: 20 }}>
           <Text style={{ color: colors.text.primary, fontSize: typography.size["3xl"], fontWeight: typography.weight.extrabold, marginBottom: 8 }}>Topics</Text>
-          {currentVolume.sections.map((section, index) => {
+          {isLoading ? (
+            <Text style={{ color: colors.text.tertiary, paddingVertical: 16 }}>Loading topics…</Text>
+          ) : sections.length === 0 ? (
+            <Text style={{ color: colors.text.tertiary, paddingVertical: 16 }}>
+              Topics for this book are not included in the app yet.
+            </Text>
+          ) : sections.map((section, index) => {
             const status = getSectionStatus(currentVolume, section, progress);
             const isCurrent = status === "current";
             const isCompleted = status === "completed";

@@ -51,6 +51,7 @@ export default {
     },
     plugins: [
       "expo-router",
+      "expo-sqlite",
       [
         "expo-splash-screen",
         {
@@ -63,7 +64,6 @@ export default {
           },
         },
       ],
-      "expo-asset",
       "expo-web-browser",
       "expo-screen-orientation",
       "expo-brightness",

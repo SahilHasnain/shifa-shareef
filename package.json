@@ -22,7 +22,6 @@
     "build:all": "eas build --platform all --profile production",
     "submit:android": "eas submit --platform android --latest",
     "submit:ios": "eas submit --platform ios --latest",
-    "split-epub": "npm --prefix scripts run split-epub --",
     "export-audios": "npm --prefix scripts run export-audios",
     "typecheck": "npx tsc --noEmit"
   },
@@ -50,6 +49,7 @@
     "expo-screen-orientation": "~9.0.9",
     "expo-sharing": "~14.0.8",
     "expo-splash-screen": "~31.0.13",
+    "expo-sqlite": "~16.0.10",
     "expo-status-bar": "~3.0.9",
     "expo-symbols": "~1.0.8",
     "expo-system-ui": "~6.0.9",
