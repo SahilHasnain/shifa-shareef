@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability -- Reanimated shared values are intentionally mutated by animation worklets and event handlers. */
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -676,30 +677,28 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      {!isAnimatingRef.current ? (
-        <View
-          pointerEvents="box-none"
-          style={{
-            position: "absolute",
-            right: 16,
-            bottom: insets.bottom - 30,
-            zIndex: 50,
-          }}
-        >
-          <OpenBookFab
-            size={56}
-            colors={colors}
-            href={buildReaderHref(
-              currentLanguageId,
-              displayVolumeId,
-              getResumeNavigationTarget(
-                currentDisplayVolume,
-                currentDisplayProgress,
-              ),
-            )}
-          />
-        </View>
-      ) : null}
+      <View
+        pointerEvents="box-none"
+        style={{
+          position: "absolute",
+          right: 16,
+          bottom: insets.bottom - 30,
+          zIndex: 50,
+        }}
+      >
+        <OpenBookFab
+          size={56}
+          colors={colors}
+          href={buildReaderHref(
+            currentLanguageId,
+            displayVolumeId,
+            getResumeNavigationTarget(
+              currentDisplayVolume,
+              currentDisplayProgress,
+            ),
+          )}
+        />
+      </View>
     </View>
   );
 }

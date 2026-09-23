@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs -- PanResponder handlers are attached to native views and use imperative responder APIs. */
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -194,7 +195,7 @@ export function ChapterReader({
   const webViewRef = useRef<WebView>(null);
   const loadedChapterIndexesRef = useRef(new Set<number>());
   const appendInFlightRef = useRef(new Set<number>());
-  const sessionStartTime = useRef(Date.now());
+  const sessionStartTime = useRef(0);
   const sessionMinProgress = useRef(0);
   const sessionMaxProgress = useRef(0);
   const sessionStartProgress = useRef<number | null>(null);
@@ -218,9 +219,13 @@ export function ChapterReader({
   const { brightness, panResponder: brightnessPanResponder, setTrackWidthFromLayout } = useReaderBrightness();
   const sliderWidthRef = useRef(1);
   const isScrubbingRef = useRef(false);
-  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const [toastOpacity] = useState(() => new Animated.Value(0));
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    sessionStartTime.current = Date.now();
+  }, []);
 
   function showToast(message: string) {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);

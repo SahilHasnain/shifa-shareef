@@ -40,7 +40,6 @@ export default {
       adaptiveIcon: {
         foregroundImage: "./assets/images/icon.png",
       },
-      edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       package: getUniqueIdentifier(),
     },
@@ -51,6 +50,10 @@ export default {
     },
     plugins: [
       "expo-router",
+      "expo-asset",
+      "expo-font",
+      "expo-image",
+      "expo-sharing",
       "expo-sqlite",
       [
         "expo-splash-screen",
@@ -67,6 +70,7 @@ export default {
       "expo-web-browser",
       "expo-screen-orientation",
       "expo-brightness",
+      "expo-status-bar",
       [
         "expo-audio",
         {

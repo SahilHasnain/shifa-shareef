@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs, react-hooks/set-state-in-effect -- PanResponder's native gesture handles and slider synchronization are imperative by design. */
 import { Ionicons } from "@expo/vector-icons";
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer, type AudioStatus } from "expo-audio";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -23,6 +24,14 @@ import {
   getDownloadedTracksInfo,
   getLocalAudioUri,
 } from "../../lib/audio-download-service";
+
+type AudioStatusSubscription = { remove: () => void };
+type AudioPlayerWithStatusEvents = AudioPlayer & {
+  addListener: (
+    eventName: "playbackStatusUpdate",
+    listener: (status: AudioStatus) => void,
+  ) => AudioStatusSubscription;
+};
 
 type SubTab = "library" | "live";
 
@@ -148,7 +157,7 @@ export default function AudioScreen() {
   const { colors, resolvedTheme } = useAppTheme();
   const { tracks, isLoading, isRefreshing, error, refresh } = useShifaAudios();
   const playerRef = useRef<AudioPlayer | null>(null);
-  const statusSubscriptionRef = useRef<ReturnType<AudioPlayer["addListener"]> | null>(null);
+  const statusSubscriptionRef = useRef<AudioStatusSubscription | null>(null);
   const [activeTab, setActiveTab] = useState<SubTab>("library");
   const [activeTrackId, setActiveTrackId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -340,7 +349,7 @@ export default function AudioScreen() {
           { uri: audioUri },
           { updateInterval: 250 },
         );
-        statusSubscriptionRef.current = player.addListener("playbackStatusUpdate", onPlaybackStatusUpdate);
+        statusSubscriptionRef.current = (player as AudioPlayerWithStatusEvents).addListener("playbackStatusUpdate", onPlaybackStatusUpdate);
         playerRef.current = player;
 
         if (startToken !== startTokenRef.current) {
@@ -398,7 +407,7 @@ export default function AudioScreen() {
         { uri: "https://seerat.duckdns.org/live" },
         { updateInterval: 250 },
       );
-      statusSubscriptionRef.current = player.addListener("playbackStatusUpdate", onPlaybackStatusUpdate);
+      statusSubscriptionRef.current = (player as AudioPlayerWithStatusEvents).addListener("playbackStatusUpdate", onPlaybackStatusUpdate);
       playerRef.current = player;
 
       if (startToken !== startTokenRef.current) {

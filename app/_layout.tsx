@@ -28,8 +28,6 @@ function ThemedRootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.surface.lightCream }}>
       <StatusBar
         style={resolvedTheme === "dark" ? "light" : "dark"}
-        translucent
-        backgroundColor="transparent"
       />
       <Stack
         screenOptions={{

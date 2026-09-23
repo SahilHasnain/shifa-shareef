@@ -1,4 +1,4 @@
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from "expo-router/react-navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { DEFAULT_LANGUAGE_ID } from "../data/languages";
