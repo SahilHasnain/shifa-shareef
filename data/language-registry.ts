@@ -6,6 +6,14 @@ import {
   ENGLISH_VOLUME1_SECTIONS,
   ENGLISH_VOLUME1_TOTAL_PAGES,
 } from "./languages/english/volume1/sections";
+import {
+  VOLUME1_SECTIONS,
+  VOLUME1_TOTAL_PAGES,
+} from "./volumes/volume1/sections";
+import {
+  VOLUME2_SECTIONS,
+  VOLUME2_TOTAL_PAGES,
+} from "./volumes/volume2/sections";
 import type { Language, Section, Volume } from "./types";
 
 export const DEFAULT_LANGUAGE_ID = "english";
@@ -56,6 +64,11 @@ const ENGLISH_VOLUMES: Volume[] = [
   ),
 ];
 
+const URDU_VOLUMES: Volume[] = [
+  buildVolume("volume1", "Volume 1", VOLUME1_TOTAL_PAGES, VOLUME1_SECTIONS),
+  buildVolume("volume2", "Volume 2", VOLUME2_TOTAL_PAGES, VOLUME2_SECTIONS),
+];
+
 export const LANGUAGES: Language[] = [
   {
     id: ENGLISH_LANGUAGE_ID,
@@ -68,6 +81,12 @@ export const LANGUAGES: Language[] = [
     title: "Roman Urdu",
     nativeTitle: "Roman Urdu",
     volumes: ROMAN_URDU_VOLUMES,
+  },
+  {
+    id: "urdu",
+    title: "Urdu",
+    nativeTitle: "اردو",
+    volumes: URDU_VOLUMES,
   },
 ];
 

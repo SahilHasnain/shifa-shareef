@@ -97,8 +97,9 @@ export default function TopicsScreen() {
                       style={{
                         color: colors.text.primary,
                         fontSize: typography.size.lg,
+                        fontFamily: currentLanguageId === "urdu" ? "NotoNastaliqUrdu_400Regular" : undefined,
+                        lineHeight: currentLanguageId === "urdu" ? 40 : 22,
                         fontWeight: typography.weight.bold,
-                        lineHeight: 22,
                       }}
                     >
                       {section.title}

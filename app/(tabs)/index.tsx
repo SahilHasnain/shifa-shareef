@@ -186,7 +186,8 @@ function ContinueReadingContent({
           color: "#FFF9EA",
           fontSize: typography.size["3xl"],
           fontWeight: typography.weight.extrabold,
-          lineHeight: 32,
+          fontFamily: languageId === "urdu" ? "NotoNastaliqUrdu_400Regular" : undefined,
+          lineHeight: languageId === "urdu" ? 56 : 32,
         }}
         numberOfLines={2}
       >
@@ -417,6 +418,8 @@ export default function HomeScreen() {
                             style={{
                               color: colors.text.tertiary,
                               fontSize: typography.size.sm,
+                              fontFamily: language.id === "urdu" ? "NotoNastaliqUrdu_400Regular" : undefined,
+                              lineHeight: language.id === "urdu" ? 32 : undefined,
                               fontWeight: typography.weight.medium,
                               marginTop: 3,
                             }}

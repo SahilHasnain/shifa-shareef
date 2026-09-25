@@ -19,10 +19,18 @@ type BlockRecord = {
   content_format: string;
 };
 
-const BOOK_SLUGS: Record<string, string> = {
-  english: "shifa-shareef-english",
-  "roman-urdu": "shifa-shareef-roman-urdu",
+const BOOK_SLUGS: Record<string, Record<string, string>> = {
+  english: { volume1: "shifa-shareef-english" },
+  "roman-urdu": { volume1: "shifa-shareef-roman-urdu" },
+  urdu: {
+    volume1: "shifa-shareef-urdu-vol-1",
+    volume2: "shifa-shareef-urdu-vol-2",
+  },
 };
+
+function getBookSlug(languageId: string, volumeId: string): string | undefined {
+  return BOOK_SLUGS[languageId]?.[volumeId];
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -63,8 +71,7 @@ export async function loadBookChapters(
   languageId: string,
   volumeId: string,
 ): Promise<BookChapter[]> {
-  if (volumeId !== "volume1") return [];
-  const bookSlug = BOOK_SLUGS[languageId];
+  const bookSlug = getBookSlug(languageId, volumeId);
   if (!bookSlug) return [];
 
   const book = await database.getFirstAsync<BookRecord>(
@@ -113,8 +120,7 @@ export async function loadBookSections(
   languageId: string,
   volume: Volume,
 ): Promise<Section[]> {
-  if (volume.id !== "volume1") return [];
-  const bookSlug = BOOK_SLUGS[languageId];
+  const bookSlug = getBookSlug(languageId, volume.id);
   if (!bookSlug) return [];
   const book = await database.getFirstAsync<BookRecord>(
     "SELECT id FROM book WHERE slug = ?",

@@ -49,7 +49,15 @@ export default {
       bundler: "metro",
     },
     plugins: [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          headers: {
+            "Cross-Origin-Embedder-Policy": "credentialless",
+            "Cross-Origin-Opener-Policy": "same-origin",
+          },
+        },
+      ],
       "expo-asset",
       "expo-font",
       "expo-image",

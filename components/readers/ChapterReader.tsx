@@ -1,6 +1,9 @@
 /* eslint-disable react-hooks/refs -- PanResponder handlers are attached to native views and use imperative responder APIs. */
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { Asset } from "expo-asset";
+import { File } from "expo-file-system";
+import { NotoNastaliqUrdu_400Regular } from "@expo-google-fonts/noto-nastaliq-urdu/400Regular";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Animated, BackHandler, Modal, PanResponder, Platform, Pressable, ScrollView, StatusBar, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -56,6 +59,25 @@ type ChapterReaderProps = {
   onProgressChange: (locator: string, progressPercent: number) => void;
 };
 
+let nastaliqFontDataUriPromise: Promise<string> | null = null;
+
+function loadNastaliqFontDataUri(): Promise<string> {
+  if (!nastaliqFontDataUriPromise) {
+    nastaliqFontDataUriPromise = Asset.fromModule(NotoNastaliqUrdu_400Regular)
+      .downloadAsync()
+      .then(async (asset) => {
+        if (!asset.localUri) throw new Error("Nastaliq font asset is not available locally.");
+        const base64 = await new File(asset.localUri).base64();
+        return `data:font/ttf;base64,${base64}`;
+      })
+      .catch((error) => {
+        nastaliqFontDataUriPromise = null;
+        throw error;
+      });
+  }
+  return nastaliqFontDataUriPromise;
+}
+
 function parseLocator(locator?: string): { chapterIndex: number; chapterProgress: number } | null {
   if (!locator?.startsWith("chapter:")) return null;
 
@@ -110,10 +132,16 @@ function getInitialChapterIndex(
   return 0;
 }
 
-function buildChapterHtml(chapters: LoadedChapter[], initialTheme: (typeof READER_THEME_COLORS)[keyof typeof READER_THEME_COLORS], fontSize: number): string {
+function buildChapterHtml(
+  chapters: LoadedChapter[],
+  initialTheme: (typeof READER_THEME_COLORS)[keyof typeof READER_THEME_COLORS],
+  fontSize: number,
+  textDirection: "ltr" | "rtl",
+  nastaliqFontDataUri?: string,
+): string {
   const chapterSections = chapters
     .map((chapter) => {
-      let html = chapter.html;
+      const html = chapter.html;
       return '<section class="reader-chapter" data-chapter-index="' + chapter.index + '">' + html + "</section>";
     })
     .join("\n");
@@ -122,17 +150,21 @@ function buildChapterHtml(chapters: LoadedChapter[], initialTheme: (typeof READE
 
   return [
     "<!DOCTYPE html>",
-    '<html data-theme="' + themeName + '">',
+    '<html dir="' + textDirection + '" data-theme="' + themeName + '">',
     "<head>",
     '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">',
+    nastaliqFontDataUri
+      ? "<style>@font-face{font-family:'NotoNastaliqUrdu';src:url('" + nastaliqFontDataUri + "') format('truetype');font-weight:400;font-style:normal;font-display:swap;}</style>"
+      : "",
     "<style>",
     ":root { --reader-bg: " + initialTheme.background + "; --reader-text: " + initialTheme.text + "; --reader-font-size: " + fontSize + "px; }",
     ':root[data-theme="dark"], :root[data-theme="sepia"] { --page-bg: var(--reader-bg) !important; --paper: var(--reader-bg) !important; --ink: var(--reader-text) !important; --muted: var(--reader-text) !important; --accent: var(--reader-text) !important; --accent-warm: var(--reader-text) !important; --gold: var(--reader-text) !important; --rule: rgba(201, 169, 97, 0.18) !important; }',
     "html, body { min-height: 100%; margin: 0; padding: 0; background: var(--reader-bg); color: var(--reader-text); }",
-    "body { font-size: var(--reader-font-size); line-height: 1.75; padding: 28px 22px 42px; overflow-x: hidden; }",
+    "body { font-size: var(--reader-font-size); line-height: " + (nastaliqFontDataUri ? "2.2" : "1.75") + "; padding: 28px 22px 42px; overflow-x: hidden; " + (nastaliqFontDataUri ? "font-family:'NotoNastaliqUrdu',serif;" : "") + "}",
     'html[data-theme="dark"] body, html[data-theme="dark"] p, html[data-theme="dark"] div, html[data-theme="dark"] span, html[data-theme="dark"] li, html[data-theme="dark"] h1, html[data-theme="dark"] h2, html[data-theme="dark"] h3, html[data-theme="dark"] h4, html[data-theme="dark"] h5, html[data-theme="dark"] h6, html[data-theme="dark"] th, html[data-theme="dark"] td, html[data-theme="dark"] blockquote, html[data-theme="dark"] sup,',
     'html[data-theme="sepia"] body, html[data-theme="sepia"] p, html[data-theme="sepia"] div, html[data-theme="sepia"] span, html[data-theme="sepia"] li, html[data-theme="sepia"] h1, html[data-theme="sepia"] h2, html[data-theme="sepia"] h3, html[data-theme="sepia"] h4, html[data-theme="sepia"] h5, html[data-theme="sepia"] h6, html[data-theme="sepia"] th, html[data-theme="sepia"] td, html[data-theme="sepia"] blockquote, html[data-theme="sepia"] sup { color: var(--reader-text) !important; }',
     "p { margin: 0 0 1em; }",
+    ".honorific { display: inline; font-size: clamp(8px, 0.42em, 12px); font-weight: 400; line-height: 1; vertical-align: super; white-space: nowrap; unicode-bidi: isolate; }",
     "img, svg { max-width: 100%; height: auto; }",
     "a { color: inherit; text-decoration: none; pointer-events: none; }",
     ".reader-chapter { min-height: 70vh; padding-bottom: 28px; margin-bottom: 28px; border-bottom: 1px solid rgba(201, 169, 97, 0.18); }",
@@ -213,6 +245,8 @@ export function ChapterReader({
   const [error, setError] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [fontSize, setFontSize] = useState(16);
+  const [nastaliqFontDataUri, setNastaliqFontDataUri] = useState<string | null>(null);
+  const [isNastaliqFontReady, setIsNastaliqFontReady] = useState(false);
   const [tocVisible, setTocVisible] = useState(false);
   const [bookmarksVisible, setBookmarksVisible] = useState(false);
   const [scrubProgress, setScrubProgress] = useState<number | null>(null);
@@ -226,6 +260,24 @@ export function ChapterReader({
   useEffect(() => {
     sessionStartTime.current = Date.now();
   }, []);
+
+  useEffect(() => {
+    if (language.id !== "urdu") return;
+    let cancelled = false;
+    void loadNastaliqFontDataUri()
+      .then((fontDataUri) => {
+        if (!cancelled) setNastaliqFontDataUri(fontDataUri);
+      })
+      .catch(() => {
+        if (!cancelled) setNastaliqFontDataUri(null);
+      })
+      .finally(() => {
+        if (!cancelled) setIsNastaliqFontReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [language.id]);
 
   function showToast(message: string) {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
@@ -244,9 +296,15 @@ export function ChapterReader({
   const locationIsBookmarked = isBookmarked(estimatedPage, makeLocator(chapterIndex, chapterProgress), currentProgress);
 
   const readerHtml = useMemo(() => {
-    if (loadedChapters.length === 0) return null;
-    return buildChapterHtml(loadedChapters, themeColors, fontSize);
-  }, [loadedChapters]); // theme and font size are applied by injectJavaScript to avoid WebView reload
+    if (loadedChapters.length === 0 || (language.id === "urdu" && !isNastaliqFontReady)) return null;
+    return buildChapterHtml(
+      loadedChapters,
+      themeColors,
+      fontSize,
+      language.id === "urdu" ? "rtl" : "ltr",
+      language.id === "urdu" ? nastaliqFontDataUri ?? undefined : undefined,
+    );
+  }, [isNastaliqFontReady, language.id, loadedChapters, nastaliqFontDataUri]); // theme and font size are applied by injectJavaScript to avoid WebView reload
   const webViewSource = useMemo(() => {
     return readerHtml ? { html: readerHtml } : undefined;
   }, [readerHtml]);
@@ -262,7 +320,7 @@ export function ChapterReader({
   const getChapterHtml = useCallback(async (index: number) => {
     if (!manifest) return null;
     const chapter = manifest.chapters[index];
-    return chapter?.html ?? null;
+    return chapter?.html.replace(/\uFDFA/g, '<sup class="honorific">\uFDFA</sup>') ?? null;
   }, [manifest]);
 
   useEffect(() => {
@@ -749,7 +807,7 @@ export function ChapterReader({
                     <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: isActive ? colors.secondary.lightGold : "rgba(23,61,49,0.08)" }}>
                       <Text style={{ color: isActive ? colors.primary.deepGreen : colors.text.tertiary, fontSize: typography.size.xs, fontWeight: typography.weight.bold }}>{index + 1}</Text>
                     </View>
-                    <Text style={{ flex: 1, color: isActive ? colors.text.onPrimary : colors.text.primary, fontSize: typography.size.base, lineHeight: 21, fontWeight: isActive ? typography.weight.bold : typography.weight.semibold, textAlign: "left" }} numberOfLines={2}>
+                    <Text style={{ flex: 1, color: isActive ? colors.text.onPrimary : colors.text.primary, fontSize: typography.size.base, lineHeight: language.id === "urdu" ? 36 : 21, fontFamily: language.id === "urdu" ? "NotoNastaliqUrdu_400Regular" : undefined, fontWeight: isActive ? typography.weight.bold : typography.weight.semibold, textAlign: language.id === "urdu" ? "right" : "left" }} numberOfLines={2}>
                       {item.label}
                     </Text>
                     {isActive ? <Ionicons name="checkmark" size={18} color={colors.secondary.lightGold} /> : null}
@@ -769,7 +827,7 @@ export function ChapterReader({
               <Text style={{ color: colors.text.tertiary, fontSize: typography.size.base }}>No bookmarks yet.</Text>
             ) : bookmarks.map((bookmark) => (
               <Pressable key={bookmark.id} onPress={() => jumpToBookmark(bookmark)} style={({ pressed }) => ({ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "rgba(23,61,49,0.08)", opacity: pressed ? 0.7 : 1 })}>
-                <Text style={{ color: colors.text.primary, fontSize: typography.size.base, fontWeight: typography.weight.bold }}>{bookmark.label ?? `Page ${bookmark.page ?? ""}`}</Text>
+                <Text style={{ color: colors.text.primary, fontSize: typography.size.base, lineHeight: language.id === "urdu" ? 36 : undefined, fontFamily: language.id === "urdu" ? "NotoNastaliqUrdu_400Regular" : undefined, fontWeight: typography.weight.bold }}>{bookmark.label ?? `Page ${bookmark.page ?? ""}`}</Text>
                 <Text style={{ color: colors.text.tertiary, fontSize: typography.size.sm }}>{Math.round((bookmark.progressPercent ?? 0) * 100)}%</Text>
               </Pressable>
             ))}
