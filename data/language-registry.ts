@@ -85,7 +85,7 @@ export const LANGUAGES: Language[] = [
   {
     id: "urdu",
     title: "Urdu",
-    nativeTitle: "اردو",
+    nativeTitle: "Urdu",
     volumes: URDU_VOLUMES,
   },
 ];

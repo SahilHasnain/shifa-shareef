@@ -46,3 +46,6 @@ app-example
 secrets/
 config.bat
 .opencode
+
+# Playwright MCP browser artifacts
+.playwright-mcp/

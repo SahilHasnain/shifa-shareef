@@ -44,7 +44,7 @@ export default {
       package: getUniqueIdentifier(),
     },
     web: {
-      output: "static",
+      output: "single",
       favicon: "./assets/images/icon.png",
       bundler: "metro",
     },

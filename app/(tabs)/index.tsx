@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -19,7 +20,6 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { shadows, typography } from "../../constants/theme";
-import { BOOK_TITLE } from "../../data/book";
 import {
   LANGUAGES,
   getVolumeByLanguageAndId,
@@ -134,6 +134,24 @@ function OpenBookFab({
         </View>
       </View>
     </Pressable>
+  );
+}
+
+function renderHonorifics(text: string, fontSize: number, fontFamily?: string) {
+  return text.split(/(ﷺ)/g).map((part, index) =>
+    part === "ﷺ" ? (
+      <Text
+        key={`honorific-${index}`}
+        style={{
+          fontSize: Math.max(8, fontSize * 0.52),
+          lineHeight: Math.max(9, fontSize * 0.58),
+          verticalAlign: "top",
+          fontFamily,
+        }}
+      >
+        {part}
+      </Text>
+    ) : part,
   );
 }
 
@@ -333,19 +351,13 @@ export default function HomeScreen() {
           paddingHorizontal: 20,
           gap: 20,
           paddingBottom: 40,
+          ...(Platform.OS === "web"
+            ? { width: "100%", maxWidth: 760, alignSelf: "center", paddingHorizontal: 0, paddingTop: 28 }
+            : {}),
         }}
         showsVerticalScrollIndicator={false}
       >
         <View style={{ gap: 12 }}>
-          <Text
-            style={{
-              color: colors.text.primary,
-              fontSize: typography.size["4xl"],
-              fontWeight: typography.weight.extrabold,
-            }}
-          >
-            {BOOK_TITLE}
-          </Text>
           <Pressable
             onPress={() => setLangMenuVisible(true)}
             style={({ pressed }) => ({
@@ -640,8 +652,11 @@ export default function HomeScreen() {
                 style={{
                   color: colors.text.primary,
                   fontSize: typography.size.xl,
+                  fontFamily: currentLanguageId === "urdu" ? "NotoNastaliqUrdu_400Regular" : undefined,
+                  lineHeight: currentLanguageId === "urdu" ? 48 : undefined,
                   fontWeight: typography.weight.extrabold,
                   marginTop: 2,
+                  textAlign: currentLanguageId === "urdu" ? "right" : "left",
                 }}
               >
                 {currentLanguageId === "roman-urdu" || currentLanguageId === "english" ? "Shifa Shareef" : "شفاء شریف"}
@@ -652,29 +667,41 @@ export default function HomeScreen() {
           <View style={{ gap: 12 }}>
             <Text
               style={{
-                color: colors.text.primary,
-                fontSize: typography.size.base,
-                lineHeight: 24,
+                  color: colors.text.primary,
+                  fontSize: typography.size.base,
+                  fontFamily: currentLanguageId === "urdu" ? "NotoNastaliqUrdu_400Regular" : undefined,
+                  lineHeight: currentLanguageId === "urdu" ? 48 : 24,
+                  textAlign: currentLanguageId === "urdu" ? "right" : "left",
               }}
             >
-              {currentLanguageId === "english"
-                ? 'Ash-Shifa, written by Qadi Iyad رحمۃ اللہ تعالیٰ علیہ, is a timeless work on the status, rights, and love of the Noble Prophet ﷺ.'
-                : currentLanguageId === "roman-urdu"
-                  ? 'Ash-Shifa Qazi Iyaz رحمۃ اللہ تعالیٰ علیہ ki azeem tasneef hai jo Huzoor ﷺ ki shaan, huqooq aur muhabbat ko samjhati hai.'
-                  : 'الشفا قاضی عیاض رحمۃ اللہ تعالیٰ علیہ کی عظیم تصنیف ہے، جو حضور ﷺ کی شان، حقوق اور محبت کو سمجھاتی ہے۔'}
+              {renderHonorifics(
+                currentLanguageId === "english"
+                  ? 'Ash-Shifa, written by Qadi Iyad رحمۃ اللہ تعالیٰ علیہ, is a timeless work on the status, rights, and love of the Noble Prophet ﷺ.'
+                  : currentLanguageId === "roman-urdu"
+                    ? 'Ash-Shifa Qazi Iyaz رحمۃ اللہ تعالیٰ علیہ ki azeem tasneef hai jo Huzoor ﷺ ki shaan, huqooq aur muhabbat ko samjhati hai.'
+                    : 'الشفا قاضی عیاض رحمۃ اللہ تعالیٰ علیہ کی عظیم تصنیف ہے، جو حضور ﷺ کی شان، حقوق اور محبت کو سمجھاتی ہے۔',
+                typography.size.base,
+                currentLanguageId === "urdu" ? "NotoNastaliqUrdu_400Regular" : undefined,
+              )}
             </Text>
             <Text
               style={{
-                color: colors.text.primary,
-                fontSize: typography.size.sm,
-                lineHeight: 22,
+                  color: colors.text.primary,
+                  fontSize: typography.size.sm,
+                  fontFamily: currentLanguageId === "urdu" ? "NotoNastaliqUrdu_400Regular" : undefined,
+                  lineHeight: currentLanguageId === "urdu" ? 42 : 22,
+                  textAlign: currentLanguageId === "urdu" ? "right" : "left",
               }}
             >
-              {currentLanguageId === "english"
-                ? 'Across four sections, it explores the Prophet\'s ﷺ virtues, miracles, rights, character, and the adab of mentioning him.'
-                : currentLanguageId === "roman-urdu"
-                  ? 'Chaar hisson mein Huzoor ﷺ ki fazilat, mojizaat, huqooq, seerat aur zikr ke adab bayan kiye gaye hain.'
-                  : 'چار حصوں میں حضور ﷺ کی فضیلت، معجزات، حقوق، سیرت اور ذکر کے آداب بیان کیے گئے ہیں۔'}
+              {renderHonorifics(
+                currentLanguageId === "english"
+                  ? 'Across four sections, it explores the Prophet\'s ﷺ virtues, miracles, rights, character, and the adab of mentioning him.'
+                  : currentLanguageId === "roman-urdu"
+                    ? 'Chaar hisson mein Huzoor ﷺ ki fazilat, mojizaat, huqooq, seerat aur zikr ke adab bayan kiye gaye hain.'
+                    : 'چار حصوں میں حضور ﷺ کی فضیلت، معجزات، حقوق، سیرت اور ذکر کے آداب بیان کیے گئے ہیں۔',
+                typography.size.sm,
+                currentLanguageId === "urdu" ? "NotoNastaliqUrdu_400Regular" : undefined,
+              )}
             </Text>
           </View>
         </View>
@@ -685,7 +712,7 @@ export default function HomeScreen() {
         style={{
           position: "absolute",
           right: 16,
-          bottom: insets.bottom - 30,
+          bottom: Platform.OS === "web" ? 20 : insets.bottom - 30,
           zIndex: 50,
         }}
       >

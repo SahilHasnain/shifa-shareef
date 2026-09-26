@@ -9,7 +9,7 @@ import { ActivityIndicator, Animated, BackHandler, Modal, PanResponder, Platform
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as SystemUI from "expo-system-ui";
 import { useSQLiteContext } from "expo-sqlite";
-import { WebView } from "react-native-webview";
+import ReaderSurface, { type ReaderSurfaceHandle } from "./ReaderSurface";
 
 import { BOOK_TITLE } from "../../data/book";
 import type { Language, Volume } from "../../data/types";
@@ -65,7 +65,12 @@ function loadNastaliqFontDataUri(): Promise<string> {
   if (!nastaliqFontDataUriPromise) {
     nastaliqFontDataUriPromise = Asset.fromModule(NotoNastaliqUrdu_400Regular)
       .downloadAsync()
-      .then(async (asset) => {
+.then(async (asset) => {
+        if (Platform.OS === "web") {
+          const url = asset.uri || asset.localUri;
+          if (!url) throw new Error("Nastaliq font asset is not available.");
+          return url;
+        }
         if (!asset.localUri) throw new Error("Nastaliq font asset is not available locally.");
         const base64 = await new File(asset.localUri).base64();
         return `data:font/ttf;base64,${base64}`;
@@ -224,7 +229,7 @@ export function ChapterReader({
   const { colors } = useAppTheme();
   const { readerTheme, setReaderTheme } = useReaderTheme();
   const themeColors = READER_THEME_COLORS[readerTheme];
-  const webViewRef = useRef<WebView>(null);
+  const webViewRef = useRef<ReaderSurfaceHandle>(null);
   const loadedChapterIndexesRef = useRef(new Set<number>());
   const appendInFlightRef = useRef(new Set<number>());
   const sessionStartTime = useRef(0);
@@ -661,8 +666,100 @@ export function ChapterReader({
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: themeColors.background }}>
-      {controlsVisible && (
+    <View
+      style={{
+        flex: 1,
+        flexDirection: Platform.OS === "web" ? "row" : "column",
+        backgroundColor: Platform.OS === "web" ? (themeColors.isDark ? "#131313" : colors.surface.lightCream) : themeColors.background,
+      }}
+    >
+      {Platform.OS === "web" && controlsVisible && (
+        <View
+          style={{
+            width: 224,
+            backgroundColor: colors.overlay.dark,
+            borderRightWidth: 1,
+            borderRightColor: "rgba(201,169,97,0.18)",
+            paddingTop: 24,
+            paddingBottom: 18,
+            paddingHorizontal: 16,
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ gap: 16 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <Pressable onPress={handleBack} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+                <Ionicons name="chevron-back" size={24} color={colors.text.onPrimary} />
+              </Pressable>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.text.onPrimary, fontSize: typography.size.lg, fontWeight: typography.weight.bold }} numberOfLines={1}>{BOOK_TITLE}</Text>
+                {showVolumeLabel ? (
+                  <Text style={{ color: colors.text.light, fontSize: typography.size.base, fontWeight: typography.weight.semibold }} numberOfLines={1}>{volumeDisplayTitle}</Text>
+                ) : null}
+              </View>
+            </View>
+
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <Pressable onPress={() => setControlsVisible(false)} style={({ pressed }) => ({ width: 42, height: 42, borderRadius: 21, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+                <Ionicons name="eye-off-outline" size={20} color={colors.text.onPrimary} />
+              </Pressable>
+              <Pressable onPress={() => { const next = readerTheme === "light" ? "sepia" : readerTheme === "sepia" ? "dark" : "light"; void setReaderTheme(next); }} style={({ pressed }) => ({ width: 42, height: 42, borderRadius: 21, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+                <Ionicons name={readerTheme === "dark" ? "moon" : readerTheme === "sepia" ? "cafe" : "sunny"} size={18} color={colors.text.onPrimary} />
+              </Pressable>
+              <Pressable onPress={toggleBookmark} style={({ pressed }) => ({ width: 42, height: 42, borderRadius: 21, backgroundColor: locationIsBookmarked ? colors.secondary.lightGold : colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+                <Ionicons name={locationIsBookmarked ? "bookmark" : "bookmark-outline"} size={20} color={locationIsBookmarked ? colors.primary.deepGreen : colors.text.onPrimary} />
+              </Pressable>
+            </View>
+          </View>
+
+          {manifest && (
+            <View style={{ gap: 14 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <Text style={{ color: colors.text.onPrimary, fontSize: typography.size.sm, fontWeight: typography.weight.semibold, minWidth: 44 }}>{Math.round((scrubProgress ?? currentProgress) * 100)}%</Text>
+                <View
+                  style={{ flex: 1, height: 24, justifyContent: "center" }}
+                  onLayout={(event) => { sliderWidthRef.current = Math.max(1, event.nativeEvent.layout.width); }}
+                  {...sliderPanResponder.panHandlers}
+                >
+                  <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.overlay.light, overflow: "hidden" }}>
+                    <View style={{ height: "100%", width: `${Math.round((scrubProgress ?? currentProgress) * 100)}%`, backgroundColor: colors.secondary.lightGold, borderRadius: 4 }} />
+                  </View>
+                  <View style={{ position: "absolute", left: `${Math.round((scrubProgress ?? currentProgress) * 100)}%`, top: 3, width: 18, height: 18, marginLeft: -9, borderRadius: 9, backgroundColor: colors.secondary.warmGold, borderWidth: 0 }} />
+                </View>
+              </View>
+
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Pressable onPress={() => setFontSize(prev => Math.max(12, prev - 2))} style={({ pressed }) => ({ width: 38, height: 38, borderRadius: 19, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+                    <Text style={{ color: colors.text.onPrimary, fontSize: 17, fontWeight: typography.weight.bold }}>A-</Text>
+                  </Pressable>
+                  <Text style={{ color: colors.text.onPrimary, fontSize: typography.size.sm, fontWeight: typography.weight.semibold, minWidth: 18, textAlign: "center", opacity: 0.7 }}>{fontSize}</Text>
+                  <Pressable onPress={() => setFontSize(prev => Math.min(28, prev + 2))} style={({ pressed }) => ({ width: 38, height: 38, borderRadius: 19, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+                    <Text style={{ color: colors.text.onPrimary, fontSize: 17, fontWeight: typography.weight.bold }}>A+</Text>
+                  </Pressable>
+                </View>
+                <Pressable onPress={() => setTocVisible(true)} style={({ pressed }) => ({ width: 38, height: 38, borderRadius: 19, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+                  <Ionicons name="list" size={20} color={colors.text.onPrimary} />
+                </Pressable>
+              </View>
+            </View>
+          )}
+        </View>
+      )}
+      <View style={{ flex: 1 }}>
+      <View
+        style={[
+          { flex: 1, width: "100%", backgroundColor: themeColors.background },
+          Platform.OS === "web" && {
+            maxWidth: 880,
+            alignSelf: "center",
+            borderLeftWidth: 1,
+            borderRightWidth: 1,
+            borderColor: "rgba(201,169,97,0.18)",
+          },
+        ]}
+      >
+      {Platform.OS !== "web" && controlsVisible && (
         <View style={{ position: "absolute", top: 0, left: 0, right: 0, backgroundColor: colors.overlay.dark, paddingTop: 50, paddingBottom: 16, paddingHorizontal: 20, gap: 6, zIndex: 10 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
             <Pressable onPress={handleBack} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.overlay.light, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
@@ -687,9 +784,8 @@ export function ChapterReader({
             </Pressable>
           </View>
 
-          {Platform.OS !== "web" && (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <Ionicons name="sunny-outline" size={16} color={colors.text.onPrimary} />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Ionicons name="sunny-outline" size={16} color={colors.text.onPrimary} />
               <View
                 onLayout={(event) => setTrackWidthFromLayout(event.nativeEvent.layout.width)}
                 {...brightnessPanResponder.panHandlers}
@@ -701,23 +797,17 @@ export function ChapterReader({
                 </View>
               </View>
             </View>
-          )}
         </View>
       )}
 
       {webViewSource ? (
-        <WebView
+        <ReaderSurface
           ref={webViewRef}
           source={webViewSource}
           onMessage={handleMessage}
           onLoadEnd={restoreProgress}
           onError={() => setIsLoading(false)}
           style={{ flex: 1, backgroundColor: themeColors.background }}
-          javaScriptEnabled
-          domStorageEnabled
-          originWhitelist={["*"]}
-          mixedContentMode="always"
-          showsVerticalScrollIndicator={false}
         />
       ) : null}
 
@@ -728,7 +818,7 @@ export function ChapterReader({
         </View>
       )}
 
-      {controlsVisible && manifest && (
+      {Platform.OS !== "web" && controlsVisible && manifest && (
         <SafeAreaView edges={["bottom"]} style={{ position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: colors.overlay.dark }}>
           <View style={{ paddingTop: 18, paddingBottom: 18, paddingHorizontal: 20, gap: 18 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
@@ -866,6 +956,8 @@ export function ChapterReader({
           </View>
         </Animated.View>
       )}
+      </View>
+      </View>
     </View>
   );
 }
