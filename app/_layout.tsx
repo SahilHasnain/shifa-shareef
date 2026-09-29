@@ -1,10 +1,18 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { SQLiteProvider } from "expo-sqlite";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { SQLiteProvider, useSQLiteContext } from "expo-sqlite";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Platform } from "react-native";
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  useColorScheme,
+  View,
+} from "react-native";
 import { useFonts, NotoNastaliqUrdu_400Regular } from "@expo-google-fonts/noto-nastaliq-urdu";
 
+import { appThemes } from "../constants/theme";
 import { AppThemeProvider, useAppTheme } from "../hooks/useAppTheme";
 import { useMultiVolumeMigration } from "../hooks/useMultiVolumeMigration";
 
@@ -36,22 +44,73 @@ function handleSqliteError(error: unknown) {
   window.location.reload();
 }
 
+function SplashLoadingScreen() {
+  const systemScheme = useColorScheme();
+  const isDark = systemScheme === "dark";
+  const backgroundColor = isDark
+    ? appThemes.dark.surface.lightCream
+    : appThemes.light.surface.lightCream;
+  const spinnerColor = isDark
+    ? appThemes.dark.secondary.warmGold
+    : appThemes.light.primary.deepGreen;
+
+  return (
+    <View style={[styles.container, { backgroundColor }]}>
+      <ActivityIndicator size="large" color={spinnerColor} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
+
+// Signals that the SQLiteProvider has finished opening the database. Because the provider
+// only mounts its children once the DB is ready, this component mounts exactly when the
+// bootstrap is complete, letting us hide the loading overlay.
+function SqliteReadyNotifier({ onReady }: { onReady: () => void }) {
+  useSQLiteContext();
+  const notifiedRef = useRef(false);
+
+  useEffect(() => {
+    if (notifiedRef.current) return;
+    notifiedRef.current = true;
+    onReady();
+  }, [onReady]);
+
+  return null;
+}
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ NotoNastaliqUrdu_400Regular });
   useMultiVolumeMigration();
+  const [isDbReady, setIsDbReady] = useState(false);
+  const handleDbReady = useCallback(() => setIsDbReady(true), []);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded) return <SplashLoadingScreen />;
 
   return (
-    <SQLiteProvider
-      databaseName="shifa-shareef-content-v2.db"
-      assetSource={{ assetId: require("../assets/db/shifa-shareef.db") }}
-      onError={handleSqliteError}
-    >
-      <AppThemeProvider>
-        <ThemedRootLayout />
-      </AppThemeProvider>
-    </SQLiteProvider>
+    <View style={{ flex: 1 }}>
+      <SQLiteProvider
+        databaseName="shifa-shareef-content-v2.db"
+        assetSource={{ assetId: require("../assets/db/shifa-shareef.db") }}
+        onError={handleSqliteError}
+      >
+        <AppThemeProvider>
+          <ThemedRootLayout />
+        </AppThemeProvider>
+        <SqliteReadyNotifier onReady={handleDbReady} />
+      </SQLiteProvider>
+      {!isDbReady ? <SplashLoadingScreen /> : null}
+    </View>
   );
 }
 
